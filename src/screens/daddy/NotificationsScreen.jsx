@@ -137,6 +137,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
+    paddingBottom: 100
   },
   notificationItem: {
     backgroundColor: '#fff',

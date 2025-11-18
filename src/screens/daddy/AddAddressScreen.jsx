@@ -390,13 +390,19 @@ const AddAddressScreen = ({ navigation, route }) => {
           full_address: address,
         };
         if (route.params?.address) {
-          dispatch(
+          console.log('Editing address - ID:', route.params.address.id);
+          console.log('Address data being sent:', {
+            ...addressData,
+            id: route.params.address.id,
+          });
+          await dispatch(
             setAddressList({
               ...addressData,
               id: route.params.address.id,
             }),
           );
         } else {
+          console.log('Creating new address');
           await dispatch(
             setAddressList(addressData),
           );
@@ -408,8 +414,7 @@ const AddAddressScreen = ({ navigation, route }) => {
     } finally {
       setIsSaving(false);
     }
-  }, [
-    dispatch,
+  }, [dispatch,
     selectedType,
     doorNo,
     markerPosition,
@@ -474,7 +479,7 @@ const AddAddressScreen = ({ navigation, route }) => {
           const response = await fetch(
             `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
               text,
-              )}&key=AIzaSyBjxoAFhr00pjmZ95SEJYoUL98A6iX8hQ4`,
+            )}&key=AIzaSyBjxoAFhr00pjmZ95SEJYoUL98A6iX8hQ4`,
           );
           const data = await response.json();
 
@@ -528,6 +533,7 @@ const AddAddressScreen = ({ navigation, route }) => {
     },
     [animateToRegion],
   );
+
 
   // useEffect(()=>{
   //   if(!userDetails) return

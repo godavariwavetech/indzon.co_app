@@ -50,6 +50,7 @@ const AddressListScreen = ({ navigation, route }) => {
   // Check if the user is coming from the cart screen
   const isFromCart = route.params?.isFromCart;
 
+  
   console.log(reaturantDetails
     , "reaturantDetails in addresess list")
 
@@ -95,7 +96,7 @@ const AddressListScreen = ({ navigation, route }) => {
 
   useFocusEffect(useCallback(() => {
     loadAddresses();
-  }, [isDeleted]));
+  }, [isDeleted, dispatch]));
 
   const loadAddresses = async () => {
     if (!hasLoaded) {
@@ -103,7 +104,7 @@ const AddressListScreen = ({ navigation, route }) => {
     }
     try {
       await dispatch(getAddressList());
-      setToggleValue(!toggleValue)
+      setToggleValue(!toggleValue);
       setHasLoaded(true);
     } catch (error) {
       console.error('Error loading addresses:', error);

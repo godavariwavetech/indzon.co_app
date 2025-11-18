@@ -1,6 +1,7 @@
-export const baseURL = "https://melocalapp.com:2630/"; 
-
+// export const baseURL = "https://melocalapp.com:2630/"; 
 //2630
+export const baseURL = 'https://melocalapp.com:1035/';
+
 
 export const endpoints = {
   VERIFY_MOBILE:'customers/v1/loginCheck',

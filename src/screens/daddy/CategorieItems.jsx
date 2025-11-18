@@ -26,19 +26,29 @@ import commonStyles from '../../commonstyles/CommonStyles';
 
 export default function CategorieItems({ navigation, route }) {
   const dispatch = useDispatch()
-  const { restaurants, activeCategoryIndex, activeSubCategory } = useSelector(state => state.Dashboard)
+  const { activeCategoryIndex, activeSubCategory } = useSelector(state => state.Dashboard)
   const [filterData, setFilterData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const timeoutRef = useRef();
   const [filteredRestaurants, setFilteredRestaurants] = useState([]);
+  const [apiRestaurants, setApiRestaurants] = useState([]); // Store API restaurants
   const [activeFilters, setActiveFilters] = useState(['All']);
+  const [subCategoryId, setSubCategoryId] = useState(activeSubCategory?.sub_category_id);
+  const [shopId, setShopId] = useState(activeSubCategory?.shop_id);
+  // console.log("activeSubCategory--------------------",activeCategoryIndex, activeSubCategory)
 
   const handleFilter = (selected) => {
+    console.log("selected--------------------", selected)
+
     if (selected.filter_name === 'All') {
       setActiveFilters(['All']);
+      console.log("ralecdhu")
     } else {
       // For single selection, just set the active filter to the selected one
+      console.log("vachindhiiiiiiiiiiiiii")
+      setSubCategoryId(selected.filter_id);
+      setShopId( selected.shop_ids);
       setActiveFilters([selected.filter_name]);
     }
   };
@@ -48,10 +58,18 @@ export default function CategorieItems({ navigation, route }) {
       setIsLoading(true);
       const getResponse = await dispatch(getRestaurants({
         categoryId: activeCategoryIndex,
-        subCatergoryId: activeSubCategory.sub_category_id
+        subCatergoryId: subCategoryId,
+        shopId: shopId
       }));
-
+      
+      // console.log("get restaurants from API--------------------433333333333333333333333", getResponse.payload.data)
       setFilterData(getResponse.payload.data[1] || []);
+      
+      // Store the restaurants from the API response (already filtered by backend)
+      const apiRestaurants = getResponse.payload.data[0] || [];
+      // console.log("API restaurants count:", apiRestaurants.length);
+      setApiRestaurants(apiRestaurants);
+      setFilteredRestaurants(apiRestaurants); // Initially show all API restaurants
     
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -61,28 +79,24 @@ export default function CategorieItems({ navigation, route }) {
     }
   }
 
-  useFocusEffect(useCallback(() => {
-    getFilters()
-  }, [activeSubCategory]))
+
 
   useEffect(() => {
-    if (activeSubCategory) {
-      getFilters()
-    }
-  }, [activeSubCategory])
+      getFilters() 
+  }, [activeSubCategory.sub_category_id,subCategoryId,shopId])
 
+  // Client-side filtering for search and additional filters (Veg/Non-Veg)
   useEffect(() => {
-    if (!restaurants) return;
-
+    if (!apiRestaurants || apiRestaurants.length === 0) return;
     const lowerQuery = searchQuery.toLowerCase();
-    const filtered = restaurants.filter(restaurant => {
+    const filtered = apiRestaurants.filter(restaurant => {
       // Search matches
       const matchesSearch = restaurant.shop_name.toLowerCase().includes(lowerQuery) ||
         restaurant.shop_items?.some(item =>
           item.item_name.toLowerCase().includes(lowerQuery)
         );
 
-      // Filter matches
+      // Filter matches (for additional filters like Veg/Non-Veg)
       const matchesFilters = activeFilters.includes('All') ||
         activeFilters.some(filterName => {
           // Find the filter in filterData
@@ -97,8 +111,9 @@ export default function CategorieItems({ navigation, route }) {
       return matchesSearch && matchesFilters;
     });
  
+    // console.log("Final filtered restaurants count:", filtered.length);
     setFilteredRestaurants(filtered);
-  }, [searchQuery, restaurants, activeFilters, filterData]);
+  }, [searchQuery, activeFilters, filterData, apiRestaurants]);
 
   const calculateDeliveryTime = (distance) => {
     if (distance < 3) {
@@ -258,7 +273,6 @@ export default function CategorieItems({ navigation, route }) {
   );
 
   return (
-   
       <View style={styles.main}>
         <LinearGradient
           colors={['#E7432D', '#E7432D']}
@@ -301,7 +315,7 @@ export default function CategorieItems({ navigation, route }) {
           </View>
         </LinearGradient>
 
-        {renderFilters()}
+        {/* {renderFilters()} */}
 
         {renderContent()}
       </View>
@@ -537,3 +551,10 @@ const styles = StyleSheet.create({
     opacity: 0.5
   }
 });
+
+
+
+
+  // useFocusEffect(useCallback(() => {
+  //   getFilters()
+  // }, [activeSubCategory]))

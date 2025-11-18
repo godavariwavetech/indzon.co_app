@@ -29,7 +29,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 // import { logout } from '../../redux/reducers/daddy';
 import CustomModal from '../../components/CustomModal';
-import { actionLogout, deleteAccount } from '../../redux/reducers/auth';
+import { actionLogout } from '../../redux/reducers/auth';
 import { clearCart, getOrders } from '../../redux/reducers/daddy';
 import VersionCheck from 'react-native-version-check';
 import commonStyles from '../../commonstyles/CommonStyles';
@@ -46,7 +46,6 @@ const ProfileScreen = () => {
   const [orders, setOrders] = useState([]);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [appVersion, setAppVersion] = useState('');
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
 
@@ -201,30 +200,17 @@ const ProfileScreen = () => {
     </View>
   );
 
-  const handleDeleteAccount = async () => {
-    try {
-      // dispatch(deleteAccount())
-      // return
-      setIsLoading(true);
-      await dispatch(deleteAccount())
-      setDeleteModalVisible(false);
-      dispatch(actionLogout());
-      dispatch(clearCart());
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      });
-    } catch (error) {
-      console.error('Error deleting account:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const menuItems = [
 
 
     // 2. Core navigation / features
+    {
+      id: '12',
+      title: 'User Profile',
+      icon: <MaterialCommunityIcons name="account-details" size={24} color="#000" />,
+      onPress: () => navigation.navigate('UserProfile'),
+    },
     {
       id: '2',
       title: 'Address List',
@@ -340,14 +326,6 @@ const ProfileScreen = () => {
         ),
         onPress: () => navigation.navigate('Register1', { isFromCart: true }),
       },
-
-    // Only show delete account option if customerId exists
-    ...(customerId ? [{
-      id: '10',
-      title: 'Delete Account',
-      icon: <MaterialCommunityIcons name="delete" size={24} color="#000" />,
-      onPress: () => setDeleteModalVisible(true),
-    }] : []),
   ];
 
 
@@ -449,7 +427,7 @@ const ProfileScreen = () => {
         message={
           showUpdateModal
             ? 'A new version is available. Please update now!'
-            : "You're using the latest version of ChilBro"
+            : "You're using the latest version of MeLocal"
         }
         confirmText="OK"
         onConfirm={() => setUpdateModalVisible(false)}
@@ -470,24 +448,13 @@ const ProfileScreen = () => {
       <CustomModal
         visible={showUpdateModal}
         title="Update Available"
-        message="A new version of ChilBro is available. Please update to continue using all features."
+        message="A new version of MeLocal is available. Please update to continue using all features."
         confirmText="Update Now"
         onConfirm={handleUpdate}
         onCancel={() => setShowUpdateModal(false)}
         cancelText="Later"
       />
 
-      {/* Add this modal for delete confirmation */}
-      <CustomModal
-        visible={deleteModalVisible}
-        title="Delete Account"
-        message="Are you sure you want to delete your account? This action cannot be undone."
-        confirmText="Delete"
-        onConfirm={handleDeleteAccount}
-        onCancel={() => setDeleteModalVisible(false)}
-        cancelText="Cancel"
-        confirmButtonColor="#FF4B4B" // Red color for delete action
-      />
     </View>
   );
 };

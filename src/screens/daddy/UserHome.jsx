@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, memo } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,8 @@ import {
   StyleSheet,
   Platform,
   RefreshControl,
-  Dimensions
+  Dimensions,
+  Animated
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -56,13 +57,141 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 const screenWidth = Dimensions.get('window').width;
 const itemWidth = screenWidth / 6; // since you use numColumns={5}
 
+// Memoized Banner Carousel Component
+const BannerCarousel = memo(({ banners, onBannerPress }) => {
+  const flatListRef = useRef(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const isFocused = useIsFocused();
+
+  useFocusEffect(
+    useCallback(() => {
+      let intervalId;
+      if (isFocused && banners?.length > 0) {
+        intervalId = setInterval(() => {
+          const newIndex = currentIndex < banners.length - 1 ? currentIndex + 1 : 0;
+          flatListRef.current?.scrollToIndex({ index: newIndex, animated: true });
+          setCurrentIndex(newIndex);
+        }, 3000);
+      }
+      return () => {
+        clearInterval(intervalId);
+      };
+    }, [currentIndex, banners, isFocused])
+  );
+
+  const renderBannerItem = useCallback(({ item }) => (
+    <TouchableOpacity onPress={() => onBannerPress(item)} style={styles.bannerContainer}>
+      <Image
+        source={{ uri: item.banner_image }}
+        style={styles.bannerImage}
+        resizeMode="stretch"
+      />
+    </TouchableOpacity>
+  ), [onBannerPress]);
+
+  const keyExtractor = useCallback((item) => item.id.toString(), []);
+
+  return (
+    <FlatList
+      ref={flatListRef}
+      data={banners}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{}}
+      keyExtractor={keyExtractor}
+      renderItem={renderBannerItem}
+      getItemLayout={(data, index) => ({
+        length: responsiveWidth(100),
+        offset: responsiveWidth(100) * index,
+        index,
+      })}
+      initialNumToRender={1}
+      maxToRenderPerBatch={1}
+      windowSize={3}
+      removeClippedSubviews={true}
+    />
+  );
+});
+
+// Special Offer Scroller Component
+const SpecialOfferScroller = ({ offerText, itemId }) => {
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const [textWidth, setTextWidth] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  useEffect(() => {
+    // Start animation when both measurements are available
+    if (textWidth > 0 && containerWidth > 0) {
+
+
+      const startAnimation = () => {
+        // Start from the right edge of the container
+        scrollX.setValue(containerWidth); // Start from right edge
+        Animated.loop(
+          Animated.timing(scrollX, {
+            toValue: -textWidth, // Scroll to the left until text is completely out of view
+            duration: 8000,
+            useNativeDriver: true,
+          })
+        ).start();
+      };
+
+      // Start animation after a delay
+      const timer = setTimeout(startAnimation, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [textWidth, containerWidth, scrollX]);
+
+  const displayText = offerText || 'Special Offer';
+  const marqueeText = `${displayText}`;
+
+  return (
+    <LinearGradient
+      colors={['#FF6B35', '#F7931E', '#FF8C42']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={styles.specialOfferContainer}
+    >
+      <View
+        style={styles.specialOfferScrollContent}
+        onLayout={(event) => {
+          const width = event.nativeEvent.layout.width;
+
+          setContainerWidth(width);
+        }}
+      >
+        <Animated.View
+          style={[
+            styles.specialOfferTextContainer,
+            {
+              transform: [{ translateX: scrollX }]
+            }
+          ]}
+        >
+          <Text
+            style={styles.specialOfferText}
+            onLayout={(event) => {
+              const width = event.nativeEvent.layout.width;
+
+              setTextWidth(width);
+            }}
+          >
+            {marqueeText}
+          </Text>
+        </Animated.View>
+      </View>
+    </LinearGradient>
+  );
+};
+
+
 export default function UserHome({ navigation }) {
   const { categories, subCategories, banners, restaurants, activeCategoryIndex, loading, addressList, userAddress,
     serviceAvailable, homeRestaurnats } = useSelector(state => state.Dashboard);
+  // console.log("homeRestaurnats--------------------", homeRestaurnats)
+  // console.log("sub categories--------------------", subCategories)
   const { locationName } = useSelector(state => state.Auth);
   const { isNetworkConnected } = useSelector(state => state.address);
-  const flatListRef = useRef(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAddress, setSelectedAddress] = useState(userAddress || "");
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -70,7 +199,6 @@ export default function UserHome({ navigation }) {
   const dispatch = useDispatch();
   const authLocation = useSelector(state => state.Auth.location);
   const [mounted, setMounted] = useState(true);
-  const isFocused = useIsFocused();
   const [initialNetLoad, setInitialNetLoad] = useState(false);
   const [serviceCheckFailed, setServiceCheckFailed] = useState(false);
   const [errorOccured, setErrorOccured] = useState(false);
@@ -248,22 +376,6 @@ export default function UserHome({ navigation }) {
     dispatch(setOrderOfferAmount(category.order_offer_amount));
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      let intervalId;
-      if (isFocused && banners?.length > 0) {
-        intervalId = setInterval(() => {
-          const newIndex = currentIndex < banners.length - 1 ? currentIndex + 1 : 0;
-          flatListRef.current?.scrollToIndex({ index: newIndex, animated: true });
-          setCurrentIndex(newIndex);
-        }, 3000);
-      }
-      return () => {
-        clearInterval(intervalId);
-      };
-    }, [currentIndex, banners, isFocused])
-  );
-
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     getCategoreis();
@@ -287,26 +399,64 @@ export default function UserHome({ navigation }) {
         const response = await dispatch(checkAddressExistence({
           latitude: authLocation.latitude,
           longitude: authLocation.longitude
-        })).unwrap();
-
+        }));
+        
         if (mounted) {
-          await dispatch(setLocationName(response.data[0].location_name));
-          await dispatch(setLocationId(response.data[0].id));
-          if (response.data.length > 0) {
-            // Load essential data after service check
-            const result = await dispatch(getCategories());
-            dispatch(setOrderOfferAmount(result.payload?.data[0]?.order_offer_amount));
-            dispatch(getBanners());
-            if (!restaurants || restaurants.length === 0) {
-              dispatch(getRestaurantsHome({ categoryId: activeCategoryIndex }));
+          // Check if service is not available
+          // Response structure: response.payload.data array with active_status field
+          const payload = response?.payload;
+          
+          // Check if no data or empty array
+          if (!payload?.data || payload.data.length === 0) {
+            // No service location found - navigate to ServicesAvailable screen
+            if (networkStatusRef.current) {
+              navigation.replace('ServicesAvailable', {
+                locationNotAvailable: true,
+                latitude: authLocation.latitude,
+                longitude: authLocation.longitude
+              });
             }
-            dispatch(getSubCategories({ categoryId: activeCategoryIndex }));
+            return;
           }
+
+          // Check if service is not available (active_status === 1 means NOT available)
+          const locationData = payload.data[0];
+          if (locationData?.active_status === 1) {
+            // Service not available at this location - navigate to ServicesAvailable screen
+            if (networkStatusRef.current) {
+              navigation.replace('ServicesAvailable', {
+                locationNotAvailable: true,
+                latitude: authLocation.latitude,
+                longitude: authLocation.longitude
+              });
+            }
+            return;
+          }
+
+          // Service is available (active_status !== 1) - proceed with normal flow
+          await dispatch(setLocationName(locationData.location_name));
+          await dispatch(setLocationId(locationData.id));
+          
+          // Load essential data after service check
+          const result = await dispatch(getCategories());
+          dispatch(setOrderOfferAmount(result.payload?.data[0]?.order_offer_amount));
+          dispatch(getBanners());
+          if (!restaurants || restaurants.length === 0) {
+            dispatch(getRestaurantsHome({ categoryId: activeCategoryIndex }));
+          }
+          dispatch(getSubCategories({ categoryId: activeCategoryIndex }));
         }
       } catch (error) {
         setErrorOccured(true)
         if (error.name !== 'AbortError' && mounted) {
-          // console.error('Service check failed:', error);
+          // If service check fails, navigate to ServicesAvailable screen
+          if (networkStatusRef.current) {
+            navigation.replace('ServicesAvailable', {
+              serviceCheckFailed: true,
+              latitude: authLocation?.latitude,
+              longitude: authLocation?.longitude
+            });
+          }
         }
       }
     };
@@ -376,8 +526,8 @@ export default function UserHome({ navigation }) {
   }, [isNetworkConnected, activeCategoryIndex, dispatch]);
 
 
-  const popularRestaurants = homeRestaurnats && homeRestaurnats.filter(restaurant => Number(restaurant.shop_rating) >= 4.5);
-  const nearbyRestaurants = homeRestaurnats && homeRestaurnats.filter(restaurant => Number(restaurant.shop_rating) < 4.5);
+  // const popularRestaurants = homeRestaurnats && homeRestaurnats.filter(restaurant => Number(restaurant.shop_rating) >= 4.5);
+  // const nearbyRestaurants = homeRestaurnats && homeRestaurnats.filter(restaurant => Number(restaurant.shop_rating) < 4.5);
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
@@ -472,22 +622,9 @@ export default function UserHome({ navigation }) {
               }
               style={styles.container}
             >
-              <FlatList
-                ref={flatListRef}
-                data={banners}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{}}
-                keyExtractor={item => item.id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity onPress={() => handleBannerPress(item)} style={styles.bannerContainer}>
-                    <Image
-                      source={{ uri: item.banner_image }}
-                      style={styles.bannerImage}
-                      resizeMode="stretch"
-                    />
-                  </TouchableOpacity>
-                )}
+              <BannerCarousel
+                banners={banners}
+                onBannerPress={handleBannerPress}
               />
               <View style={styles.categoryHeaderContainer}>
                 <Text style={styles.categoryHeaderTitle}>Category</Text>
@@ -554,7 +691,7 @@ export default function UserHome({ navigation }) {
               </TouchableOpacity> */}
               </View>
               <FlatList
-                data={popularRestaurants}
+                data={homeRestaurnats}
                 keyExtractor={item => item.id}
                 contentContainerStyle={{ padding: 10 }}
                 showsVerticalScrollIndicator={false}
@@ -562,9 +699,9 @@ export default function UserHome({ navigation }) {
                   <Text style={{ fontSize: 14, fontWeight: '400', color: '#656565' }}>No popular restaurants/Shops available</Text>
                 </View>}
                 renderItem={({ item }) => {
-
                   const isUnavailable = item.shop_active_status === "1";
                   const distance = item.distance;
+
                   return (
                     <TouchableOpacity
                       style={[styles.restaurantCard, isUnavailable && styles.unavailableCard]}
@@ -578,6 +715,12 @@ export default function UserHome({ navigation }) {
                         }
                       }}
                     >
+                      {item.special_offer_status == "1" && (
+                        <SpecialOfferScroller
+                          offerText={item.special_offer_name}
+                          itemId={item.id}
+                        />
+                      )}
                       <View style={styles.restaurantContent}>
                         {/* Left image */}
                         <View style={styles.restaurantImageContainer}>
@@ -589,13 +732,13 @@ export default function UserHome({ navigation }) {
                           {/* <View style={styles.heartIcon}>
                         <MaterialIcons name="favorite" size={28} color="red" />
                         </View> */}
-                         
+
                         </View>
-                         {isUnavailable && (
-                            <View style={styles.unavailableOverlay}>
-                              <Text style={[styles.unavailableText, { color: "red" }]}>Currently Unavailable</Text>
-                            </View>
-                          )}
+                        {isUnavailable && (
+                          <View style={styles.unavailableOverlay}>
+                            <Text style={[styles.unavailableText, { color: "red" }]}>Currently Unavailable</Text>
+                          </View>
+                        )}
 
                         {/* Right text content */}
                         <View style={styles.restaurantTextContainer}>
@@ -1067,7 +1210,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     position: 'relative',
     textAlign: "center",
-   
+
   },
 
   restaurantImageContainer: {
@@ -1185,7 +1328,52 @@ const styles = StyleSheet.create({
     fontSize: 10,
     textAlign: 'center',
     color: '#000'
-  }
+  },
+  specialOfferContainer: {
+    borderRadius: 3,
+    paddingHorizontal: 1,
+    paddingVertical: 0,
+    marginBottom: 5,
+    marginTop: 0,
+    marginHorizontal: 0,
+    overflow: 'hidden', // Hide overflowing text
+    shadowColor: '#FF6B35',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#FF8C42',
+  },
+  specialOfferText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 1.2,
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+    whiteSpace: 'nowrap', // Prevent text wrapping
+    textTransform: 'uppercase',
+  },
+  specialOfferScrollContent: {
+    paddingHorizontal: 5,
+    overflow: 'hidden', // Hide overflowing content
+    height: 24, // Increased height for better visibility
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  specialOfferTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    height: 24,
+  },
 
 
 });

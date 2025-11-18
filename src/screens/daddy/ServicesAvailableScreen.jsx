@@ -22,6 +22,7 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import { setLocation, setLocationId, setLocationName } from '../../redux/reducers/auth';
 import commonStyles from '../../commonstyles/CommonStyles';
 import { colors } from '../../config/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -31,6 +32,9 @@ const ServicesAvailableScreen = ({ navigation, route }) => {
   const { availableAreas, loading } = useSelector(state => state.Dashboard);
   const dispatch = useDispatch();
   const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
+
+  console.log("availableAreas--------------------", availableAreas)
 
   useEffect(() => {
     dispatch(getServices());
@@ -38,7 +42,10 @@ const ServicesAvailableScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     if (availableAreas) {
+      // Filter out locations with active_status === 1 (service not available)
+      // Only show locations with active_status === 0 (service available)
       setFilteredAreas(availableAreas?.filter(area =>
+        area.active_status !== 1 && // Hide inactive locations
         area.location_name.toLowerCase().includes(searchQuery.toLowerCase())
       ));
     }
@@ -60,16 +67,17 @@ const ServicesAvailableScreen = ({ navigation, route }) => {
     }
   };
 
+
   return (
-    <SafeAreaView style={styles.container}>
-      {/* <StatusBar backgroundColor={"transparent"} translucent barStyle={"light-content"} /> */}
+    <SafeAreaView style={[styles.container]}>
+      <StatusBar backgroundColor="#FE4A31" translucent={true} barStyle="light-content" />
       <View style={styles.container}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: Math.max(insets.top, responsiveHeight(2)) }]}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            {!route?.params?.permissionDenied && <FontAwesome6 name="arrow-left-long" size={20} color={colors.black} />}
+            {!route?.params?.permissionDenied && <FontAwesome6 name="arrow-left-long" size={20} color={colors.white} />}
           </TouchableOpacity>
           <Text style={styles.title}>Available Service Areas</Text>
         </View>
@@ -142,11 +150,11 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: "#FE4A31",
-    height: responsiveHeight(15),
     flexDirection: "row",
     alignItems: "flex-end",
     paddingBottom: responsiveHeight(3),
-    paddingLeft: responsiveWidth(5)
+    paddingLeft: responsiveWidth(5),
+    gap: 10
   },
   backButton: {
     width: responsiveWidth(7)

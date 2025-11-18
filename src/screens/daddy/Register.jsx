@@ -357,7 +357,7 @@ export default function Register({ navigation, route }) {
     if (validatePhoneNumber()) {
       try {
         const response = await dispatch(verifyCustomerMobile({ customer_mobile_number: phoneNumber }));
-     
+        console.log("response of verifyCustomerMobile", response)
         if (response.payload && !response.error) {
           navigation.navigate(route.params?.isFromCart ? "OTPVerification1" : "OTPVerification", {
             phoneNumber: phoneNumber,

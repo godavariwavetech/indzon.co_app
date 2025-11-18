@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -45,7 +45,7 @@ import RazorpayCheckout from 'react-native-razorpay';
 const CheckoutScreen = ({ navigation, route }) => {
   const { cartItems, totalPrice } = useSelector(state => state.Dashboard);
   const { appliedCoupon } = useSelector(state => state.coupons);
-  const { chargesList, selectedAddress} = useSelector(
+  const { chargesList, selectedAddress } = useSelector(
     state => state.address,
   );
   const {
@@ -58,11 +58,15 @@ const CheckoutScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
 
   console.log("cartItems", cartItems)
- 
+
   const handlingCharges = chargesList?.[0]?.handling_charges || 0;
+  
+  // Debug logging
+  console.log("Debug - chargesList:", chargesList);
+  console.log("Debug - handlingCharges:", handlingCharges);
+  console.log("Debug - cartItems length:", cartItems.length);
   const [clearCartConfirmVisible, setClearCartConfirmVisible] = useState(false);
-  const [paymentMenuVisible, setPaymentMenuVisible] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('Pay Online');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [totalSellingPrice, setTotalSellingPrice] = useState(0);
   const [itemsTotalPrice, setItemsTotalPrice] = useState(0);
@@ -77,9 +81,6 @@ const CheckoutScreen = ({ navigation, route }) => {
   });
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
-  const paymentMethods = ['Pay Online', 'COD'];
-
-  const buttonRef = useRef(null);
 
   const addItem = item => {
     dispatch(addToCart(item));
@@ -98,112 +99,42 @@ const CheckoutScreen = ({ navigation, route }) => {
     }
   }, [cartItems.length]);
 
-  // const caliculateTotalPrice = () => {
-  //   const totals = cartItems.reduce(
-  //     (acc, item) => {
-  //       const actualTotal = parseFloat(item.actual_price) * item.quantity;
-  //       const sellingTotal = parseFloat(item.selling_price) * item.quantity;
-
-  //       acc.totalSellingPrice += sellingTotal;
-  //       acc.totalActualPrice += actualTotal;
-  //       acc.totalSavings += actualTotal - sellingTotal;
-
-  //       return acc;
-  //     },
-  //     { totalSellingPrice: 0, totalActualPrice: 0, totalSavings: 0 },
-  //   );
-
-  //   setTotalSellingPrice(totals.totalSellingPrice);
-  //   setTotalSavings(totals.totalSavings);
-
-  //   // Check coupon validity when prices change
-  //   if (appliedCoupon) {
-  //     // Remove coupon if current total is below coupon's minimum requirement 
-  //    
-  //     if (totals.totalSellingPrice < appliedCoupon.coupon_upto_price) {
-  //      
-  //       dispatch(removeCoupon());
-  //       setCouponDiscount(0);
-  //       // dispatch(removeCoupon())
-
-  //       setItemsTotalPrice(totals.totalSellingPrice);
-  //       return;
-  //     }
-
-  //     let discountAmount = (totals.totalSellingPrice * appliedCoupon.coupon_percentage) / 100;
-  //     discountAmount = Math.min(discountAmount, parseFloat(appliedCoupon.coupon_max_price_limit));
-
-
-  //     setCouponDiscount(discountAmount);
-  //     setItemsTotalPrice(totals.totalSellingPrice - discountAmount);
-  //   } else {
-  //     setItemsTotalPrice(totals.totalSellingPrice);
-  //   }
-  // };
-
-  const caliculateTotalPrice = () => {
-
-
+  
+  const caliculateTotalPrice = useCallback(() => {
     const totals = cartItems.reduce(
       (acc, item, index) => {
         const actualTotal = parseFloat(item.actual_price) * item.quantity;
         const sellingTotal = parseFloat(item.selling_price) * item.quantity;
-
-
-
         acc.totalSellingPrice += sellingTotal;
         acc.totalActualPrice += actualTotal;
         acc.totalSavings += actualTotal - sellingTotal;
-
-
-
         return acc;
       },
       { totalSellingPrice: 0, totalActualPrice: 0, totalSavings: 0 },
     );
-
-
 
     setTotalSellingPrice(totals.totalSellingPrice);
     setTotalSavings(totals.totalSavings);
 
     // Coupon Handling
     if (appliedCoupon) {
-
-
       const totalSellingPriceNum = parseFloat(totals.totalSellingPrice);
       const couponMinOrderValue = parseFloat(appliedCoupon.coupon_upto_price);
       const couponMaxDiscountLimit = parseFloat(appliedCoupon.coupon_max_price_limit);
-
-
-
       if (totalSellingPriceNum < couponMinOrderValue) {
-
         dispatch(removeCoupon());
         setCouponDiscount(0);
         setItemsTotalPrice(totalSellingPriceNum);
         return;
       }
-
-
       let discountAmount = (totalSellingPriceNum * appliedCoupon.coupon_percentage) / 100;
-
-
       discountAmount = Math.min(discountAmount, couponMaxDiscountLimit);
-
-
       setCouponDiscount(discountAmount);
       setItemsTotalPrice(totalSellingPriceNum - discountAmount);
-
-
     } else {
-
       setItemsTotalPrice(totals.totalSellingPrice);
     }
-
-
-  };
-
+  }, [cartItems, appliedCoupon, dispatch]);
 
   const renderCartItem = ({ item }) => {
     const eachPrice = Number(item.selling_price) * Number(item.quantity);
@@ -247,14 +178,13 @@ const CheckoutScreen = ({ navigation, route }) => {
     );
   };
 
-
-  function calculateDeliveryCharge(
+  const calculateDeliveryCharge = useCallback((
     distance,
     cartPrice,
     minOrderPrice,
     gstRate = 18,
-  ) {
-    let deliveryCharge = reaturantDetails?.minimum_del_charge;
+  ) => {
+    let deliveryCharge = reaturantDetails?.minimum_del_charge || 0;
 
     if (distance >= Number(reaturantDetails?.minimum_km || 3)) {
       deliveryCharge = deliveryCharge + (Number(distance) - Number(reaturantDetails?.minimum_km)) * (reaturantDetails?.per_km_chargers || 10);
@@ -263,28 +193,22 @@ const CheckoutScreen = ({ navigation, route }) => {
     if (cartPrice < minOrderPrice) {
       deliveryCharge += 10;
     }
-    // let gstAmount =
-    //   (Number(deliveryCharge) * Number(chargesList ? chargesList[0].gst_percentage : 18)) / 100;
+    
     let gstAmount = 0;
     let totalDeliveryCharge = deliveryCharge + gstAmount;
-
-
-    setDelivery({
-      baseCharge: deliveryCharge,
-      gstAmount: gstAmount,
-      totalCharge: totalDeliveryCharge.toFixed(2),
-    });
 
     return {
       baseCharge: deliveryCharge,
       gstAmount: gstAmount,
       totalCharge: totalDeliveryCharge.toFixed(2),
     };
-  }
-
-
-
+  }, [reaturantDetails]);
+ 
   const handlePlaceOrder = async () => {
+    if (!selectedPaymentMethod) {
+      Alert.alert('Select Payment', 'Please choose a payment method to continue.');
+      return;
+    }
     try {
       setIsProcessingPayment(true);
 
@@ -297,7 +221,7 @@ const CheckoutScreen = ({ navigation, route }) => {
         customer_mobile_number: selectedAddress?.customer_mobile_number,
         category_id: cartItems[0]?.category_id,
         sub_category_id: cartItems[0]?.sub_category_id,
-        admin_percentage: 10,
+        admin_percentage: Number(reaturantDetails?.admin_percentage || 0),
         item_count: cartItems?.reduce((sum, item) => sum + Number(item.quantity), 0),
         total_amount: totalSellingPrice,
         total_saving_amount: totalSavings,
@@ -346,7 +270,9 @@ const CheckoutScreen = ({ navigation, route }) => {
           shop_id: item.shop_id,
           filter_one: item.filter_one,
         })),
-      };
+      }; 
+
+      console.log("admin chargesssssssssssssssssssssssssss", payload)
 
       // 🔹 Case 1: COD
       if (selectedPaymentMethod === 'COD') {
@@ -380,7 +306,7 @@ const CheckoutScreen = ({ navigation, route }) => {
             razorpay_order_id: razorpayOrder.id,
           }
         }));
-        
+
         if (!pendingOrder?.payload?.order_id) {
           Alert.alert("Order Error", "Failed to create pending order. Please try again.");
           return;
@@ -421,7 +347,7 @@ const CheckoutScreen = ({ navigation, route }) => {
           navigation.replace('OrderSuccess', { response: pendingOrder.payload });
 
         } catch (error) {
-          
+
 
           // Mark order as failed (optional)
           await dispatch(updateOrderStatus({
@@ -441,7 +367,6 @@ const CheckoutScreen = ({ navigation, route }) => {
     }
   };
 
-
   const navigateToCoupons = () => {
     navigation.navigate('Coupons', {
       onCouponSelect: coupon => {
@@ -454,49 +379,67 @@ const CheckoutScreen = ({ navigation, route }) => {
     dispatch(getChargesList());
   }, []);
 
-  useEffect(() => {
-    caliculateTotalPrice();
-  }, [cartItems, appliedCoupon]);
-
-  useEffect(() => {
-    if (!selectedAddress && !reaturantDetails) return;
-    const value = haversineDistance(
+  // Recalculate grand total when chargesList is loaded
+  // Memoize distance calculation
+  const calculatedDistance = useMemo(() => {
+    if (!selectedAddress || !reaturantDetails) return 0;
+    return haversineDistance(
       selectedAddress.customer_latitude,
       selectedAddress.customer_longitude,
       reaturantDetails.shop_latitude,
       reaturantDetails.shop_longitude,
     );
-    setDistance(value);
-    const charges = calculateDeliveryCharge(
-      distance,
+  }, [selectedAddress, reaturantDetails]);
+
+  // Memoize delivery charges calculation
+  const deliveryCharges = useMemo(() => {
+    if (!reaturantDetails || !chargesList?.length) return { baseCharge: 0, gstAmount: 0, totalCharge: 0 };
+    return calculateDeliveryCharge(
+      calculatedDistance,
       itemsTotalPrice,
       orderOfferAmount,
     );
+  }, [calculatedDistance, itemsTotalPrice, orderOfferAmount, calculateDeliveryCharge, reaturantDetails, chargesList]);
 
-    setGrandTotal(
-      totalSellingPrice
+  // Memoize grand total calculation
+  const calculatedGrandTotal = useMemo(() => {
+    return totalSellingPrice
       - couponDiscount
-      + Number(charges.totalCharge)
-      + Number(handlingCharges || 0)
-    );
-  }, [
-    selectedAddress,
-    reaturantDetails,
-    appliedCoupon,
-    cartItems,
-    totalSellingPrice,
-    couponDiscount,
-  ]);
+      + Number(deliveryCharges.totalCharge)
+      + Number(handlingCharges || 0);
+  }, [totalSellingPrice, couponDiscount, deliveryCharges.totalCharge, handlingCharges]);
+
+  // Update states when calculated values change
+  useEffect(() => {
+    setDistance(calculatedDistance);
+  }, [calculatedDistance]);
+
+  useEffect(() => {
+    setDelivery(deliveryCharges);
+  }, [deliveryCharges]);
+
+  useEffect(() => {
+    setGrandTotal(calculatedGrandTotal);
+    console.log("Debug - Grand Total Calculation:");
+    console.log("  totalSellingPrice:", totalSellingPrice);
+    console.log("  couponDiscount:", couponDiscount);
+    console.log("  deliveryCharges.totalCharge:", deliveryCharges.totalCharge);
+    console.log("  handlingCharges:", handlingCharges);
+    console.log("  calculatedGrandTotal:", calculatedGrandTotal);
+  }, [calculatedGrandTotal, totalSellingPrice, couponDiscount, deliveryCharges.totalCharge, handlingCharges]);
+
+  // Calculate total price when cart items or coupon changes
+  useEffect(() => {
+    caliculateTotalPrice();
+  }, [cartItems, appliedCoupon]);
 
   useEffect(() => {
     if (grandTotal > 700 && selectedPaymentMethod === "COD") {
-      setSelectedPaymentMethod(
-        paymentMethods.find(m => m !== "COD") || ""
-      );
+      setSelectedPaymentMethod("Pay Online");
     }
-  }, [grandTotal, selectedPaymentMethod, paymentMethods]);
+  }, [grandTotal, selectedPaymentMethod]);
 
-  
+
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -517,7 +460,7 @@ const CheckoutScreen = ({ navigation, route }) => {
         </View>
 
         {/* Savings Banner */}
-        <ScrollView style={[styles.content, { marginBottom: responsiveHeight(20) }]}>
+        <ScrollView style={[styles.content, { marginBottom: responsiveHeight(25) }]}>
           <View style={styles.savingsBanner}>
             <MaterialCommunityIcons
               name="brightness-percent"
@@ -752,38 +695,73 @@ const CheckoutScreen = ({ navigation, route }) => {
 
         {/* Bottom Payment Section */}
         <View style={[styles.paymentSection, { position: 'absolute', bottom: "5%", width: '100%' }]}>
-          <TouchableOpacity
-            style={styles.paymentMethod}
-            ref={buttonRef}
-            onPress={() => setPaymentMenuVisible(!paymentMenuVisible)}>
-            <Text style={styles.paymentMethodText}>{selectedPaymentMethod}</Text>
-            <MaterialIcons name="arrow-drop-up" size={24} color="#000" />
-          </TouchableOpacity>
+          {/* Payment Method Selection */}
+          <View style={styles.paymentMethodContainer}>
+            <Text style={styles.paymentMethodTitle}>Choose Payment Method</Text>
+            <View style={styles.paymentButtonsContainer}>
+              {/* Pay Online Button */}
+              <TouchableOpacity
+                style={[
+                  styles.paymentMethodButton,
+                  selectedPaymentMethod === 'Pay Online' && styles.paymentMethodButtonSelected
+                ]}
+                onPress={() => setSelectedPaymentMethod('Pay Online')}
+                disabled={isProcessingPayment}>
+                <MaterialIcons 
+                  name="credit-card" 
+                  size={20} 
+                  color={selectedPaymentMethod === 'Pay Online' ? '#fff' : commonStyles.btn2Color} 
+                />
+                <Text style={[
+                  styles.paymentMethodButtonText,
+                  selectedPaymentMethod === 'Pay Online' && styles.paymentMethodButtonTextSelected
+                ]}>
+                  Pay Online
+                </Text>
+              </TouchableOpacity>
 
-          {paymentMenuVisible && (
-            <View style={styles.paymentMethodsContainer}>
-              {paymentMethods
-                .filter(method => !(Number(grandTotal) > 700 && method === "COD"))
-                .map(method => (
-                  <TouchableOpacity
-                    key={method}
-                    style={styles.paymentMethodItem}
-                    onPress={() => {
-                      setSelectedPaymentMethod(method);
-                      setPaymentMenuVisible(false);
-                    }}>
-                    <Text style={styles.paymentMethodText}>{method}</Text>
-                  </TouchableOpacity>
-                ))}
+              {/* COD Button */}
+              <TouchableOpacity
+                style={[
+                  styles.paymentMethodButton,
+                  selectedPaymentMethod === 'COD' && styles.paymentMethodButtonSelected,
+                  Number(grandTotal) > 700 && styles.paymentMethodButtonDisabled
+                ]}
+                onPress={() => setSelectedPaymentMethod('COD')}
+                disabled={isProcessingPayment || Number(grandTotal) > 700}>
+                <MaterialIcons 
+                  name="money" 
+                  size={20} 
+                  color={
+                    Number(grandTotal) > 700 
+                      ? '#ccc' 
+                      : selectedPaymentMethod === 'COD' 
+                        ? '#fff' 
+                        : commonStyles.btn2Color
+                  } 
+                />
+                <Text style={[
+                  styles.paymentMethodButtonText,
+                  selectedPaymentMethod === 'COD' && styles.paymentMethodButtonTextSelected,
+                  Number(grandTotal) > 700 && styles.paymentMethodButtonTextDisabled
+                ]}>
+                  COD
+                </Text>
+                {Number(grandTotal) > 700 && (
+                  <Text style={styles.codLimitText}>Not available above ₹700</Text>
+                )}
+              </TouchableOpacity>
             </View>
-          )}
+          </View>
 
-
-
+          {/* Place Order Button */}
           <TouchableOpacity
-            style={styles.placeOrderButton}
+            style={[
+              styles.placeOrderButton,
+              (!selectedPaymentMethod || isProcessingPayment) && { opacity: 0.6 }
+            ]}
             onPress={handlePlaceOrder}
-            disabled={isProcessingPayment}>
+            disabled={isProcessingPayment || !selectedPaymentMethod}>
             {isProcessingPayment ? (
               <ActivityIndicator color="#fff" />
             ) : (
@@ -1125,25 +1103,65 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   paymentSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
+    padding: 10,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
   },
-  paymentMethod: {
+  paymentMethodContainer: {
+    marginBottom: 10,
+  },
+  paymentMethodTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  paymentButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
+  paymentMethodButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    gap: 6,
   },
-  paymentMethodText: {
-    fontSize: 16,
+  paymentMethodButtonSelected: {
+    backgroundColor: commonStyles.btn2Color,
+    borderColor: commonStyles.btn2Color,
+  },
+  paymentMethodButtonDisabled: {
+    backgroundColor: '#f8f9fa',
+    borderColor: '#dee2e6',
+    opacity: 0.6,
+  },
+  paymentMethodButtonText: {
+    fontSize: 17,
     fontWeight: '600',
-    color: '#000',
+    color: commonStyles.btn2Color,
+  },
+  paymentMethodButtonTextSelected: {
+    color: '#fff',
+  },
+  paymentMethodButtonTextDisabled: {
+    color: '#6c757d',
+  },
+  codLimitText: {
+    fontSize: 9,
+    color: '#dc3545',
+    fontWeight: '500',
+    marginTop: 2,
+    textAlign: 'center',
   },
   placeOrderButton: {
     flex: 1,
@@ -1151,11 +1169,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: commonStyles.btn2Color,
-    borderRadius: 8,
+    borderRadius: 6,
     // padding: 15,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    marginLeft: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
   },
   placeOrderContent: {
     flexDirection: 'row',
@@ -1167,12 +1184,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   orderTotalValue: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: '#fff',
   },
   orderTotalLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '400',
     color: '#fff',
   },
@@ -1181,10 +1198,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   placeOrderText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#fff',
-    marginRight: 5,
+    marginRight: 4,
   },
   totalContainer: {
     flexDirection: 'row',
@@ -1257,22 +1274,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: commonStyles.btn2Color,
-  },
-  paymentMethodsContainer: {
-    position: 'absolute',
-    top: -responsiveHeight(10), // Adjust based on your layout
-    left: 10,
-    // right: 0,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    elevation: 5,
-    padding: 10,
-    zIndex: 1,
-  },
-  paymentMethodItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
   },
   modalContainer: {
     flex: 1,

@@ -177,20 +177,28 @@ export const getBanners = createAsyncThunk(
 export const getRestaurants = createAsyncThunk(
   "getRestaurants",
   async (
-    { categoryId, subCatergoryId },
+    { categoryId, subCatergoryId, shopId },
     { getState, rejectWithValue, fulfillWithValue }
   ) => {
 
     const { location, locationId } = getState().Auth;
+    console.log("payload of shops liest ++++++++++++++++++++++++++++ ",{
+      "shop_latitude": location.latitude,
+      "shop_longitude": location.longitude,
+      "location_id": locationId,
+      "category_id": categoryId,
+      "sub_category_id": subCatergoryId,
+      "shop_id": shopId
+    })
     const response = await api.post(endpoints.GET_SHOPS, {
       "shop_latitude": location.latitude,
       "shop_longitude": location.longitude,
       "location_id": locationId,
       "category_id": categoryId,
-      "sub_category_id": subCatergoryId || 0,
-      "shop_id": 0
-    })
-  
+      "sub_category_id": subCatergoryId,
+      "shop_id": shopId
+    }) 
+    console.log("response--------------------2222222222222222222222222222222222222222222222222222", response)
     if (response) {
       if (response.data) {
         return fulfillWithValue(response.data);
@@ -331,7 +339,7 @@ export const getAddressList = createAsyncThunk(
 export const setAddressList = createAsyncThunk(
   "setAddressList",
   async (
-    { addressType, address, customer_latitude, customer_longitude, customer_name, customer_mobile_number, location_id },
+    { addressType, address, customer_latitude, customer_longitude, customer_name, customer_mobile_number, location_id, id, pincode, landmark, city, state },
     { getState, rejectWithValue, fulfillWithValue }
   ) => {
     const { customerId } = getState().Auth;
@@ -345,6 +353,31 @@ export const setAddressList = createAsyncThunk(
       "customer_name": customer_name,
       "customer_mobile_number": customer_mobile_number
     }
+    
+    // Include id for updates - API might expect number or string
+    if (id) {
+      // Try both number and string format to ensure API recognizes it
+      data.id = typeof id === 'number' ? id : Number(id) || id;
+      console.log('Updating address - ID type:', typeof data.id, 'Value:', data.id);
+      console.log('Full data being sent to API:', JSON.stringify(data, null, 2));
+    } else {
+      console.log('Creating new address (no ID provided)');
+    }
+    
+    // Include optional address details if provided
+    if (pincode) {
+      data.pincode = pincode;
+    }
+    if (landmark) {
+      data.landmark = landmark;
+    }
+    if (city) {
+      data.city = city;
+    }
+    if (state) {
+      data.state = state;
+    }
+    
     const response = await api.post(endpoints.SET_ADDRESS_LIST, data)
     if (response) {
       if (response.data) {
@@ -615,6 +648,7 @@ export const Dashboard = createSlice({
       state.loading.restaurants = false;
       state.message = null;
       state.restaurants = action.payload.data[0];
+      console.log("restaurants--------------------",state.restaurants)
       state.itemsFilter = action.payload.data[1];
     });
     builder.addCase(getRestaurants.rejected, (state, action) => {
@@ -773,6 +807,7 @@ export const Dashboard = createSlice({
     });
   },
 });
+
 
 export const {
   updatecartItems,

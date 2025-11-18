@@ -93,16 +93,16 @@ export const verifyCustomerMobile = createAsyncThunk(
       "customer_mobile_number":customer_mobile_number,
     }; 
     try {
-
+      console.log("response of REQUEST_OTP 4")
       const response = await api.post(endpoints.REQUEST_OTP, data);
-      
+    
       if (response?.data) {
         return fulfillWithValue(response.data);
       } else {
         return rejectWithValue('Something went wrong!');
       }
     } catch (error) {
-      
+      console.log("error of REQUEST_OTP 5", error)
       return rejectWithValue(error.message || 'Something went wrong!');
     }
   },

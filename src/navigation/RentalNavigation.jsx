@@ -30,6 +30,7 @@ import NotificationsScreen from '../screens/daddy/NotificationsScreen';
 import BannerRestaurantScreen from '../screens/daddy/BannerRestaurantScreen';
 import SearchShopList from '../screens/daddy/SearchShopList';
 import OrderTrackingScreen from '../screens/OrderTrackingscreen';
+import UserProfileScreen from '../screens/daddy/UserProfileScreen';
 const Stack = createStackNavigator();
 
 export default function RentalNavigation() {
@@ -85,6 +86,11 @@ export default function RentalNavigation() {
     <Stack.Screen 
       name="BannerRestaurantScreen" 
       component={BannerRestaurantScreen} 
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen 
+      name="UserProfile" 
+      component={UserProfileScreen} 
       options={{ headerShown: false }}
     />
  </Stack.Navigator>
