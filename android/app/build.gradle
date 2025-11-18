@@ -83,11 +83,8 @@ android {
         applicationId "com.melocal"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 19
-        versionName "2.9.0"
-        ndk {
-            abiFilters "arm64-v8a"
-        }
+        versionCode 20
+        versionName "2.9.1"
     }
     signingConfigs {
         debug {
