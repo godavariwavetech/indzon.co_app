@@ -57,18 +57,20 @@ const CheckoutScreen = ({ navigation, route }) => {
   } = useSelector(state => state.Auth);
   const dispatch = useDispatch();
 
-  console.log("cartItems", cartItems)
+  console.log("reaturantDetails", reaturantDetails)
 
   const handlingCharges = chargesList?.[0]?.handling_charges || 0;
-  
+
   // Debug logging
-  console.log("Debug - chargesList:", chargesList);
-  console.log("Debug - handlingCharges:", handlingCharges);
-  console.log("Debug - cartItems length:", cartItems.length);
+  // console.log("Debug - chargesList:", chargesList);
+  // console.log("Debug - handlingCharges:", handlingCharges);
+  // console.log("Debug - cartItems length:", cartItems.length);
   const [clearCartConfirmVisible, setClearCartConfirmVisible] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [totalSellingPrice, setTotalSellingPrice] = useState(0);
+  const [totalSellingPriceOriginal, setTotalSellingPriceOriginal] = useState(0);
+  const [totalExtraPrice, setTotalExtraPrice] = useState(0);
   const [itemsTotalPrice, setItemsTotalPrice] = useState(0);
   const [totalSavings, setTotalSavings] = useState(0);
   const [couponDiscount, setCouponDiscount] = useState(0);
@@ -99,22 +101,35 @@ const CheckoutScreen = ({ navigation, route }) => {
     }
   }, [cartItems.length]);
 
-  
+
   const caliculateTotalPrice = useCallback(() => {
     const totals = cartItems.reduce(
       (acc, item, index) => {
         const actualTotal = parseFloat(item.actual_price) * item.quantity;
         const sellingTotal = parseFloat(item.selling_price) * item.quantity;
+        const sellingOriginal = parseFloat(item.sellingprice || 0) * item.quantity;
+        const extraPriceTotal = parseFloat(item.extra_price || 0) * item.quantity;
+
         acc.totalSellingPrice += sellingTotal;
         acc.totalActualPrice += actualTotal;
         acc.totalSavings += actualTotal - sellingTotal;
+        acc.totalSellingPriceOriginal += sellingOriginal;
+        acc.totalExtraPrice += extraPriceTotal;
         return acc;
       },
-      { totalSellingPrice: 0, totalActualPrice: 0, totalSavings: 0 },
+      {
+        totalSellingPrice: 0,
+        totalActualPrice: 0,
+        totalSavings: 0,
+        totalSellingPriceOriginal: 0,
+        totalExtraPrice: 0
+      },
     );
 
     setTotalSellingPrice(totals.totalSellingPrice);
     setTotalSavings(totals.totalSavings);
+    setTotalSellingPriceOriginal(totals.totalSellingPriceOriginal);
+    setTotalExtraPrice(totals.totalExtraPrice);
 
     // Coupon Handling
     if (appliedCoupon) {
@@ -193,7 +208,7 @@ const CheckoutScreen = ({ navigation, route }) => {
     if (cartPrice < minOrderPrice) {
       deliveryCharge += 10;
     }
-    
+
     let gstAmount = 0;
     let totalDeliveryCharge = deliveryCharge + gstAmount;
 
@@ -203,7 +218,7 @@ const CheckoutScreen = ({ navigation, route }) => {
       totalCharge: totalDeliveryCharge.toFixed(2),
     };
   }, [reaturantDetails]);
- 
+
   const handlePlaceOrder = async () => {
     if (!selectedPaymentMethod) {
       Alert.alert('Select Payment', 'Please choose a payment method to continue.');
@@ -211,6 +226,8 @@ const CheckoutScreen = ({ navigation, route }) => {
     }
     try {
       setIsProcessingPayment(true);
+
+      console.log("ammo", cartItems)
 
       // 🔹 Common payload (COD or Razorpay)
       let payload = {
@@ -223,7 +240,9 @@ const CheckoutScreen = ({ navigation, route }) => {
         sub_category_id: cartItems[0]?.sub_category_id,
         admin_percentage: Number(reaturantDetails?.admin_percentage || 0),
         item_count: cartItems?.reduce((sum, item) => sum + Number(item.quantity), 0),
-        total_amount: totalSellingPrice,
+        total_amount: totalSellingPriceOriginal,
+        total_sub_amount: totalSellingPrice,
+        extraprice_amount: totalExtraPrice,
         total_saving_amount: totalSavings,
         coupon_amount: couponDiscount,
         delivery_charges: delivery.totalCharge,
@@ -259,6 +278,8 @@ const CheckoutScreen = ({ navigation, route }) => {
           category_id: item.category_id,
           sub_category_id: item.sub_category_id,
           category_name: item.category_name,
+          sellingprice: item.sellingprice || 0,
+          extra_price: item.extra_price || 0,
           sub_category_name: item.sub_category_name,
           actualitem_price: item.actual_price,
           item_price: item.selling_price,
@@ -270,9 +291,9 @@ const CheckoutScreen = ({ navigation, route }) => {
           shop_id: item.shop_id,
           filter_one: item.filter_one,
         })),
-      }; 
+      };
 
-      console.log("admin chargesssssssssssssssssssssssssss", payload)
+      console.log("order payload chargesssssssssssssssssssssssssss", payload)
 
       // 🔹 Case 1: COD
       if (selectedPaymentMethod === 'COD') {
@@ -420,12 +441,12 @@ const CheckoutScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     setGrandTotal(calculatedGrandTotal);
-    console.log("Debug - Grand Total Calculation:");
-    console.log("  totalSellingPrice:", totalSellingPrice);
-    console.log("  couponDiscount:", couponDiscount);
-    console.log("  deliveryCharges.totalCharge:", deliveryCharges.totalCharge);
-    console.log("  handlingCharges:", handlingCharges);
-    console.log("  calculatedGrandTotal:", calculatedGrandTotal);
+    // console.log("Debug - Grand Total Calculation:");
+    // console.log("  totalSellingPrice:", totalSellingPrice);
+    // console.log("  couponDiscount:", couponDiscount);
+    // console.log("  deliveryCharges.totalCharge:", deliveryCharges.totalCharge);
+    // console.log("  handlingCharges:", handlingCharges);
+    // console.log("  calculatedGrandTotal:", calculatedGrandTotal);
   }, [calculatedGrandTotal, totalSellingPrice, couponDiscount, deliveryCharges.totalCharge, handlingCharges]);
 
   // Calculate total price when cart items or coupon changes
@@ -707,10 +728,10 @@ const CheckoutScreen = ({ navigation, route }) => {
                 ]}
                 onPress={() => setSelectedPaymentMethod('Pay Online')}
                 disabled={isProcessingPayment}>
-                <MaterialIcons 
-                  name="credit-card" 
-                  size={20} 
-                  color={selectedPaymentMethod === 'Pay Online' ? '#fff' : commonStyles.btn2Color} 
+                <MaterialIcons
+                  name="credit-card"
+                  size={20}
+                  color={selectedPaymentMethod === 'Pay Online' ? '#fff' : commonStyles.btn2Color}
                 />
                 <Text style={[
                   styles.paymentMethodButtonText,
@@ -729,16 +750,16 @@ const CheckoutScreen = ({ navigation, route }) => {
                 ]}
                 onPress={() => setSelectedPaymentMethod('COD')}
                 disabled={isProcessingPayment || Number(grandTotal) > 700}>
-                <MaterialIcons 
-                  name="money" 
-                  size={20} 
+                <MaterialIcons
+                  name="money"
+                  size={20}
                   color={
-                    Number(grandTotal) > 700 
-                      ? '#ccc' 
-                      : selectedPaymentMethod === 'COD' 
-                        ? '#fff' 
+                    Number(grandTotal) > 700
+                      ? '#ccc'
+                      : selectedPaymentMethod === 'COD'
+                        ? '#fff'
                         : commonStyles.btn2Color
-                  } 
+                  }
                 />
                 <Text style={[
                   styles.paymentMethodButtonText,

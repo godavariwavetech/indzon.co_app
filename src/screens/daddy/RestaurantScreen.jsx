@@ -61,6 +61,8 @@ const RestaurantScreen = ({ navigation, route }) => {
   // state for subcategory filter (if you want only one subcategory active at a time)
   const [activeSubCategoryFilter, setActiveSubCategoryFilter] = useState(null);
 
+  console.log("yemoooooooooooooooooooooooooo", filteredData)
+
   // Restore original mergedFilters
   // const mergedFilters = [
   //   { filter_name: 'All', id: 'all' },
@@ -106,43 +108,8 @@ const RestaurantScreen = ({ navigation, route }) => {
       setIsLoading(false);
     }
 
-
-
-    // const handleFilter = (selected) => {
-    //   if (selected.type === 'subcategory') {
-    //     setActiveSubCategoryFilter(selected.filter_name === 'All' ? 'All' : selected.filter_name);
-    //   } else {
-
-
-    //     setActiveFilters([selected.filter_name]);
-    //     // if (selected.filter_name === 'All') {
-    //     //   setActiveFilters(['All']);
-    //     //   return;
-    //     // }
-    //     // const newFilters = activeFilters.includes(selected.filter_name) 
-    //     //   ? activeFilters.filter(f => f !== selected.filter_name)
-    //     //   : [...activeFilters.filter(f => f !== 'All'), selected.filter_name];
-    //     // setActiveFilters(newFilters);
-    //   }
-    // };
-
-
   }
 
-
-  // useEffect(() => {
-  //   if (!restaurantItems) return;
-  //   const filtered = restaurantItems.filter(item => {
-  //     const matchesSearch = item.item_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-  //       item.item_description?.toLowerCase().includes(searchQuery.toLowerCase());
-  //     const matchesFilters = activeFilters[0] === 'All' ||
-  //       item.filter_one === activeFilters[0];
-  //     const matchesMenu = filterType === 'All' ||
-  //       item.sub_category_name === filterType;
-  //     return matchesSearch && matchesFilters && matchesMenu;
-  //   });
-  //   setFilterData(filtered);
-  // }, [searchQuery, activeFilters, restaurantItems, filterType, initialFilter]);
   useEffect(() => {
     if (!restaurantItems) return;
 
@@ -446,15 +413,6 @@ const RestaurantScreen = ({ navigation, route }) => {
 
             </View>
             <Text style={styles.itemdescription}>{item.item_description}</Text>
-
-            {/* Optional Rating */}
-            {/* 
-    <View style={styles.itemRatingContainer}>
-      <Icon name="star" size={17} color="#D0A50F" />
-      <Text style={styles.itemRating}>4.7</Text>
-      <Text style={styles.itemReviewCount}>(12)</Text>
-    </View> 
-    */}
 
             <View style={styles.itemFooter}>
               <View>

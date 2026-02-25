@@ -188,14 +188,13 @@ const SpecialOfferScroller = ({ offerText, itemId }) => {
 export default function UserHome({ navigation }) {
   const { categories, subCategories, banners, restaurants, activeCategoryIndex, loading, addressList, userAddress,
     serviceAvailable, homeRestaurnats } = useSelector(state => state.Dashboard);
-  // console.log("homeRestaurnats--------------------", homeRestaurnats)
-  // console.log("sub categories--------------------", subCategories)
   const { locationName } = useSelector(state => state.Auth);
   const { isNetworkConnected } = useSelector(state => state.address);
   const [selectedAddress, setSelectedAddress] = useState(userAddress || "");
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSubCategoriesExpanded, setIsSubCategoriesExpanded] = useState(false);
   const dispatch = useDispatch();
   const authLocation = useSelector(state => state.Auth.location);
   const [mounted, setMounted] = useState(true);
@@ -400,12 +399,12 @@ export default function UserHome({ navigation }) {
           latitude: authLocation.latitude,
           longitude: authLocation.longitude
         }));
-        
+
         if (mounted) {
           // Check if service is not available
           // Response structure: response.payload.data array with active_status field
           const payload = response?.payload;
-          
+
           // Check if no data or empty array
           if (!payload?.data || payload.data.length === 0) {
             // No service location found - navigate to ServicesAvailable screen
@@ -436,7 +435,7 @@ export default function UserHome({ navigation }) {
           // Service is available (active_status !== 1) - proceed with normal flow
           await dispatch(setLocationName(locationData.location_name));
           await dispatch(setLocationId(locationData.id));
-          
+
           // Load essential data after service check
           const result = await dispatch(getCategories());
           dispatch(setOrderOfferAmount(result.payload?.data[0]?.order_offer_amount));
@@ -674,26 +673,37 @@ export default function UserHome({ navigation }) {
 
               <View style={styles.customContainer}>
                 <FlatList
-                  data={subCategories}
+                  data={isSubCategoriesExpanded ? subCategories : subCategories?.slice(0, 12)}
                   key={6}
                   numColumns={6}
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={renderItem}
-                  scrollEnabled={true}
+                  scrollEnabled={false}
                 />
+                {subCategories?.length > 12 && (
+                  <TouchableOpacity
+                    onPress={() => setIsSubCategoriesExpanded(!isSubCategoriesExpanded)}
+                    style={styles.expandButton}
+                  >
+                    <Text style={styles.expandButtonText}>
+                      {isSubCategoriesExpanded ? "Show Less" : "See All"}
+                    </Text>
+                    <MaterialIcons
+                      name={isSubCategoriesExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                      size={20}
+                      color={"#F38D33"}
+                    />
+                  </TouchableOpacity>
+                )}
               </View>
 
               {/* Popular Restaurants */}
-              <View style={[commonStyles.row, { paddingHorizontal: 16, marginTop: 3 }]}>
-                <Text style={{ fontSize: 18, fontWeight: '600', color: '#2B2B2B' }}>Popular {activeCategoryIndex === 1 ? "Restaurants" : "Shops"} </Text>
-                {/* <TouchableOpacity onPress={()=>navigation.navigate('RestaurantsScreen')}>
-                <Text style={styles.moreText}>More</Text>
-              </TouchableOpacity> */}
+              <View style={[commonStyles.row, { paddingHorizontal: 2, marginTop: 5, marginBottom: 10 }]}>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: '#2B2B2B' }}>Popular {activeCategoryIndex === 1 ? "Restaurants" : "Shops"} </Text>
               </View>
               <FlatList
                 data={homeRestaurnats}
                 keyExtractor={item => item.id}
-                contentContainerStyle={{ padding: 10 }}
                 showsVerticalScrollIndicator={false}
                 ListEmptyComponent={() => <View style={{ alignItems: "center", justifyContent: "center", height: responsiveHeight(10), width: responsiveWidth(100) }}>
                   <Text style={{ fontSize: 14, fontWeight: '400', color: '#656565' }}>No popular restaurants/Shops available</Text>
@@ -750,7 +760,7 @@ export default function UserHome({ navigation }) {
                             {/* <Text style={styles.deliveryTime}>{calculateDeliveryTime(distance)}</Text> */}
                             <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
                               <Clock />
-                              <Text style={{ fontSize: 11, fontWeight: '400' }}>{calculateDeliveryTime(distance)}</Text>
+                              <Text style={{ fontSize: 13, fontWeight: '400', color: '#000' }}>{calculateDeliveryTime(distance)}</Text>
                             </View>
                           </View>
                           {/* <Text numberOfLines={1} style={styles.cuisineText}>{item.cuisines || 'Fried Rice, Chinese, Italian'}</Text> */}
@@ -970,11 +980,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     color: '#2B2B2B',
   },
-  restaurantCard: {
-    margin: 15,
-    backgroundColor: '#fff',
-    overflow: 'hidden',
-  },
+
   restaurantImage: {
     width: '100%',
     height: 137,
@@ -1198,11 +1204,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderRadius: 8,
     backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-    padding: 10,
+    boxShadow: '0px 0px 10px 0px rgba(0, 0, 0, 0.1)',
+    padding: 2,
   },
 
   restaurantContent: {
@@ -1214,11 +1217,11 @@ const styles = StyleSheet.create({
   },
 
   restaurantImageContainer: {
-    width: 90,
-    height: 90,
-    borderRadius: 3,
+    width: 110,
+    height: 110,
+    borderRadius: 8,
     overflow: 'hidden',
-    marginRight: 12,
+    marginRight: 15,
   },
 
   restaurantImage: {
@@ -1237,11 +1240,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     // backgroundColor: "green"
+    paddingVertical: 5
   },
 
   restaurantName: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#000',
   },
 
@@ -1252,14 +1256,15 @@ const styles = StyleSheet.create({
   },
 
   ratingText: {
-    fontSize: 12,
+    fontSize: 14,
     marginLeft: 4,
     color: '#000',
+    fontWeight: '600',
   },
 
   dot: {
-    marginHorizontal: 4,
-    fontSize: 12,
+    marginHorizontal: 6,
+    fontSize: 14,
     color: '#888',
   },
 
@@ -1275,9 +1280,9 @@ const styles = StyleSheet.create({
   },
 
   addressText: {
-    fontSize: 12,
-    color: '#777',
-    marginTop: 2,
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
   },
 
   offerTag: {
@@ -1374,135 +1379,23 @@ const styles = StyleSheet.create({
     top: 0,
     height: 24,
   },
-
-
+  expandButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    marginTop: 5,
+    borderTopWidth: 0.5,
+    borderTopColor: '#eee',
+  },
+  expandButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+    marginRight: 4,
+  },
 });
 
-
-
-
-
-
-{/* <FlatList
-              horizontal
-              data={popularRestaurants}
-              contentContainerStyle={{ padding: 16 }}
-              keyExtractor={item => item.id}
-              ListEmptyComponent={() => <View style={{ alignItems: "center", justifyContent: "center", height: responsiveHeight(10), width: responsiveWidth(100) }}>
-                <Text style={{ fontSize: 14, fontWeight: '400', color: '#656565' }}>No popular restaurants available</Text>
-              </View>}
-              renderItem={({ item, index }) => {
-                const isUnavailable = item.shop_active_status === "1";
-                const distance = item.distance;
-                return (
-                  <TouchableOpacity style={[styles.popularCard, isUnavailable && styles.unavailableCard]} onPress={() => {
-                    if (!isUnavailable) {
-                      navigation.navigate('RestaurantScreen', {
-                        shopId: item.shop_id,
-                        shopItem: item.shop_items_tb_nm,
-                        item,
-                      });
-                    }
-                  }}>
-
-                    <View style={{ position: 'relative' }}>
-                      {isUnavailable && (
-                        <View style={styles.unavailableOverlay}>
-                          <Text style={[styles.unavailableText, { color: "red" }]}>Currently Unavailable</Text>
-                        </View>
-                      )}
-                      <Image source={item?.shop_image ? { uri: item?.shop_image } : ''} style={styles.foodImage} />
-                      <View style={{ flexDirection: 'row', position: 'absolute', left: 8, bottom: 8 }}>
-                        <StarIcon />
-                        <Text style={[commonStyles.text3, { fontWeight: '700', color: '#fff' }]}>{item.shop_rating}</Text>
-                      </View>
-                    </View>
-
-                    <View style={[styles.popularFoodsBottomContainer, { backgroundColor: `${index % 2 == 0 ? '#fff' : '#fff'}` }]}>
-                      <Text style={commonStyles.label}>{item.shop_name}</Text>
-                      <View style={{ flexDirection: "row", gap: 8, paddingTop: 4 }}>
-                        <Clock />
-                        <Text style={{ fontSize: 11, fontWeight: '400' }}>{calculateDeliveryTime(distance)}</Text>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                )
-              }}
-              showsHorizontalScrollIndicator={false}
-            /> */}
-
-{/* {activeCategoryIndex === 1 || true ? (
-              <View>
-                <Text style={styles.sectionTitle}>Restaurants Near You</Text>
-                {nearbyRestaurants?.length > 0 ? (
-                  <FlatList
-                    showsVerticalScrollIndicator={false}
-                    data={nearbyRestaurants}
-                    keyExtractor={item => item.shop_id}
-                    renderItem={({ item }) => {
-                      const isUnavailable = item.shop_active_status === "1";
-                      const distance = item.distance;
-
-                      return (
-                        <TouchableOpacity
-                          style={[styles.restaurantCard, isUnavailable && styles.unavailableCard]}
-                          onPress={() => {
-                            if (!isUnavailable) {
-                              navigation.navigate('RestaurantScreen', {
-                                shopId: item.shop_id,
-                                shopItem: item.shop_items_tb_nm,
-                                item,
-                              });
-                            }
-                          }}
-                          disabled={isUnavailable}
-                        >
-                          {isUnavailable && (
-                            <View style={styles.unavailableOverlay}>
-                              <Text style={styles.unavailableText}>Currently Unavailable</Text>
-                            </View>
-                          )}
-
-                          <Image
-                            source={{ uri: item.shop_image }}
-                            style={[styles.restaurantImage, isUnavailable && styles.grayImage]}
-                          />
-                          <View style={styles.restaurantInfo}>
-                            <Text style={styles.restaurantName}>
-                              {item.shop_name}
-                            </Text>
-                            <Text style={styles.restaurantType}>
-                              {item.shop_address}
-                            </Text>
-                            <View style={styles.restaurantStats}>
-                              <View style={styles.statItem}>
-                                <StarIcon />
-                                <Text style={styles.statText}>{item.shop_rating}</Text>
-                              </View>
-
-                              <View style={styles.statItem}>
-                                <MaterialCommunityIcons name="map-marker-distance" size={responsiveFontSize(2.5)} color={"#065E2C"} />
-                                <Text style={styles.statText}>{item?.distance?.toFixed(2)} km</Text>
-                              </View>
-
-                              <View style={styles.statItem}>
-                                <Clock />
-                                <Text style={styles.statText}>{calculateDeliveryTime(distance)}</Text>
-                              </View>
-                            </View>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    }}
-                  />
-                ) : (
-                  <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>No restaurants found in your area</Text>
-                  </View>
-                )}
-              </View>
-            ) : <ShopSection shops={restaurants} />
-            }  */}
 
 
 
