@@ -170,13 +170,13 @@ const CheckoutScreen = ({ navigation, route }) => {
               <TouchableOpacity
                 onPress={() => decreaseItem(item)}
                 style={styles.quantityButton}>
-                <AntDesign name="minus" size={16} color={commonStyles.btn2Color} />
+                <AntDesign name="minus" size={16} color={commonStyles.appMainColor} />
               </TouchableOpacity>
               <Text style={styles.quantityText}>{item.quantity}</Text>
               <TouchableOpacity
                 onPress={() => addItem(item)}
                 style={styles.quantityButton}>
-                <AntDesign name="plus" size={16} color={commonStyles.btn2Color} />
+                <AntDesign name="plus" size={16} color={commonStyles.appMainColor} />
               </TouchableOpacity>
             </View>
             <Text style={styles.itemTotalPrice}>₹ {eachPrice}</Text>
@@ -485,7 +485,7 @@ const CheckoutScreen = ({ navigation, route }) => {
           <View style={styles.savingsBanner}>
             <MaterialCommunityIcons
               name="brightness-percent"
-              color={commonStyles.btn2Color}
+              color={commonStyles.appMainColor}
               size={15}
             />
             {totalSavings && (
@@ -588,7 +588,7 @@ const CheckoutScreen = ({ navigation, route }) => {
 
           {/* Apply Coupons */}
           <TouchableOpacity onPress={navigateToCoupons} style={styles.couponCard}>
-            <MaterialIcons name="local-offer" size={24} color={commonStyles.btn2Color} />
+            <MaterialIcons name="local-offer" size={24} color={commonStyles.appMainColor} />
             <Text style={styles.couponText}>Apply coupons</Text>
             <MaterialIcons name="chevron-right" size={24} color="#666" />
           </TouchableOpacity>
@@ -731,7 +731,7 @@ const CheckoutScreen = ({ navigation, route }) => {
                 <MaterialIcons
                   name="credit-card"
                   size={20}
-                  color={selectedPaymentMethod === 'Pay Online' ? '#fff' : commonStyles.btn2Color}
+                  color={selectedPaymentMethod === 'Pay Online' ? '#fff' : commonStyles.appMainColor}
                 />
                 <Text style={[
                   styles.paymentMethodButtonText,
@@ -758,7 +758,7 @@ const CheckoutScreen = ({ navigation, route }) => {
                       ? '#ccc'
                       : selectedPaymentMethod === 'COD'
                         ? '#fff'
-                        : commonStyles.btn2Color
+                        : commonStyles.appMainColor
                   }
                 />
                 <Text style={[
@@ -865,7 +865,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
@@ -925,14 +925,14 @@ const styles = StyleSheet.create({
   },
   foodPrice: {
     fontSize: 16,
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     fontWeight: '700',
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: commonStyles.appMainColor,
     borderRadius: 6,
   },
   quantityButton: {
@@ -942,7 +942,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginHorizontal: 5,
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
   },
   itemTotalPrice: {
     color: '#3D3D3D',
@@ -1035,7 +1035,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: commonStyles.appMainColor,
     // shadowColor: '#000',
     // shadowOffset: {
     //   width: 0,
@@ -1059,7 +1059,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     width: responsiveWidth(90),
     alignSelf: 'center',
-    borderColor: commonStyles.btn2Color,
+    borderColor: commonStyles.appMainColor,
     // shadowColor: '#000',
     // shadowOffset: {
     //   width: 0,
@@ -1096,7 +1096,7 @@ const styles = StyleSheet.create({
   },
   couponCode: {
     fontSize: 12,
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     fontWeight: '500',
     marginLeft: 10,
   },
@@ -1158,8 +1158,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   paymentMethodButtonSelected: {
-    backgroundColor: commonStyles.btn2Color,
-    borderColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
+    borderColor: commonStyles.appMainColor,
   },
   paymentMethodButtonDisabled: {
     backgroundColor: '#f8f9fa',
@@ -1169,7 +1169,7 @@ const styles = StyleSheet.create({
   paymentMethodButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
   },
   paymentMethodButtonTextSelected: {
     color: '#fff',
@@ -1189,7 +1189,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     borderRadius: 6,
     // padding: 15,
     paddingVertical: 8,
@@ -1233,7 +1233,7 @@ const styles = StyleSheet.create({
   },
   totalPrice: {
     fontSize: 18,
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     fontWeight: '700',
   },
   dottedLineContainer: {
@@ -1294,7 +1294,7 @@ const styles = StyleSheet.create({
   removeCouponText: {
     fontSize: 16,
     fontWeight: '600',
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
   },
   modalContainer: {
     flex: 1,
@@ -1320,7 +1320,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     borderRadius: 5,
     padding: 10,
     width: '100%',
@@ -1341,14 +1341,14 @@ const styles = StyleSheet.create({
   address: {
     marginHorizontal: responsiveWidth(1),
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: commonStyles.appMainColor,
     borderRadius: 8,
   },
   address: {
     padding: 15,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: commonStyles.appMainColor,
   },
   priceContainer: {
     flexDirection: 'row',
@@ -1362,7 +1362,7 @@ const styles = StyleSheet.create({
   },
   sellingPrice: {
     fontSize: 16,
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     fontWeight: '700',
     textAlign: "left"
   },

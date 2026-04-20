@@ -249,7 +249,7 @@ const CategoriesScreen = ({ navigation, route }) => {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       {/* <LinearGradient colors={['#FD0', '#F7F2F2']} style={styles.gradientContainer}> */}
-      <LinearGradient colors={['#E7432D', '#E7432D']} style={[styles.gradientContainer, { paddingTop: insets.top }]}>
+      <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.gradientContainer, { paddingTop: insets.top }]}>
         <View style={styles.headerContainer}>
           {route.params?.isFromHome ? (
             <TouchableOpacity
@@ -258,7 +258,16 @@ const CategoriesScreen = ({ navigation, route }) => {
             >
               <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
             </TouchableOpacity>
-          ) : <CategoryInactive color="#fff" />}
+          ) : (
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+            </TouchableOpacity>
+          // <CategoryInactive color="#fff" />
+          )
+          }
           <Text style={styles.headerTitle}>All Categories</Text>
         </View>
         <View style={styles.searchContainer}>
@@ -269,13 +278,14 @@ const CategoriesScreen = ({ navigation, route }) => {
               style={[styles.searchInput, { paddingRight: searchLoading ? 80 : 35 }]}
               value={searchQuery}
               onChangeText={handleSearch}
+              selectionColor={commonStyles.appMainColor}
               autoFocus={!!route.params?.isFromHome}
             />
-            <Icon name="search" size={24} color="gray" style={styles.searchIcon} />
+            <Icon name="search" size={24} color={commonStyles.appMainColor} style={styles.searchIcon} />
             {searchLoading ? (
               <ActivityIndicator
                 size="small"
-                color={commonStyles.btn2Color}
+                color={commonStyles.appMainColor}
                 style={[styles.loaderIndicator, { right: 55 }]}
               />
             ) : searchQuery.length > 0 && (
@@ -363,13 +373,15 @@ const styles = StyleSheet.create({
   },
   gradientContainer: {
     paddingBottom: 0,
-    // paddingTop: 10
+   
+    borderBottomLeftRadius:20,
+    borderBottomRightRadius:20
   },
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: responsiveWidth(5),
-    // paddingTop: responsiveHeight(5),
+    paddingTop: responsiveHeight(1),
     gap: 10,
   },
   backButton: {
@@ -383,8 +395,8 @@ const styles = StyleSheet.create({
   searchContainer: {
     marginTop: 15,
     backgroundColor: '#fff',
-    borderRadius: 15,
-    height: 56,
+    borderRadius: 12,
+    height: 47,
     paddingHorizontal: 10,
     marginHorizontal: responsiveWidth(3),
     marginVertical: responsiveHeight(3),

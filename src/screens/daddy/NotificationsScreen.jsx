@@ -8,6 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import commonStyles from '../../commonstyles/CommonStyles';
 import StatusBarManager from '../../components/StatusBarManager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import LinearGradient from 'react-native-linear-gradient';
 
 const NotificationsScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -57,17 +58,19 @@ const NotificationsScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top }]}>
+      <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.header, { paddingTop: insets.top }]} >
+      <>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.title}>Notifications</Text>
-      </View>
+      </>
+      </LinearGradient>
 
       <View style={styles.contentContainer}>
         {loading ? (
           <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color={commonStyles.btn2Color} />
+            <ActivityIndicator size="large" color={commonStyles.appMainColor} />
           </View>
         ) : (
           <FlatList
@@ -75,6 +78,7 @@ const NotificationsScreen = ({ navigation }) => {
             renderItem={renderItem}
             keyExtractor={item => item.id.toString()}
             contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <FontAwesome6
@@ -93,8 +97,8 @@ const NotificationsScreen = ({ navigation }) => {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={handleRefresh}
-                colors={[commonStyles.btn2Color]}
-                tintColor={commonStyles.btn2Color}
+                colors={[commonStyles.appMainColor]}
+                tintColor={commonStyles.appMainColor}
               />
             }
           />
@@ -110,17 +114,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: commonStyles.btn2Color,
+    // backgroundColor: commonStyles.appMainColor,
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingVertical: responsiveHeight(2),
+    paddingVertical: responsiveHeight(3),
     paddingHorizontal: responsiveWidth(5),
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    borderBottomLeftRadius:16,
+    borderBottomRightRadius:16,
+  
     marginBottom: responsiveHeight(2),
+    // marginTop:responsiveHeight(3)
   },
   backButton: {
     width: responsiveWidth(7),
@@ -130,14 +133,17 @@ const styles = StyleSheet.create({
     color: '#fff'
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: '#fff',
     marginLeft: responsiveWidth(2),
+    marginTop:responsiveHeight(1)
   },
   listContent: {
     flexGrow: 1,
-    paddingBottom: 100
+    paddingBottom: 45,
+    paddingTop:20
+
   },
   notificationItem: {
     backgroundColor: '#fff',
@@ -150,6 +156,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
+    // borderWidth:0.5,
+    // borderColor:commonStyles.appMainColor
   },
   notificationHeader: {
     flexDirection: 'row',
@@ -157,7 +165,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   notificationIcon: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     width: 28,
     height: 28,
     borderRadius: 14,

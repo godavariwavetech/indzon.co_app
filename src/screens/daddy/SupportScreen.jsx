@@ -44,7 +44,7 @@ const SupportScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       {/* <StatusBar backgroundColor={commonStyles.btn2Color} barStyle={'light-content'} translucent /> */}
-      <LinearGradient colors={['#E7432D', '#E7432D']} style={[styles.gradientContainer, { paddingTop: insets.top }]}>
+      <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.gradientContainer, { paddingTop: insets.top }]}>
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
@@ -58,15 +58,15 @@ const SupportScreen = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Contact Us</Text>
           <View style={styles.contactOptions}>
             <TouchableOpacity style={styles.contactOption} onPress={handleCall}>
-              <MaterialIcons name="phone" size={32} color={commonStyles.btn2Color} />
+              <MaterialIcons name="phone" size={32} color='#2E7D32' />
               <Text style={styles.contactText}>Call Support Team</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.contactOption} onPress={handleEmail}>
-              <MaterialIcons name="email" size={32} color={commonStyles.btn2Color} />
+              <MaterialIcons name="email" size={32} color='#D32F2F' />
               <Text style={styles.contactText}>Send Email</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.contactOption} onPress={handleWhatsApp}>
-              <FontAwesome6 name="whatsapp" size={32} color={commonStyles.btn2Color} />
+              <FontAwesome6 name="whatsapp" size={32} color='#25D366' />
               <Text style={styles.contactText}>Chat on WhatsApp</Text>
             </TouchableOpacity>
           </View>
@@ -84,7 +84,9 @@ const styles = StyleSheet.create({
   },
   gradientContainer: {
     // paddingTop: 10,
-    paddingVertical: responsiveHeight(2),
+    paddingVertical: responsiveHeight(3),
+    borderBottomLeftRadius:16,
+    borderBottomRightRadius:16
   },
   headerContainer: {
     flexDirection: 'row',

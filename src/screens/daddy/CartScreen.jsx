@@ -123,7 +123,7 @@ const CartScreen = ({ navigation, route }) => {
               <TouchableOpacity
                 onPress={() => handleRemoveFromCart(item)}
                 style={styles.quantityButton}>
-                <AntDesign name="minus" size={16} color={commonStyles.btn2Color} />
+                <AntDesign name="minus" size={16} color={commonStyles.appMainColor} />
               </TouchableOpacity>
               <Text style={styles.quantityText}>
                 {item.quantity}
@@ -131,7 +131,7 @@ const CartScreen = ({ navigation, route }) => {
               <TouchableOpacity
                 onPress={() => handleAddToCart(item)}
                 style={styles.quantityButton}>
-                <AntDesign name="plus" size={16} color={commonStyles.btn2Color} />
+                <AntDesign name="plus" size={16} color={commonStyles.appMainColor} />
               </TouchableOpacity>
             </View>
             <Text style={styles.itemTotalPrice}>₹ {eachPrice}</Text>
@@ -163,7 +163,7 @@ const CartScreen = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
       ) : (
-        <LinearGradient colors={['#E7432D', '#E7432D']} style={[styles.gradientContainer,{paddingTop: insets.top}]}>
+        <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.gradientContainer,{paddingTop: insets.top+10}]}>
           <View style={styles.headerContainer}>
             <CartInactive color="#fff" />
             <Text style={styles.headerTitle}>Your Cart</Text>
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     lineHeight: 25,
   },
   exploreButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     width: responsiveWidth(85),
     paddingVertical: responsiveHeight(1.7),
     borderRadius: 8,
@@ -367,11 +367,13 @@ const styles = StyleSheet.create({
   },
   totalPrice: {
     fontSize: 18,
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     fontWeight: '700',
   },
   gradientContainer: {
-   paddingBottom: 15
+   paddingVertical: responsiveHeight(3),
+   borderBottomLeftRadius:20,
+   borderBottomRightRadius:20
   },
   headerContainer: {
     flexDirection: 'row',
@@ -441,14 +443,14 @@ const styles = StyleSheet.create({
   },
   foodPrice: {
     fontSize: 16,
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     fontWeight: '700',
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: commonStyles.appMainColor,
     borderRadius: 6,
   },
   quantityButton: {
@@ -458,7 +460,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginHorizontal: 5,
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
   },
   addMoreContainer: {},
   addMoreText: {
@@ -478,7 +480,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   addressButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     height: 42,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -564,7 +566,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   confirmButton: {
-    backgroundColor: '#FE4A31',
+    backgroundColor: commonStyles.appMainColor,
   },
   cancelButtonText: {
     color: '#666',
@@ -598,7 +600,7 @@ const styles = StyleSheet.create({
   },
   sellingPrice: {
     fontSize: 16,
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     fontWeight: '700',
     textAlign: "left"
   },

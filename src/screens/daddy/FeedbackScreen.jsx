@@ -29,7 +29,7 @@ const FeedbackScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       {/* <StatusBar backgroundColor={commonStyles.btn2Color} barStyle={'light-content'} /> */}
-      <LinearGradient colors={['#E7432D', '#E7432D']} style={[styles.gradientContainer, { paddingTop: insets.top }]}>
+      <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.gradientContainer, { paddingTop: insets.top }]}>
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
@@ -65,6 +65,7 @@ const FeedbackScreen = ({ navigation }) => {
           value={comment}
           onChangeText={setComment}
           placeholderTextColor="#666"
+          selectionColor={commonStyles.appMainColor}
         />
 
         <TouchableOpacity 
@@ -97,7 +98,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   gradientContainer: {
-   paddingVertical: responsiveHeight(2),
+   paddingVertical: responsiveHeight(3),
+   borderBottomLeftRadius:16,
+   borderBottomRightRadius:16
   //  paddingTop: 40
   },
   headerContainer: {
@@ -142,7 +145,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   input: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFF',
     borderRadius: 8,
     padding: 15,
     fontSize: 16,
@@ -150,11 +153,12 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     height: responsiveHeight(20),
     marginBottom: responsiveHeight(3),
+    borderWidth:0.5
   },
   submitButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     borderRadius: 8,
-    padding: responsiveHeight(2),
+    padding: responsiveHeight(1.5),
     alignItems: 'center',
   },
   submitButtonDisabled: {

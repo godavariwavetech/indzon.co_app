@@ -29,8 +29,9 @@ import Geolocation from '@react-native-community/geolocation';
 import CustomModal from '../../components/CustomModal';
 import { setUserDetails } from '../../redux/reducers/addressSlice';
 import commonStyles from '../../commonstyles/CommonStyles';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 
 const AddAddressScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
@@ -73,6 +74,7 @@ const AddAddressScreen = ({ navigation, route }) => {
   });
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const showCustomModal = useCallback(
     (
@@ -543,16 +545,18 @@ const AddAddressScreen = ({ navigation, route }) => {
   return (
     <View style={styles.container}>
       {/* <StatusBar backgroundColor={commonStyles.btn2Color} barStyle="light-content" translucent /> */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}>
-          <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.title}>
-          {route.params?.address ? 'Edit Address' : 'Add Address'}
-        </Text>
-      </View>
+      <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.header,{paddingTop:insets.top+ 10}]}>
+        {/* <View style={styles.header}> */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}>
+            <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.title}>
+            {route.params?.address ? 'Edit Address' : 'Add Address'}
+          </Text>
+        {/* </View> */}
+      </LinearGradient>
 
       <View style={styles.mapContainer}>
         <MapView
@@ -573,7 +577,7 @@ const AddAddressScreen = ({ navigation, route }) => {
               </Text>
               {/* <View style={styles.markerArrow} /> */}
             </View>
-            <MaterialIcons name="location-on" size={40} color={commonStyles.btn2Color} />
+            <MaterialIcons name="location-on" size={40} color={commonStyles.appMainColor} />
           </View>
         </View>
         <TouchableOpacity
@@ -584,10 +588,10 @@ const AddAddressScreen = ({ navigation, route }) => {
           onPress={getCurrentLocation}
           disabled={isLoadingLocation}>
           {isLoadingLocation ? (
-            <ActivityIndicator color={commonStyles.btn2Color} size="small" />
+            <ActivityIndicator color={commonStyles.appMainColor} size="small" />
           ) : (
             <>
-              <MaterialIcons name="my-location" size={24} color={commonStyles.btn2Color} />
+              <MaterialIcons name="my-location" size={24} color={commonStyles.appMainColor} />
               <Text style={styles.currentLocationText}>
                 use current location
               </Text>
@@ -610,6 +614,7 @@ const AddAddressScreen = ({ navigation, route }) => {
             placeholderTextColor="#666"
             value={searchQuery}
             onChangeText={handleSearch}
+            selectionColor={commonStyles.appMainColor}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity
@@ -631,7 +636,7 @@ const AddAddressScreen = ({ navigation, route }) => {
                   key={result.place_id}
                   style={styles.searchResultItem}
                   onPress={() => handlePlaceSelect(result.place_id)}>
-                  <MaterialIcons name="location-on" size={20} color={commonStyles.btn2Color} />
+                  <MaterialIcons name="location-on" size={20} color={commonStyles.appMainColor} />
                   <View style={styles.searchResultText}>
                     <Text style={styles.searchResultMain}>
                       {result.structured_formatting?.main_text ||
@@ -652,7 +657,7 @@ const AddAddressScreen = ({ navigation, route }) => {
         <View style={styles.bottomContainer}>
           <View style={styles.locationInfo}>
             <View style={styles.locationIcon}>
-              <MaterialIcons name="location-on" size={24} color={commonStyles.btn2Color} />
+              <MaterialIcons name="location-on" size={24} color={commonStyles.appMainColor} />
             </View>
             <View style={styles.locationDetails}>
               <Text style={styles.locationTitle}>{city || 'Location'}</Text>
@@ -767,6 +772,7 @@ const AddAddressScreen = ({ navigation, route }) => {
                         keyboardType="default"
                         placeholderTextColor="#666"
                         maxLength={50}
+                        selectionColor={commonStyles.appMainColor}
                       />
                       <TouchableOpacity
                         style={styles.clearButton}
@@ -787,6 +793,7 @@ const AddAddressScreen = ({ navigation, route }) => {
                         keyboardType="phone-pad"
                         placeholderTextColor="#666"
                         maxLength={10}
+                        selectionColor={commonStyles.appMainColor}
                       />
                       <TouchableOpacity
                         style={styles.clearButton}
@@ -807,6 +814,7 @@ const AddAddressScreen = ({ navigation, route }) => {
                         onChangeText={setDoorNo}
                         keyboardType="default"
                         maxLength={100}
+                        selectionColor={commonStyles.appMainColor}
                       />
                       <TouchableOpacity
                         style={styles.clearButton}
@@ -828,6 +836,7 @@ const AddAddressScreen = ({ navigation, route }) => {
                         onChangeText={setPincode}
                         keyboardType="number-pad"
                         maxLength={6}
+                        selectionColor={commonStyles.appMainColor}
                       />
                       <TouchableOpacity
                         style={styles.clearButton}
@@ -850,6 +859,7 @@ const AddAddressScreen = ({ navigation, route }) => {
                         onChangeText={setLandmark}
                         keyboardType="default"
                         maxLength={100}
+                        selectionColor={commonStyles.appMainColor}
                       />
                       <TouchableOpacity
                         style={styles.clearButton}
@@ -915,13 +925,12 @@ const styles = StyleSheet.create({
     paddingBottom: 30
   },
   header: {
-    backgroundColor: commonStyles.btn2Color,
+    // backgroundColor: commonStyles.btn2Color,
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: responsiveWidth(6),
     paddingTop: responsiveHeight(6),
     paddingBottom: 15,
-    backgroundColor: commonStyles.btn2Color,
     gap: 10
   },
   backButton: {
@@ -952,7 +961,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   markerTextContainer: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -986,11 +995,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderTopColor: commonStyles.btn2Color,
+    borderTopColor: commonStyles.appMainColor,
   },
   searchContainer: {
     position: 'absolute',
-    top: responsiveHeight(17),
+    top: responsiveHeight(15),
     left: 0,
     right: 0,
     zIndex: 2,
@@ -1040,14 +1049,14 @@ const styles = StyleSheet.create({
     padding: responsiveWidth(5),
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -4,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    // elevation: 8,
+    // shadowColor: '#000',
+    // shadowOffset: {
+    //   width: 0,
+    //   height: -4,
+    // },
+    // shadowOpacity: 0.25,
+    // shadowRadius: 4,
     zIndex: 1,
   },
   locationInfo: {
@@ -1082,7 +1091,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: commonStyles.appMainColor,
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -1098,7 +1107,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   addButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     borderRadius: 8,
     paddingVertical: responsiveHeight(1.5),
     alignItems: 'center',
@@ -1160,7 +1169,7 @@ const styles = StyleSheet.create({
     marginHorizontal: responsiveWidth(1),
   },
   selectedTypeButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
   },
   typeButtonText: {
     color: '#666',
@@ -1197,7 +1206,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   saveButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',

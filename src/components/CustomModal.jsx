@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     marginBottom: responsiveHeight(1),
   },
   modalMessage: {
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     borderColor: '#A3A3A3',
   },
   confirmButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
   },
   cancelButtonText: {
     color: '#A3A3A3',

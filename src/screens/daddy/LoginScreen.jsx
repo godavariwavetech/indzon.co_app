@@ -346,7 +346,9 @@ import {
   Image,
   Dimensions,
   TouchableOpacity,
-  SafeAreaView,StatusBar,Text
+  SafeAreaView,StatusBar,Text,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { Svg, Path } from 'react-native-svg'; // For the arrow icon
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -392,40 +394,45 @@ const LoginScreen = () => {
 }
 
   return (
-    <View style={{ flex: 1, backgroundColor: commonStyles.bgColor }}>
-    <StatusBarManager screenName="login" />
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
+      <View style={{ flex: 1, backgroundColor: commonStyles.bgColor }}>
+        <StatusBarManager screenName="login" />
 
+        <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+          <View style={styles.imageContainer}>
+            <Image
+              source={require('./svg/LoginImg.png')}
+              style={styles.image}
+              resizeMode="contain"
+            />
+          </View>
 
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.imageContainer}>
-        <Image
-          source={require('./svg/LoginImg.png')}
-          style={styles.image}
-          resizeMode="contain"
-        />
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter Your Mobile Number"
+              placeholderTextColor="#727272"
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={(text) => {
+                const numericText = text.replace(/[^0-9]/g, '');
+                setPhone(numericText);
+                setError('');
+              }}
+            />
+            <Text style={styles.errorText}>{error}</Text>
+
+            <TouchableOpacity style={styles.nextButton} onPress={handleLogin}>
+              <AntDesign name="arrowright" size={25} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
       </View>
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter Your Mobile Number"
-          placeholderTextColor="#727272"
-          keyboardType="phone-pad"
-          value={phone}
-          onChangeText={(text) => {
-            const numericText = text.replace(/[^0-9]/g, '');
-            setPhone(numericText);
-            setError('');
-          }}
-        />
-        <Text style={styles.errorText}>{error}</Text>
-
-        <TouchableOpacity style={styles.nextButton} onPress={handleLogin}>
-          <AntDesign name="arrowright" size={25} color="#fff" />
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
-  </View>
+    </KeyboardAvoidingView>
   );
 };
 

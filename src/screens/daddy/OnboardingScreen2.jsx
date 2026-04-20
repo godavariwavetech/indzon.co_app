@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(0.5),
     width: '90%',
     borderWidth: 0.3,
-    borderColor: commonStyles.btn2Color,
+    borderColor: commonStyles.appMainColor,
     paddingHorizontal: responsiveWidth(4),
     paddingVertical: responsiveHeight(2),
     // borderRadius:40
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 10,
     // color:'#101811'
-    color: commonStyles.btn2Color
+    color: commonStyles.appMainColor
   },
   description: {
     fontSize: 14,

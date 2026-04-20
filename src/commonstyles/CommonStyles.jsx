@@ -2,7 +2,7 @@ import {StyleSheet} from 'react-native';
 
 const commonStyles = StyleSheet.create({
   //COLORS
- 
+ appMainColor:'#85360B',
   bgColor: '#FFFDF4',
   mainColor:'#FFBF2D',
   btnColor:'#857300',

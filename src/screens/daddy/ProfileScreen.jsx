@@ -208,19 +208,20 @@ const ProfileScreen = () => {
     {
       id: '12',
       title: 'User Profile',
-      icon: <MaterialCommunityIcons name="account-details" size={24} color="#000" />,
-      onPress: () => navigation.navigate('UserProfile'),
+      icon: <MaterialCommunityIcons name="account" size={24} color={commonStyles.appMainColor} />,
+      // onPress: () => navigation.navigate('UserProfile'),
+      onPress: () => navigation.navigate('UserProfileScreenLatest'),
     },
     {
       id: '2',
       title: 'Address List',
-      icon: <Ionicons name="clipboard-outline" size={24} color="#000" />,
+      icon: <Ionicons name="clipboard-outline" size={24} color={commonStyles.appMainColor} />,
       onPress: () => navigation.navigate('AddressList'),
     },
     {
       id: '3',
       title: 'Support',
-      icon: <Feather name="user" size={24} color="#000" />,
+      icon: <MaterialCommunityIcons name="help-circle-outline" size={24} color={commonStyles.appMainColor}/>,
       onPress: () => navigation.navigate('Support'),
     },
     {
@@ -230,7 +231,7 @@ const ProfileScreen = () => {
         <MaterialCommunityIcons
           name="card-bulleted-outline"
           size={24}
-          color="#000"
+          color={commonStyles.appMainColor}
         />
       ),
       onPress: () => navigation.navigate('Feedback'),
@@ -239,7 +240,7 @@ const ProfileScreen = () => {
     {
       id: '11',
       title: 'Notifications',
-      icon: <Ionicons name="notifications-outline" size={24} color="#000" />,
+      icon: <Ionicons name="notifications-outline" size={24} color={commonStyles.appMainColor} />,
       onPress: () => navigation.navigate('Notifications'),
     },
 
@@ -247,7 +248,7 @@ const ProfileScreen = () => {
     {
       id: '8',
       title: 'Check for Updates',
-      icon: <MaterialCommunityIcons name="update" size={24} color="#000" />,
+      icon: <MaterialCommunityIcons name="update" size={24} color={commonStyles.appMainColor}/>,
       onPress: handleCheckForUpdate,
     },
 
@@ -259,7 +260,7 @@ const ProfileScreen = () => {
         <MaterialCommunityIcons
           name="information-outline"
           size={24}
-          color="#000"
+          color={commonStyles.appMainColor}
         />
       ),
       onPress: () => Linking.openURL('https://melocalapp.com/about/'),
@@ -273,7 +274,7 @@ const ProfileScreen = () => {
         <MaterialCommunityIcons
           name="shield-account"
           size={24}
-          color="#000"
+          color={commonStyles.appMainColor}
         />
       ),
       onPress: () => Linking.openURL('https://melocalapp.com/privacypolicy/'),
@@ -287,7 +288,7 @@ const ProfileScreen = () => {
         <MaterialCommunityIcons
           name="file-document"
           size={24}
-          color="#000"
+          color={commonStyles.appMainColor}
         />
       ),
       onPress: () => Linking.openURL('https://melocalapp.com/terms/'),
@@ -301,7 +302,7 @@ const ProfileScreen = () => {
         <MaterialCommunityIcons
           name="credit-card-refund-outline"
           size={24}
-          color="#000"
+          color={commonStyles.appMainColor}
         />
       ),
       onPress: () => Linking.openURL('https://melocalapp.com/refundpolicy/'),
@@ -315,7 +316,7 @@ const ProfileScreen = () => {
       ? {
         id: '9',
         title: 'Logout',
-        icon: <Feather name="log-out" size={24} color="#000" />,
+        icon: <Feather name="log-out" size={24} color={commonStyles.appMainColor} />,
         onPress: () => setLogoutModalVisible(true),
       }
       : {
@@ -333,7 +334,7 @@ const ProfileScreen = () => {
   return (
     <View style={styles.container}>
       {/* <LinearGradient colors={['#FD0', '#F7F2F2']} style={styles.gradientContainer}> */}
-      <LinearGradient colors={['#E7432D', '#E7432D']} style={[styles.gradientContainer, { paddingTop: insets.top }]}>
+      {/* <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.gradientContainer, { paddingTop: insets.top+10 }]}>
         <View
           style={{
             flexDirection: 'row',
@@ -353,6 +354,37 @@ const ProfileScreen = () => {
           <Text style={styles.profileName}>
             {userDetails?.name || 'Hello User'}
           </Text>
+        </View>
+      </LinearGradient> */}
+
+      <LinearGradient
+        colors={['#D14A00', '#6C2600']}
+        style={[styles.headerGradient, { paddingTop: insets.top }]}>
+
+        <View style={styles.headerContent}>
+          {/* <View style={{ flexDirection: 'column'}}> */}
+            {/* Back Button */}
+            {/* <TouchableOpacity style={styles.backButton} onPress={()=> navigation.goBack()}>
+              <Icon name="arrow-back" size={24} color="#fff" />
+            </TouchableOpacity> */}
+
+            {/* Profile Info */}
+            <View style={styles.profileInfo}>
+              <Text style={styles.nameText}>Jani</Text>
+              <Text style={styles.contactText}>
+                +91 9965841257 | sachine@gmail.com
+              </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('UserProfileScreenLatest')}>
+                <Text style={styles.editProfileText}>Edit Profile ›</Text>
+              </TouchableOpacity>
+            </View>
+          {/* </View> */}
+
+          {/* Profile Picture */}
+          <Image
+            source={require("../daddy/tabassets/dummy-profile.png")} // Replace with your avatar
+            style={styles.profileImage}
+          />
         </View>
       </LinearGradient>
       <ScrollView
@@ -377,7 +409,7 @@ const ProfileScreen = () => {
         </View>
         {isLoading && !refreshing ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={commonStyles.btn2Color} />
+            <ActivityIndicator size="large" color={commonStyles.appMainColor} />
           </View>
         ) : orders.length > 0 ? (
           <View >
@@ -406,9 +438,9 @@ const ProfileScreen = () => {
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 {item.isExternal ? (
-                  <Ionicons name="open-outline" size={20} color="#888" style={{ marginRight: 8 }} />
+                  <Ionicons name="open-outline" size={20} color={commonStyles.appMainColor} style={{ marginRight: 8 }} />
                 ) : (
-                  <Icon name="chevron-right" size={24} color="#666" />
+                  <Icon name="chevron-right" size={24} color={commonStyles.appMainColor} />
                 )}
               </View>
             </TouchableOpacity>
@@ -478,7 +510,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   ordersTitle: { fontSize: 18, fontWeight: 'bold' },
-  viewAll: { color: commonStyles.btn2Color, fontWeight: 'bold' },
+  viewAll: { color: commonStyles.appMainColor, fontWeight: 'bold' },
   orderCard: {
     backgroundColor: '#fff',
     marginHorizontal: 10,
@@ -489,7 +521,7 @@ const styles = StyleSheet.create({
     width: responsiveWidth(95) - 20
   },
   orderId: { fontSize: 14, fontWeight: '500', color: '#3D3D3D', width: responsiveWidth(40) },
-  orderStatus: { color: commonStyles.btn2Color, fontWeight: '600', fontSize: 14, width: responsiveWidth(40), textAlign: 'right' },
+  orderStatus: { color: commonStyles.appMainColor, fontWeight: '600', fontSize: 14, width: responsiveWidth(40), textAlign: 'right' },
   orderDetails: {
     fontSize: 12,
     color: '#3D3D3D',
@@ -508,7 +540,7 @@ const styles = StyleSheet.create({
   menuItem: { fontSize: 14, color: '#555' },
   price: {
     fontSize: 16,
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     fontWeight: 'bold',
     alignSelf: 'flex-start',
   },
@@ -529,14 +561,14 @@ const styles = StyleSheet.create({
     width: responsiveWidth(38),
     //  paddingHorizontal:20
   },
-  rateButton: {
-    backgroundColor: '#00773F',
-    // padding: 5,
-    borderRadius: 5,
-    width: responsiveWidth(38),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  // rateButton: {
+  //   backgroundColor: '#00773F',
+  //   // padding: 5,
+  //   borderRadius: 5,
+  //   width: responsiveWidth(38),
+  //   alignItems: 'center',
+  //   justifyContent: 'center',
+  // },
   buttonText: { color: '#A3A3A3', fontWeight: 'bold' },
   menuOptions: {
     padding: 20,
@@ -544,8 +576,8 @@ const styles = StyleSheet.create({
   },
   menuItemMain: {
     paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#A3A3A3',
+    borderBottomWidth: 0.5,
+    borderBottomColor: commonStyles.appMainColor,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -613,7 +645,7 @@ const styles = StyleSheet.create({
   },
   versionText: {
     fontSize: 14,
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     fontWeight: '500',
     textAlign: 'center',
   },
@@ -629,7 +661,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   loginButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     padding: 15,
     borderRadius: 8,
     width: '100%',
@@ -643,6 +675,52 @@ const styles = StyleSheet.create({
   listContainer: {
     padding: 10,
   },
+
+  headerGradient: {
+    paddingBottom: 15,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    justifyContent: 'space-between',
+    paddingBottom:16,
+  },
+  backButton: {
+    padding: 5,
+  },
+  profileInfo: {
+    flex: 1,
+    marginLeft: 15,
+  },
+  nameText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  contactText: {
+    fontSize: 14,
+    color: '#fff',
+    marginTop: 4,
+    opacity: 0.95,
+  },
+  editProfileText: {
+    color: '#fff',
+    fontSize: 15,
+    marginTop: 8,
+    fontWeight: '500',
+  },
+  profileImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    borderColor: '#fff',
+    marginTop:12
+  },
+
 });
 
 export default ProfileScreen;

@@ -28,6 +28,7 @@ import {
   setLocationId,
 } from '../../redux/reducers/auth';
 import commonStyles from '../../commonstyles/CommonStyles';
+import LinearGradient from 'react-native-linear-gradient';
 
 const DEFAULT_REGION = {
   latitude: 16.9979679,
@@ -85,7 +86,7 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
     const lat = route?.params?.selectedAddress?.customer_latitude;
     const lng = route?.params?.selectedAddress?.customer_longitude;
 
-   
+
 
     // Check if both lat and lng are valid numbers
     if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
@@ -95,7 +96,7 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
         latitudeDelta: 0.005,
         longitudeDelta: 0.005,
       };
-      
+
       setRegion(newRegion);
     }
   }, [route?.params?.selectedAddress]);
@@ -159,7 +160,7 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
           setSearchResults(data.predictions);
         } else {
           setSearchResults([]);
-         
+
         }
       } catch (error) {
         console.error('Search error:', error);
@@ -293,7 +294,7 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
 
   const removeCartItems = () => {
     dispatch(clearCart())
-   
+
     dispatch(
       setLocation({
         latitude: parseFloat(region.latitude),
@@ -309,14 +310,16 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}>
-          <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Select Service Location</Text>
-      </View>
+      <LinearGradient colors={['#D14A00', '#6C2600']} style={styles.header}>
+        {/* <View style={styles.header}> */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}>
+            <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Select Service Location</Text>
+        {/* </View> */}
+      </LinearGradient>
 
       <View style={styles.mapContainer}>
         {region && (
@@ -340,10 +343,10 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
         )}
         <View style={styles.markerOverlay}>
           <View style={styles.markerContainer}>
-            <MaterialIcons name="location-on" size={40} color={commonStyles.btn2Color} />
+            <MaterialIcons name="location-on" size={40} color={commonStyles.appMainColor} />
           </View>
         </View>
-        
+
         <TouchableOpacity
           style={[
             styles.currentLocationButton,
@@ -353,10 +356,10 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
           onPress={getCurrentLocation}
           disabled={isLoadingLocation}>
           {isLoadingLocation ? (
-            <ActivityIndicator color={commonStyles.btn2Color} size="small" />
+            <ActivityIndicator color={commonStyles.appMainColor} size="small" />
           ) : (
             <>
-              <MaterialIcons name="my-location" size={24} color={commonStyles.btn2Color} />
+              <MaterialIcons name="my-location" size={24} color={commonStyles.appMainColor} />
               <Text style={styles.currentLocationText}>
                 use current location
               </Text>
@@ -400,7 +403,7 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
                   key={result.place_id}
                   style={styles.searchResultItem}
                   onPress={() => handlePlaceSelect(result.place_id)}>
-                  <MaterialIcons name="location-on" size={20} color={commonStyles.btn2Color} />
+                  <MaterialIcons name="location-on" size={20} color={commonStyles.appMainColor} />
                   <View style={styles.searchResultText}>
                     <Text style={styles.searchResultMain}>
                       {result.structured_formatting?.main_text}
@@ -419,7 +422,7 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
       {!isKeyboardVisible && (
         <View style={styles.bottomContainer}>
           <View style={styles.locationInfo}>
-            <MaterialIcons name="location-on" size={24} color={commonStyles.btn2Color} />
+            <MaterialIcons name="location-on" size={24} color={commonStyles.appMainColor} />
             <View style={styles.locationDetails}>
               <Text style={styles.locationTitle}>
                 {city || 'Select Location'}
@@ -476,8 +479,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    backgroundColor: "#E7432D",
-    height: responsiveHeight(15),
+    // backgroundColor: "#E7432D",
+    height: responsiveHeight(13),
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingBottom: responsiveHeight(3),
@@ -526,7 +529,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F0F0',
   },
   currentLocationText: {
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -545,7 +548,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     elevation: 3,
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: commonStyles.appMainColor,
   },
   searchIcon: {
     marginRight: 10,
@@ -618,7 +621,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   confirmButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',

@@ -105,6 +105,8 @@ const UserProfileScreen = () => {
     }
   };
 
+  console.log(addressData,',,',addressList,selectedAddress)
+
   // User Details fields from addressList
   const userDetailFields = [
     {
@@ -175,7 +177,7 @@ const UserProfileScreen = () => {
                     <MaterialCommunityIcons
                       name={field.icon}
                       size={20}
-                      color={commonStyles.btn2Color}
+                      color={commonStyles.appMainColor}
                     />
                     <Text style={styles.fieldLabel}>{field.label}</Text>
                   </View>
@@ -233,7 +235,7 @@ const UserProfileScreen = () => {
         onConfirm={handleDeleteAccount}
         onCancel={() => setDeleteModalVisible(false)}
         cancelText="Cancel"
-        confirmButtonColor="#FF4B4B"
+        confirmButtonColor={commonStyles.appMainColor}
       />
     </View>
   );
@@ -245,7 +247,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -357,11 +359,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   deleteButton: {
-    backgroundColor: '#FF4B4B',
+    backgroundColor: commonStyles.appMainColor,
     marginHorizontal: responsiveWidth(5),
     marginTop: responsiveHeight(3),
     marginBottom: responsiveHeight(2),
-    paddingVertical: responsiveHeight(1.8),
+    paddingVertical: responsiveHeight(1.5),
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',

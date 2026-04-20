@@ -25,32 +25,32 @@ const AboutUsScreen = () => {
         <Text style={styles.sectionTitle}>Why Choose Food Trail?</Text>
         
         <View style={styles.featureItem}>
-          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.btn2Color} />
+          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.appMainColor} />
           <Text style={styles.featureText}>Wide Variety of Categories – Explore diverse cuisines from street food to fine dining</Text>
         </View>
 
         <View style={styles.featureItem}>
-          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.btn2Color} />
+          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.appMainColor} />
           <Text style={styles.featureText}>Restaurant Ratings & Reviews – Make informed decisions with honest feedback</Text>
         </View>
 
         <View style={styles.featureItem}>
-          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.btn2Color} />
+          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.appMainColor} />
           <Text style={styles.featureText}>Seamless Cart & Checkout – Intuitive ordering experience</Text>
         </View>
 
         <View style={styles.featureItem}>
-          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.btn2Color} />
+          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.appMainColor} />
           <Text style={styles.featureText}>Fast & Reliable Delivery – Food arrives hot and fresh</Text>
         </View>
 
         <View style={styles.featureItem}>
-          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.btn2Color} />
+          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.appMainColor} />
           <Text style={styles.featureText}>Secure Payments – Multiple safe payment options</Text>
         </View>
 
         <View style={styles.featureItem}>
-          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.btn2Color} />
+          <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.appMainColor} />
           <Text style={styles.featureText}>Real-Time Order Tracking – Follow your order from restaurant to doorstep</Text>
         </View>
 
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 20,
     marginBottom: 15,
-    color: commonStyles.btn2Color
+    color: commonStyles.appMainColor
   },
   content: {
     fontSize: 14,

@@ -96,8 +96,7 @@ const addressSlice = createSlice({
     globalSearchResults: null,
     isNetworkConnected: null,
     onloadComponents: false,
-    
-
+  
   },
   reducers: {
     setSelectedAddress: (state, action) => {

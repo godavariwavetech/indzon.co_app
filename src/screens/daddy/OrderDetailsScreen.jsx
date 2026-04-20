@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   header: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     height: responsiveHeight(15),
     flexDirection: "row",
     alignItems: "flex-end",
@@ -776,7 +776,7 @@ const styles = StyleSheet.create({
   estimatedTimeValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
   },
   estimatedTimeLabel: {
     fontSize: 10,
@@ -800,7 +800,7 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(1),
     padding: responsiveWidth(2),
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: commonStyles.appMainColor,
     borderRadius: 10,
     backgroundColor: '#F9F9F9',
     alignItems: 'center',
@@ -809,7 +809,7 @@ const styles = StyleSheet.create({
   otpValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     letterSpacing: 5,
     marginBottom: 8,
   },
@@ -831,7 +831,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   callAgentButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     padding: responsiveWidth(2),
     borderRadius: 20,
   },
@@ -871,7 +871,7 @@ const styles = StyleSheet.create({
   },
   itemPrice: {
     fontSize: 14,
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     fontWeight: '600',
     marginTop: 4,
   },
@@ -893,7 +893,7 @@ const styles = StyleSheet.create({
   },
   addressCard: {
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: commonStyles.appMainColor,
     borderRadius: 8,
     padding: responsiveWidth(4),
     marginTop: responsiveHeight(1),
@@ -940,7 +940,7 @@ const styles = StyleSheet.create({
   },
   billingCard: {
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: commonStyles.appMainColor,
     borderRadius: 8,
     padding: responsiveWidth(4),
     marginTop: responsiveHeight(1),
@@ -971,7 +971,7 @@ const styles = StyleSheet.create({
   },
   couponCode: {
     fontSize: 12,
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     marginLeft: responsiveWidth(2),
     marginBottom: responsiveHeight(1),
   },
@@ -1045,7 +1045,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   submitButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     borderRadius: 8,
     padding: 15,
     alignItems: 'center',
@@ -1092,7 +1092,7 @@ const styles = StyleSheet.create({
   },
   reviewSubmittedText: {
     fontSize: 14,
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     fontWeight: '600',
   },
   reviewContainer: {
@@ -1103,7 +1103,7 @@ const styles = StyleSheet.create({
     marginVertical: 15,
   },
   callIcon: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     padding: 5,
     borderRadius: 30
   }

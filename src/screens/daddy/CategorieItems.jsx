@@ -150,7 +150,7 @@ export default function CategorieItems({ navigation, route }) {
     if (isLoading) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={commonStyles.btn2Color} />
+          <ActivityIndicator size="large" color={commonStyles.appMainColor} />
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
       );
@@ -201,7 +201,7 @@ export default function CategorieItems({ navigation, route }) {
                     {item.shop_name}
                   </Text>
                   <View style={styles.ratingContainer}>
-                    <MaterialCommunityIcons name="star-circle" color={commonStyles.btn2Color} />
+                    <MaterialCommunityIcons name="star-circle" color={commonStyles.appMainColor} />
                     <Text style={styles.rating}>{item?.shop_rating}</Text>
                     <Text style={styles.rating}>
                       {'\u25CF'} {calculateDeliveryTime(item?.distance)}   {/*  {item.time} */}
@@ -275,7 +275,7 @@ export default function CategorieItems({ navigation, route }) {
   return (
       <View style={styles.main}>
         <LinearGradient
-          colors={['#E7432D', '#E7432D']}
+          colors={['#D14A00', '#6C2600']}
           style={styles.gradientContainer}>
           <View style={styles.headerContent}>
             <View style={styles.headerLeft}>
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loadingText: {
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     backgroundColor: '#fff',
     borderRadius: 10,
-    height: 50,
+    height: 47,
     marginHorizontal: responsiveWidth(5),
     elevation: 2,
   },

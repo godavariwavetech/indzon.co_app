@@ -410,7 +410,6 @@ const RestaurantScreen = ({ navigation, route }) => {
             <View style={styles.itemHeader}>
               <HeaderPick2 color={item.filter_one === "Veg" ? "#0EAF50" : "#CD2A2A"} />
               <Text style={styles.itemName}>{item.item_name}</Text>
-
             </View>
             <Text style={styles.itemdescription}>{item.item_description}</Text>
 
@@ -433,10 +432,6 @@ const RestaurantScreen = ({ navigation, route }) => {
                 )}
                 <Text style={styles.price}>₹{item.selling_price}</Text>
               </View>
-
-
-
-
             </View>
 
           </View>
@@ -451,13 +446,13 @@ const RestaurantScreen = ({ navigation, route }) => {
             {cartItems.findIndex(value => value.id === item.id) !== -1 ? (
               <View style={styles.counterContainer}>
                 <TouchableOpacity onPress={() => decreaseItem(item)}>
-                  <AntDesign name="minus" size={20} color={commonStyles.btn2Color} />
+                  <AntDesign name="minus" size={20} color={commonStyles.appMainColor} />
                 </TouchableOpacity>
                 <Text style={styles.counterText}>
                   {cartItems.find(value => value.id === item.id).quantity}
                 </Text>
                 <TouchableOpacity onPress={() => handleAddToCart(item)}>
-                  <AntDesign name="plus" size={20} color={commonStyles.btn2Color} />
+                  <AntDesign name="plus" size={20} color={commonStyles.appMainColor} />
                 </TouchableOpacity>
               </View>
             ) : (
@@ -575,7 +570,7 @@ const RestaurantScreen = ({ navigation, route }) => {
 
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={commonStyles.btn2Color} />
+            <ActivityIndicator size="large" color={commonStyles.appMainColor} />
           </View>
         ) : filteredData?.length === 0 ? (
           <View style={styles.noItemsContainer}>
@@ -792,18 +787,19 @@ const styles = StyleSheet.create({
   itemDetails: {
     flex: 1,
     justifyContent: 'space-between',
+    gap:6
   },
   itemHeader: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: "center",
     width: '100%',
-    marginTop: 5,
+    // marginTop: 5,
     gap: 5
   },
   itemName: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '700',
     textAlign: 'left',
     flex: 1,
     color: '#000',
@@ -840,20 +836,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: commonStyles.btn2Color,
+    borderColor: commonStyles.appMainColor,
     marginTop: 10
   },
-  counterText: { color: commonStyles.btn2Color, fontSize: 16, fontWeight: '700', marginHorizontal: 20 },
+  counterText: { color: commonStyles.appMainColor, fontSize: 16, fontWeight: '700', marginHorizontal: 20 },
   addButton: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FEF1E6',
     paddingVertical: 4,
     paddingHorizontal: 12,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "black",
+    borderColor: "#F8BE8A",
     marginTop: 10,
   },
-  addButtonText: { color: "black", textAlign: "center", fontWeight: '700', fontSize: 14 },
+  addButtonText: { color: commonStyles.appMainColor, textAlign: "center", fontWeight: '700', fontSize: 14 },
   draggableMenu: {
     position: 'absolute',
     backgroundColor: 'white',
@@ -867,7 +863,7 @@ const styles = StyleSheet.create({
     left: 20,
     bottom: 40,
   },
-  menuText: { fontSize: 12, fontWeight: 700, color: commonStyles.btn2Color },
+  menuText: { fontSize: 12, fontWeight: 700, color: commonStyles.appMainColor },
   menuButton: {
     backgroundColor: '#fffbe5',
     borderRadius: 10,
@@ -976,7 +972,7 @@ const styles = StyleSheet.create({
   cartItemCount: {
     fontSize: 16,
     fontWeight: '700',
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
   },
   cartTextContainer: {
     flexDirection: 'column',
@@ -1093,7 +1089,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   confirmButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
   },
   cancelButtonText: {
     color: '#666',

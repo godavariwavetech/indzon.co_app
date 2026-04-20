@@ -28,6 +28,7 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
 import { haversineDistance } from './distanceCalculator';
 import commonStyles from '../../commonstyles/CommonStyles';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import LinearGradient from 'react-native-linear-gradient';
 
 const AddressListScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
@@ -212,16 +213,18 @@ const AddressListScreen = ({ navigation, route }) => {
     <View style={styles.container}>
       {/* <StatusBar backgroundColor={commonStyles.btn2Color} barStyle="light-content" translucent /> */}
 
-      <View style={[styles.header, { paddingTop: insets.top }]}>
+      <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.header, { paddingTop: insets.top+10 }]}>
+      {/* <View style={[styles.header, { paddingTop: insets.top }]}> */}
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.title}>Address List</Text>
-      </View>
+      {/* </View> */}
+      </LinearGradient>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={commonStyles.btn2Color} />
+          <ActivityIndicator size="large" color={commonStyles.appMainColor} />
           <Text style={styles.loadingText}>Loading addresses...</Text>
         </View>
       ) : (
@@ -304,7 +307,7 @@ const AddressListScreen = ({ navigation, route }) => {
       />
       {isCheckingAddress && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={commonStyles.btn2Color} />
+          <ActivityIndicator size="large" color={commonStyles.appMainColor} />
         </View>
       )}
     </View>
@@ -333,7 +336,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: responsiveHeight(2),
     fontSize: 16,
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     fontWeight: '500',
   },
   emptyContainer: {
@@ -355,7 +358,7 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(3),
   },
   addAddressButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     paddingVertical: responsiveHeight(1.5),
     paddingHorizontal: responsiveWidth(10),
     borderRadius: 8,
@@ -366,20 +369,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   header: {
-    backgroundColor: commonStyles.btn2Color,
+    // backgroundColor: commonStyles.appMainColor,
     flexDirection: "row",
     alignItems: "flex-end",
     paddingHorizontal: responsiveWidth(6),
+     paddingVertical: responsiveHeight(3),
     // paddingTop: responsiveHeight(6),
-    paddingBottom: 18,
-    gap: 10
+    // paddingBottom: 20,
+    gap: 10,
+    borderBottomLeftRadius:16,
+    borderBottomRightRadius:16
   },
   backButton: {
     width: responsiveWidth(7)
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#fff',
     textAlign: "left"
 
@@ -429,7 +435,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: "10%",
     right: "10%",
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     borderRadius: 50,
     padding: 10,
     elevation: 5

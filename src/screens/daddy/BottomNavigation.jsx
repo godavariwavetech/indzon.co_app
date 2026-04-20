@@ -68,19 +68,19 @@ export default function BottomNavigation() {
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
             if (route.name === 'Home') {
-              iconName = focused ? <HomeSvg color={commonStyles.btn2Color} /> : <HomeInactive />;
+              iconName = focused ? <HomeSvg color={commonStyles.appMainColor} /> : <HomeInactive />;
             } else if (route.name === 'Reorder') {
-              iconName = focused ? <ReorderInactive color={commonStyles.btn2Color} /> : <Reorder />;
+              iconName = focused ? <ReorderInactive color={commonStyles.appMainColor} /> : <Reorder />;
             } else if (route.name === 'Categories') {
               iconName = focused ? (
-                <CategoryInactive color={commonStyles.btn2Color} />
+                <CategoryInactive color={commonStyles.appMainColor} />
               ) : (
                 <Categoreis />
               );
             } else if (route.name === 'Cart') {
               iconName = (
                 <View>
-                  {focused ? <CartInactive color={commonStyles.btn2Color} /> : <Cart />}
+                  {focused ? <CartInactive color={commonStyles.appMainColor} /> : <Cart />}
                   {cartItems.length > 0 && (
                     <View style={styles.badge}>
                       <Text style={styles.badgeText}>
@@ -91,11 +91,11 @@ export default function BottomNavigation() {
                 </View>
               );
             } else if (route.name === 'Profile') {
-              iconName = focused ? <UserActive /> : <User />;
+              iconName = focused ? <UserActive  /> : <User />;
             }
             return iconName;
           },
-          tabBarActiveTintColor: commonStyles.btn2Color,
+          tabBarActiveTintColor: commonStyles.appMainColor,
           tabBarInactiveTintColor: 'gray',
           tabBarLabelStyle: { fontSize: 12, fontWeight: '700' },
           tabBarStyle: {
@@ -107,7 +107,7 @@ export default function BottomNavigation() {
             elevation: 0,
             backgroundColor: '#fff',
             borderTopWidth: 1,
-            borderTopColor: '#E5E5E5',
+            borderTopColor: commonStyles.appMainColor,
             paddingBottom: insets.bottom,
           },
           tabBarHideOnKeyboard: true,
@@ -139,7 +139,7 @@ export default function BottomNavigation() {
           name="Categories"
           component={CategoriesScreen}
           options={{
-            tabBarLabel: 'Categories',
+            tabBarLabel: 'Menu',
             contentStyle: {
               // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
             },
@@ -159,7 +159,7 @@ export default function BottomNavigation() {
           name="Profile"
           component={ProfileScreen}
           options={{
-            tabBarLabel: 'Profile',
+            tabBarLabel: 'You',
             contentStyle: {
               // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
             },
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -8,
     right: -8,
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     borderRadius: 10,
     minWidth: 20,
     height: 20,

@@ -23,6 +23,7 @@ import { setLocation, setLocationId, setLocationName } from '../../redux/reducer
 import commonStyles from '../../commonstyles/CommonStyles';
 import { colors } from '../../config/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import LinearGradient from 'react-native-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
@@ -70,17 +71,19 @@ const ServicesAvailableScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={[styles.container]}>
-      <StatusBar backgroundColor="#FE4A31" translucent={true} barStyle="light-content" />
+      <StatusBar backgroundColor={commonStyles.appMainColor} translucent={true} barStyle="light-content" />
       <View style={styles.container}>
-        <View style={[styles.header, { paddingTop: Math.max(insets.top, responsiveHeight(2)) }]}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            {!route?.params?.permissionDenied && <FontAwesome6 name="arrow-left-long" size={20} color={colors.white} />}
-          </TouchableOpacity>
-          <Text style={styles.title}>Available Service Areas</Text>
-        </View>
+        <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.header, { paddingTop: Math.max(insets.top+5, responsiveHeight(2)) }]}>
+          {/* <View style={[styles.header, { paddingTop: Math.max(insets.top, responsiveHeight(2)) }]}> */}
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              {!route?.params?.permissionDenied && <FontAwesome6 name="arrow-left-long" size={20} color={colors.white} />}
+            </TouchableOpacity>
+            <Text style={styles.title}>Available Service Areas</Text>
+          {/* </View> */}
+        </LinearGradient>
 
         <View style={styles.searchContainer}>
           <TextInput
@@ -149,7 +152,7 @@ const styles = StyleSheet.create({
     // paddingTop: responsiveHeight(2),
   },
   header: {
-    backgroundColor: "#FE4A31",
+    // backgroundColor: commonStyles.appMainColor,
     flexDirection: "row",
     alignItems: "flex-end",
     paddingBottom: responsiveHeight(3),

@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginTop: 15,
-    color: commonStyles.btn2Color
+    color: commonStyles.appMainColor
   },
   subsectionTitle: {
     fontWeight: '600',

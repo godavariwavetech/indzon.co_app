@@ -205,7 +205,7 @@ export default function UserHome({ navigation }) {
   const numColumns = 6; // or 2, or based on your condition
   const insets = useSafeAreaInsets();
 
-
+// console.log(banners,'banners')
 
   useEffect(() => {
     networkStatusRef.current = isNetworkConnected;
@@ -539,7 +539,8 @@ export default function UserHome({ navigation }) {
         width: itemWidth - 12,  // Adjust for margin
         margin: 5,
         alignItems: "center",
-        alignSelf: "flex-start"  // This fixes alignment issue
+        alignSelf: "flex-start",  // This fixes alignment issue
+        borderRadius: 8,
       }}
     >
       <View style={styles.customCard}>
@@ -555,9 +556,13 @@ export default function UserHome({ navigation }) {
     </TouchableOpacity>
   );
 
+  const selectedCategory = categories?.find(
+    cat => cat.id === activeCategoryIndex
+  );
+
   return (
     <View style={[styles.mainContainer, { paddingTop: insets.top }]}>
-      <StatusBar backgroundColor={"transparent"} translucent barStyle={'dark-content'} />
+      <StatusBar backgroundColor={'#85360B'} translucent barStyle={'light-content'} />
       <View style={styles.container}>
         {isNetworkConnected === null ? (
           <Skeleton />
@@ -583,14 +588,14 @@ export default function UserHome({ navigation }) {
           <Skeleton />
         ) : serviceAvailable ? (
           <>
-            <LinearGradient colors={['#fff', '#fff']} style={styles.gradientContainer}>
+            <LinearGradient colors={['#85360B', '#DAAE97']} style={styles.gradientContainer}>
               <View style={styles.headerContainer}>
                 <View>
                   <TouchableOpacity
                     onPress={() => navigation.navigate("SelectServiceFromLocation", { selectedAddress })}
                     style={styles.locationContainer}
                   >
-                    <SimpleLineIcons name="location-pin" color="#000" size={22} />
+                    <SimpleLineIcons name="location-pin" color="#FFF" size={22} />
                     <View>
                       <Text style={styles.locationTitle}>
                         {locationName ? (locationName || 'Current Location') : 'Select Location'}
@@ -605,7 +610,7 @@ export default function UserHome({ navigation }) {
                   onPress={() => navigation.navigate('Notifications')}
                   style={styles.supportButton}
                 >
-                  <FontAwesome6 name="bell" size={20} color={colors.black} />
+                  <FontAwesome6 name="bell" size={20} color={colors.white} />
                 </TouchableOpacity>
               </View>
             </LinearGradient>
@@ -616,19 +621,21 @@ export default function UserHome({ navigation }) {
                 <RefreshControl
                   refreshing={refreshing}
                   onRefresh={onRefresh}
-                  colors={[commonStyles.btn2Color]}
+                  colors={[commonStyles.appMainColor]}
                 />
               }
               style={styles.container}
             >
-              <BannerCarousel
+              {/* <BannerCarousel
                 banners={banners}
                 onBannerPress={handleBannerPress}
-              />
-              <View style={styles.categoryHeaderContainer}>
+              /> */}
+
+              {/* update ui of main category */}
+              {/* <View style={styles.categoryHeaderContainer}>
                 <Text style={styles.categoryHeaderTitle}>Category</Text>
                 <View style={styles.categoryHeaderLine} />
-              </View>
+              </View> */}
               {categories && (
                 <FlatList
                   showsHorizontalScrollIndicator={false}
@@ -636,7 +643,7 @@ export default function UserHome({ navigation }) {
                   style={styles.categoriesList}
                   horizontal
                   contentContainerStyle={[
-                    { paddingTop: 5, paddingHorizontal: 10, gap: 10 },
+                    { paddingTop: 15, paddingHorizontal: 10, gap: 10, paddingBottom: 10 },
                     categories.length <= 3 && { justifyContent: "space-around", flexGrow: 1 } // ✅ center if <= 3
                   ]}
                   keyExtractor={item => item.id.toString()}
@@ -645,23 +652,32 @@ export default function UserHome({ navigation }) {
                       <TouchableOpacity
                         style={[styles.activeItemTab,]}
                         onPress={() => handleSubCategories(item)}>
-                        <Image
-                          source={{ uri: item.category_image }}
-                          resizeMode="contain"
-                          style={[styles.categoryImage,
-                          { backgroundColor: "#fff7ec", borderColor: "#F38D33" }]}
-                        />
+                        <LinearGradient colors={['#85360B', '#FFCAB0', '#FFF6F2']} style={[styles.imgContainer,]}>
+                          {/* <View style={styles.imgContainer}> */}
+                          <Image
+                            source={{ uri: item.category_image }}
+                            resizeMode="contain"
+                            style={[styles.categoryImage,
+                              // { backgroundColor: "#fff7ec", borderColor: "#F38D33" }
+                            ]}
+                          />
+                          {/* </View> */}
+                        </LinearGradient>
                         <Text numberOfLines={1} style={styles.activeCategoryText}>
-                          {item.category_name}
+                          {item?.category_name}
                         </Text>
                       </TouchableOpacity>
                     ) : (
                       <TouchableOpacity style={styles.activeItemTab} onPress={() => handleSubCategories(item)}>
-                        <Image
-                          source={{ uri: item.category_image }}
-                          resizeMode="contain"
-                          style={[styles.categoryImage, { borderColor: item.id == activeCategoryIndex ? "#F38D33" : '#ddd' }]}
-                        />
+                        <LinearGradient colors={['#85360B', '#FFCAB0', '#FFF6F2']} style={styles.imgContainer}>
+                          <Image
+                            source={{ uri: item.category_image }}
+                            resizeMode="contain"
+                            style={[styles.categoryImage,
+                              // { borderColor: item.id == activeCategoryIndex ? "#F38D33" : '#ddd' }
+                            ]}
+                          />
+                        </LinearGradient>
                         <Text numberOfLines={1} style={styles.inactiveCategoryText}>
                           {item.category_name}
                         </Text>
@@ -671,6 +687,16 @@ export default function UserHome({ navigation }) {
                 />
               )}
 
+              <BannerCarousel
+                banners={banners}
+                onBannerPress={handleBannerPress}
+              /> 
+
+              {/* update ui of sub categories */}
+              {/* <Text style={styles.categoryHeaderTitle}> Selected category name</Text> */}
+              <Text style={styles.categoryHeaderTitle}>
+                {selectedCategory?.category_name  || "Category"} Categories
+              </Text>
               <View style={styles.customContainer}>
                 <FlatList
                   data={isSubCategoriesExpanded ? subCategories : subCategories?.slice(0, 12)}
@@ -691,14 +717,14 @@ export default function UserHome({ navigation }) {
                     <MaterialIcons
                       name={isSubCategoriesExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
                       size={20}
-                      color={"#F38D33"}
+                      color={commonStyles.appMainColor}
                     />
                   </TouchableOpacity>
                 )}
               </View>
 
               {/* Popular Restaurants */}
-              <View style={[commonStyles.row, { paddingHorizontal: 2, marginTop: 5, marginBottom: 10 }]}>
+              <View style={[commonStyles.row, { paddingHorizontal: 4, marginTop: 5, marginBottom: 10 }]}>
                 <Text style={{ fontSize: 20, fontWeight: '700', color: '#2B2B2B' }}>Popular {activeCategoryIndex === 1 ? "Restaurants" : "Shops"} </Text>
               </View>
               <FlatList
@@ -764,7 +790,7 @@ export default function UserHome({ navigation }) {
                             </View>
                           </View>
                           {/* <Text numberOfLines={1} style={styles.cuisineText}>{item.cuisines || 'Fried Rice, Chinese, Italian'}</Text> */}
-                          <Text style={styles.addressText}>{item.shop_address || 'Tilak Road • 3.0 km'}</Text>
+                          <Text style={styles.addressText} numberOfLines={3}>{item.shop_address || 'Tilak Road • 3.0 km'}</Text>
 
                           {/* Optional Offer Tag */}
                           {item.offer && (
@@ -808,12 +834,10 @@ export default function UserHome({ navigation }) {
 }
 
 
-
-
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#85360B",
     paddingBottom: Platform.OS === 'ios' ? 85 : 60,
   },
   container: {
@@ -829,6 +853,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: responsiveWidth(3),
+    paddingBottom: responsiveWidth(5)
 
   },
   categoryHeaderContainer: {
@@ -839,7 +864,7 @@ const styles = StyleSheet.create({
   categoryHeaderTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginRight: 10,
+    marginLeft: 12,
   },
   categoryHeaderLine: {
     flex: 1,
@@ -852,12 +877,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   locationTitle: {
-    color: '#000',
+    color: '#fff',
     fontSize: 18,
     fontWeight: '700',
   },
   locationAddress: {
-    color: '#000',
+    color: '#FFF',
     fontWeight: '500',
     fontSize: 14,
     width: responsiveWidth(60),
@@ -891,9 +916,10 @@ const styles = StyleSheet.create({
     // paddingHorizontal: 8,
   },
   categoriesList: {
-    marginTop: 10,
+    // marginTop: 10,
     paddingBottom: 15,
-    paddingTop: 10
+    paddingTop: 10,
+    backgroundColor:'#FFF6F2'
   },
   activeItemTab: {
     width: responsiveWidth(25),
@@ -901,19 +927,35 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    // borderWidth:2,
+    // borderColor:'#FFDCCB',
+    // borderTopLeftRadius:60,
+    // borderTopRightRadius:60,
     // backgroundColor: "orange"
+  },
+  imgContainer: {
+    // backgroundColor:'#ffcab0',
+
+    width: responsiveWidth(30),
+    height: 100,
+    alignItems: "center",
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFDCCB',
+    borderTopLeftRadius: 60,
+    borderTopRightRadius: 60,
   },
   categoryImage: {
     width: responsiveWidth(25),
-    height: 80,
-    borderRadius: 10,
-    borderWidth: 1.4,
+    height: 70,
+    // borderRadius: 10,
+    // borderWidth: 1.4,
     marginBottom: 5
   },
   activeCategoryText: {
     fontSize: 14,
-    fontWeight: '700',
-    color: colors.black,
+    fontWeight: '800',
+    color: commonStyles.appMainColor,
     width: responsiveWidth(23),
     textAlign: 'center',
   },
@@ -1103,29 +1145,29 @@ const styles = StyleSheet.create({
     margin: 20,
     alignItems: 'center',
   },
-  locationWarning: {
-    fontSize: 16,
-    color: '#FF4444',
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-  locationButton: {
-    backgroundColor: '#065E2C',
-    padding: 15,
-    borderRadius: 8,
-    width: '100%',
-    alignItems: 'center',
-    marginVertical: 5,
-  },
-  locationButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  locationOr: {
-    color: '#666',
-    marginVertical: 10,
-  },
+  // locationWarning: {
+  //   fontSize: 16,
+  //   color: '#FF4444',
+  //   marginBottom: 15,
+  //   textAlign: 'center',
+  // },
+  // locationButton: {
+  //   backgroundColor: '#065E2C',
+  //   padding: 15,
+  //   borderRadius: 8,
+  //   width: '100%',
+  //   alignItems: 'center',
+  //   marginVertical: 5,
+  // },
+  // locationButtonText: {
+  //   color: '#fff',
+  //   fontSize: 16,
+  //   fontWeight: '600',
+  // },
+  // locationOr: {
+  //   color: '#666',
+  //   marginVertical: 10,
+  // },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -1202,10 +1244,13 @@ const styles = StyleSheet.create({
   },
   restaurantCard: {
     marginBottom: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     backgroundColor: '#fff',
-    boxShadow: '0px 0px 10px 0px rgba(0, 0, 0, 0.1)',
-    padding: 2,
+    boxShadow: '2px 2px 5px 0px rgba(0, 0, 0, 0.3)',
+    // padding: 2,    
+    marginHorizontal: 4,
+    // borderTopLeftRadius: 12,
+    // borderBottomLeftRadius: 12
   },
 
   restaurantContent: {
@@ -1219,9 +1264,11 @@ const styles = StyleSheet.create({
   restaurantImageContainer: {
     width: 110,
     height: 110,
-    borderRadius: 8,
+    // borderRadius: 8,
     overflow: 'hidden',
     marginRight: 15,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12
   },
 
   restaurantImage: {
@@ -1316,13 +1363,13 @@ const styles = StyleSheet.create({
     height: 50,
     margin: 6,
     paddingVertical: 12,
-    backgroundColor: '#fff7ec',
+    backgroundColor: '#FFDCCB',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#F38D33",
-    elevation: 2,
+    // borderWidth: 1,
+    // borderColor: "#F38D33",
+    // elevation: 2,
   },
   customImage: {
     width: 40,
@@ -1331,8 +1378,9 @@ const styles = StyleSheet.create({
   },
   customLabel: {
     fontSize: 10,
+    fontWeight:500,
     textAlign: 'center',
-    color: '#000'
+    color: '#000',
   },
   specialOfferContainer: {
     borderRadius: 3,

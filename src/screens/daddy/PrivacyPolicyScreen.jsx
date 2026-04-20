@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginTop: 15,
-    color: commonStyles.btn2Color
+    color: commonStyles.appMainColor
   },
   subsectionTitle: {
     fontSize: 16,
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     color: '#000'
   },
   link: {
-    color: commonStyles.btn2Color,
+    color: commonStyles.appMainColor,
     textDecorationLine: 'underline',
   }
 });

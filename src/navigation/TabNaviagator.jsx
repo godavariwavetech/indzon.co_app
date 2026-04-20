@@ -54,7 +54,7 @@ const TabNavigator=()=>{
             ) 
             // return <Icon name={iconName} size={size} color={color} />;
           },
-          tabBarActiveTintColor: commonStyles.mainColor,
+          tabBarActiveTintColor: commonStyles.appMainColor,
           tabBarInactiveTintColor: "#64748B",
           tabBarStyle: { backgroundColor: "#fff", paddingBottom: 5, height: 60 ,borderTopWidth:1,borderColor:commonStyles.mainColor},
           tabBarLabelStyle: { fontSize: 12,fontWeight:400,marginTop:4 },

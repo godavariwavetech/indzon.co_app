@@ -262,7 +262,7 @@ const ReorderScreen = ({ navigation }) => {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       {/* <LinearGradient colors={['#FD0', '#F7F2F2']} style={styles.gradientContainer}> */}
       {/* <LinearGradient colors={['#FE4A31', '#FFD6CD']} style={styles.gradientContainer}> */}
-      <LinearGradient colors={['#E7432D', '#E7432D']} style={[styles.gradientContainer, { paddingTop: insets.top }]}>
+      <LinearGradient colors={['#D14A00', '#6C2600']} style={[ styles.gradientHeader,{ paddingTop: insets.top+10 }]}>
         <View style={styles.headerContainer}>
           <ReorderInactive color='#fff' />
           <Text style={styles.headerTitle}>Orders</Text>
@@ -275,6 +275,7 @@ const ReorderScreen = ({ navigation }) => {
               style={styles.searchInput}
               value={searchQuery}
               onChangeText={handleSearch}
+              selectionColor={commonStyles.appMainColor}
             />
             <Icon name="search" size={24} color="gray" style={styles.searchIcon} />
             {searchQuery.length > 0 && (
@@ -290,7 +291,7 @@ const ReorderScreen = ({ navigation }) => {
       </LinearGradient>
       {initialLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={commonStyles.btn2Color} />
+          <ActivityIndicator size="large" color={commonStyles.appMainColor} />
         </View>
       ) : filteredOrders?.length > 0 ? (
         <FlatList
@@ -359,6 +360,11 @@ const styles = StyleSheet.create({
     // marginTop: responsiveHeight(5),
     marginLeft: responsiveWidth(5)
   },
+  gradientHeader:{
+    borderBottomLeftRadius:20,
+    borderBottomRightRadius:20,
+    paddingBottom:10
+  },
   headerTitle: {
     color: "#fff",
     fontSize: 20,
@@ -369,7 +375,7 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(2),
     marginBottom: responsiveHeight(1),
     backgroundColor: '#fff',
-    borderRadius: 15,
+    borderRadius: 12,
     padding: 5,
     height: 48,
   },
@@ -459,9 +465,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600"
   },
-  gradientContainer: {
-    // paddingTop: 10,
-  },
+
   cartItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -625,7 +629,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   confirmButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
   },
   cancelButtonText: {
     color: '#666',

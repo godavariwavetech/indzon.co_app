@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width:'90%',
     borderWidth:0.3,
-    borderColor:commonStyles.btn2Color,
+    borderColor:commonStyles.appMainColor,
     paddingHorizontal:responsiveWidth(4),
     paddingVertical:responsiveHeight(2),
     backgroundColor:'#FE4A31',
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 10,
     // color:'#101811'
-    color:commonStyles.btn2Color
+    color:commonStyles.appMainColor
   },
   skipButton:{
     flexDirection:'row',
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     marginBottom:responsiveHeight(2),
     width:'100%',
     borderWidth:0.3,
-    borderColor:commonStyles.btn2Color,
+    borderColor:commonStyles.appMainColor,
     paddingVertical:responsiveHeight(1.5),
     backgroundColor:'#fff',
     borderRadius:10,
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   skipText:{
     fontSize:16,
     fontWeight:'600',
-    color:commonStyles.btn2Color
+    color:commonStyles.appMainColor
   },
 
   description: {

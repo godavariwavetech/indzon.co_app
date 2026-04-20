@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#E0E0E0',
   },
   applyButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     textAlign:"center"
   },
   closeButton: {
-    backgroundColor: commonStyles.btn2Color,
+    backgroundColor: commonStyles.appMainColor,
     borderRadius: 5,
     padding: 10,
     alignItems: 'center',

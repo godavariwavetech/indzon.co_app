@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     // paddingHorizontal: 20,
     width: '82%',
     borderWidth: 0.3,
-    borderColor: commonStyles.btn2Color,
+    borderColor: commonStyles.appMainColor,
     paddingHorizontal: responsiveWidth(4),
     paddingVertical: responsiveHeight(2),
     // borderRadius:40
