@@ -1,10 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState, memo } from 'react';
+import React, { useCallback, useEffect, useRef, useState, memo, useMemo } from 'react';
 import {
   View,
   Text,
   TextInput,
   Image,
-  ScrollView,
   TouchableOpacity,
   StatusBar,
   FlatList,
@@ -114,7 +113,7 @@ const BannerCarousel = memo(({ banners, onBannerPress }) => {
 });
 
 // Special Offer Scroller Component
-const SpecialOfferScroller = ({ offerText, itemId }) => {
+const SpecialOfferScroller = memo(({ offerText, itemId }) => {
   const scrollX = useRef(new Animated.Value(0)).current;
   const [textWidth, setTextWidth] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -182,8 +181,59 @@ const SpecialOfferScroller = ({ offerText, itemId }) => {
       </View>
     </LinearGradient>
   );
+});
+
+
+const calculateDeliveryTime = (distance) => {
+  if (distance < 3) return '15-20 mins';
+  if (distance < 5) return '20-30 mins';
+  return '30-45 mins';
 };
 
+const RestaurantCard = memo(({ item, onPress }) => {
+  const isUnavailable = item.shop_active_status === "1";
+  return (
+    <TouchableOpacity
+      style={[styles.restaurantCard, isUnavailable && styles.unavailableCard]}
+      onPress={() => !isUnavailable && onPress(item)}
+    >
+      {item.special_offer_status == "1" && (
+        <SpecialOfferScroller offerText={item.special_offer_name} itemId={item.id} />
+      )}
+      <View style={styles.restaurantContent}>
+        <View style={styles.restaurantImageContainer}>
+          <Image
+            source={item?.shop_image ? { uri: item.shop_image } : undefined}
+            style={styles.restaurantImage}
+          />
+        </View>
+        {isUnavailable && (
+          <View style={styles.unavailableOverlay}>
+            <Text style={[styles.unavailableText, { color: "red" }]}>Currently Unavailable</Text>
+          </View>
+        )}
+        <View style={styles.restaurantTextContainer}>
+          <Text style={styles.restaurantName}>{item.shop_name}</Text>
+          <View style={styles.ratingRow}>
+            <StarIcon />
+            <Text style={styles.ratingText}>{item.shop_rating}</Text>
+            <Text style={styles.dot}>•</Text>
+            <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
+              <Clock />
+              <Text style={{ fontSize: 13, fontWeight: '400', color: '#000' }}>{calculateDeliveryTime(item.distance)}</Text>
+            </View>
+          </View>
+          <Text style={styles.addressText} numberOfLines={3}>{item.shop_address || 'Tilak Road • 3.0 km'}</Text>
+          {item.offer && (
+            <View style={styles.offerTag}>
+              <Text style={styles.offerText}>{item.offer}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+});
 
 export default function UserHome({ navigation }) {
   const { categories, subCategories, banners, restaurants, activeCategoryIndex, loading, addressList, userAddress,
@@ -368,12 +418,12 @@ export default function UserHome({ navigation }) {
     }, [authLocation])
   );
 
-  const handleSubCategories = category => {
+  const handleSubCategories = useCallback(category => {
     dispatch(setActiveCategoryIndex(category.id));
     dispatch(getSubCategories({ categoryId: category.id }));
     dispatch(getRestaurantsHome({ categoryId: category.id }));
     dispatch(setOrderOfferAmount(category.order_offer_amount));
-  };
+  }, [dispatch]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -473,17 +523,7 @@ export default function UserHome({ navigation }) {
     }
   }, [authLocation, serviceAvailable]);
 
-  const calculateDeliveryTime = (distance) => {
-    if (distance < 3) {
-      return '15-20 mins';
-    } else if (distance < 5) {
-      return '20-30 mins';
-    } else {
-      return '30-45 mins';
-    }
-  };
-
-  const handleBannerPress = async (banner) => {
+  const handleBannerPress = useCallback(async (banner) => {
     const resp = await dispatch(indiviadualShop({ shopId: banner?.shop_id }))
     // return
     if (!resp.payload.data[0] || resp.payload.data[0] <= 0) return
@@ -494,8 +534,7 @@ export default function UserHome({ navigation }) {
         highlightItemId: 0
       });
     }
-
-  };
+  }, [dispatch, navigation]);
 
   // Handle network connection changes
   useEffect(() => {
@@ -528,18 +567,17 @@ export default function UserHome({ navigation }) {
   // const popularRestaurants = homeRestaurnats && homeRestaurnats.filter(restaurant => Number(restaurant.shop_rating) >= 4.5);
   // const nearbyRestaurants = homeRestaurnats && homeRestaurnats.filter(restaurant => Number(restaurant.shop_rating) < 4.5);
 
-  const renderItem = ({ item }) => (
+  const renderSubCategoryItem = useCallback(({ item }) => (
     <TouchableOpacity
       onPress={() => {
-
         dispatch(setsubCategory(item));
         navigation.navigate('CategorieItems');
       }}
       style={{
-        width: itemWidth - 12,  // Adjust for margin
+        width: itemWidth - 12,
         margin: 5,
         alignItems: "center",
-        alignSelf: "flex-start",  // This fixes alignment issue
+        alignSelf: "flex-start",
         borderRadius: 8,
       }}
     >
@@ -554,11 +592,105 @@ export default function UserHome({ navigation }) {
         {item.sub_category_name}
       </Text>
     </TouchableOpacity>
+  ), [dispatch, navigation]);
+
+  const renderCategoryItem = useCallback(({ item }) => {
+    const isActive = item.id == activeCategoryIndex;
+    return (
+      <TouchableOpacity
+        style={styles.activeItemTab}
+        onPress={() => handleSubCategories(item)}
+      >
+        <LinearGradient colors={['#85360B', '#FFCAB0', '#FFF6F2']} style={styles.imgContainer}>
+          <Image
+            source={{ uri: item.category_image }}
+            resizeMode="contain"
+            style={styles.categoryImage}
+          />
+        </LinearGradient>
+        <Text numberOfLines={1} style={isActive ? styles.activeCategoryText : styles.inactiveCategoryText}>
+          {item.category_name}
+        </Text>
+      </TouchableOpacity>
+    );
+  }, [activeCategoryIndex, handleSubCategories]);
+
+  const renderRestaurantItem = useCallback(({ item }) => (
+    <RestaurantCard
+      item={item}
+      onPress={(shop) => navigation.navigate('RestaurantScreen', {
+        shopId: shop.shop_id,
+        shopItem: shop.shop_items_tb_nm,
+        item: shop,
+      })}
+    />
+  ), [navigation]);
+
+  const restaurantKeyExtractor = useCallback((item) => item.id?.toString(), []);
+
+  const selectedCategory = useMemo(() =>
+    categories?.find(cat => cat.id === activeCategoryIndex),
+    [categories, activeCategoryIndex]
   );
 
-  const selectedCategory = categories?.find(
-    cat => cat.id === activeCategoryIndex
+  const visibleSubCategories = useMemo(() =>
+    isSubCategoriesExpanded ? subCategories : subCategories?.slice(0, 12),
+    [isSubCategoriesExpanded, subCategories]
   );
+
+  const ListHeader = useMemo(() => (
+    <>
+      {categories && (
+        <FlatList
+          showsHorizontalScrollIndicator={false}
+          data={categories}
+          style={styles.categoriesList}
+          horizontal
+          contentContainerStyle={[
+            { paddingTop: 15, paddingHorizontal: 10, gap: 10, paddingBottom: 10 },
+            categories.length <= 3 && { justifyContent: "space-around", flexGrow: 1 }
+          ]}
+          keyExtractor={item => item.id.toString()}
+          renderItem={renderCategoryItem}
+        />
+      )}
+      <BannerCarousel banners={banners} onBannerPress={handleBannerPress} />
+      <Text style={styles.categoryHeaderTitle}>
+        {selectedCategory?.category_name || "Category"} Categories
+      </Text>
+      <View style={styles.customContainer}>
+        <FlatList
+          data={visibleSubCategories}
+          key={6}
+          numColumns={6}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderSubCategoryItem}
+          scrollEnabled={false}
+        />
+        {subCategories?.length > 12 && (
+          <TouchableOpacity
+            onPress={() => setIsSubCategoriesExpanded(prev => !prev)}
+            style={styles.expandButton}
+          >
+            <Text style={styles.expandButtonText}>
+              {isSubCategoriesExpanded ? "Show Less" : "See All"}
+            </Text>
+            <MaterialIcons
+              name={isSubCategoriesExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+              size={20}
+              color={commonStyles.appMainColor}
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+      <View style={[commonStyles.row, { paddingHorizontal: 4, marginTop: 5, marginBottom: 10 }]}>
+        <Text style={{ fontSize: 20, fontWeight: '700', color: '#2B2B2B' }}>
+          Popular {activeCategoryIndex === 1 ? "Restaurants" : "Shops"}
+        </Text>
+      </View>
+    </>
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [categories, banners, selectedCategory, visibleSubCategories, subCategories, isSubCategoriesExpanded, activeCategoryIndex, renderCategoryItem, renderSubCategoryItem]);
 
   return (
     <View style={[styles.mainContainer, { paddingTop: insets.top }]}>
@@ -614,9 +746,18 @@ export default function UserHome({ navigation }) {
                 </TouchableOpacity>
               </View>
             </LinearGradient>
-            <ScrollView
+            <FlatList
+              data={homeRestaurnats}
+              keyExtractor={restaurantKeyExtractor}
+              renderItem={renderRestaurantItem}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 40 }}
+              ListHeaderComponent={ListHeader}
+              ListEmptyComponent={() => (
+                <View style={{ alignItems: "center", justifyContent: "center", height: responsiveHeight(10) }}>
+                  <Text style={{ fontSize: 14, fontWeight: '400', color: '#656565' }}>No popular restaurants/Shops available</Text>
+                </View>
+              )}
               refreshControl={
                 <RefreshControl
                   refreshing={refreshing}
@@ -624,192 +765,11 @@ export default function UserHome({ navigation }) {
                   colors={[commonStyles.appMainColor]}
                 />
               }
-              style={styles.container}
-            >
-              {/* <BannerCarousel
-                banners={banners}
-                onBannerPress={handleBannerPress}
-              /> */}
-
-              {/* update ui of main category */}
-              {/* <View style={styles.categoryHeaderContainer}>
-                <Text style={styles.categoryHeaderTitle}>Category</Text>
-                <View style={styles.categoryHeaderLine} />
-              </View> */}
-              {categories && (
-                <FlatList
-                  showsHorizontalScrollIndicator={false}
-                  data={categories}
-                  style={styles.categoriesList}
-                  horizontal
-                  contentContainerStyle={[
-                    { paddingTop: 15, paddingHorizontal: 10, gap: 10, paddingBottom: 10 },
-                    categories.length <= 3 && { justifyContent: "space-around", flexGrow: 1 } // ✅ center if <= 3
-                  ]}
-                  keyExtractor={item => item.id.toString()}
-                  renderItem={({ item }) => {
-                    return item.id == activeCategoryIndex ? (
-                      <TouchableOpacity
-                        style={[styles.activeItemTab,]}
-                        onPress={() => handleSubCategories(item)}>
-                        <LinearGradient colors={['#85360B', '#FFCAB0', '#FFF6F2']} style={[styles.imgContainer,]}>
-                          {/* <View style={styles.imgContainer}> */}
-                          <Image
-                            source={{ uri: item.category_image }}
-                            resizeMode="contain"
-                            style={[styles.categoryImage,
-                              // { backgroundColor: "#fff7ec", borderColor: "#F38D33" }
-                            ]}
-                          />
-                          {/* </View> */}
-                        </LinearGradient>
-                        <Text numberOfLines={1} style={styles.activeCategoryText}>
-                          {item?.category_name}
-                        </Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity style={styles.activeItemTab} onPress={() => handleSubCategories(item)}>
-                        <LinearGradient colors={['#85360B', '#FFCAB0', '#FFF6F2']} style={styles.imgContainer}>
-                          <Image
-                            source={{ uri: item.category_image }}
-                            resizeMode="contain"
-                            style={[styles.categoryImage,
-                              // { borderColor: item.id == activeCategoryIndex ? "#F38D33" : '#ddd' }
-                            ]}
-                          />
-                        </LinearGradient>
-                        <Text numberOfLines={1} style={styles.inactiveCategoryText}>
-                          {item.category_name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  }}
-                />
-              )}
-
-              <BannerCarousel
-                banners={banners}
-                onBannerPress={handleBannerPress}
-              /> 
-
-              {/* update ui of sub categories */}
-              {/* <Text style={styles.categoryHeaderTitle}> Selected category name</Text> */}
-              <Text style={styles.categoryHeaderTitle}>
-                {selectedCategory?.category_name  || "Category"} Categories
-              </Text>
-              <View style={styles.customContainer}>
-                <FlatList
-                  data={isSubCategoriesExpanded ? subCategories : subCategories?.slice(0, 12)}
-                  key={6}
-                  numColumns={6}
-                  keyExtractor={(item) => item.id.toString()}
-                  renderItem={renderItem}
-                  scrollEnabled={false}
-                />
-                {subCategories?.length > 12 && (
-                  <TouchableOpacity
-                    onPress={() => setIsSubCategoriesExpanded(!isSubCategoriesExpanded)}
-                    style={styles.expandButton}
-                  >
-                    <Text style={styles.expandButtonText}>
-                      {isSubCategoriesExpanded ? "Show Less" : "See All"}
-                    </Text>
-                    <MaterialIcons
-                      name={isSubCategoriesExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
-                      size={20}
-                      color={commonStyles.appMainColor}
-                    />
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {/* Popular Restaurants */}
-              <View style={[commonStyles.row, { paddingHorizontal: 4, marginTop: 5, marginBottom: 10 }]}>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: '#2B2B2B' }}>Popular {activeCategoryIndex === 1 ? "Restaurants" : "Shops"} </Text>
-              </View>
-              <FlatList
-                data={homeRestaurnats}
-                keyExtractor={item => item.id}
-                showsVerticalScrollIndicator={false}
-                ListEmptyComponent={() => <View style={{ alignItems: "center", justifyContent: "center", height: responsiveHeight(10), width: responsiveWidth(100) }}>
-                  <Text style={{ fontSize: 14, fontWeight: '400', color: '#656565' }}>No popular restaurants/Shops available</Text>
-                </View>}
-                renderItem={({ item }) => {
-                  const isUnavailable = item.shop_active_status === "1";
-                  const distance = item.distance;
-
-                  return (
-                    <TouchableOpacity
-                      style={[styles.restaurantCard, isUnavailable && styles.unavailableCard]}
-                      onPress={() => {
-                        if (!isUnavailable) {
-                          navigation.navigate('RestaurantScreen', {
-                            shopId: item.shop_id,
-                            shopItem: item.shop_items_tb_nm,
-                            item,
-                          });
-                        }
-                      }}
-                    >
-                      {item.special_offer_status == "1" && (
-                        <SpecialOfferScroller
-                          offerText={item.special_offer_name}
-                          itemId={item.id}
-                        />
-                      )}
-                      <View style={styles.restaurantContent}>
-                        {/* Left image */}
-                        <View style={styles.restaurantImageContainer}>
-                          <Image
-                            source={item?.shop_image ? { uri: item.shop_image } : ''}
-                            style={styles.restaurantImage}
-                          />
-                          {/* Heart icon */}
-                          {/* <View style={styles.heartIcon}>
-                        <MaterialIcons name="favorite" size={28} color="red" />
-                        </View> */}
-
-                        </View>
-                        {isUnavailable && (
-                          <View style={styles.unavailableOverlay}>
-                            <Text style={[styles.unavailableText, { color: "red" }]}>Currently Unavailable</Text>
-                          </View>
-                        )}
-
-                        {/* Right text content */}
-                        <View style={styles.restaurantTextContainer}>
-                          <Text style={styles.restaurantName}>{item.shop_name}</Text>
-                          <View style={styles.ratingRow}>
-                            <StarIcon />
-                            <Text style={styles.ratingText}>{item.shop_rating}</Text>
-                            <Text style={styles.dot}>•</Text>
-                            {/* <Text style={styles.deliveryTime}>{calculateDeliveryTime(distance)}</Text> */}
-                            <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
-                              <Clock />
-                              <Text style={{ fontSize: 13, fontWeight: '400', color: '#000' }}>{calculateDeliveryTime(distance)}</Text>
-                            </View>
-                          </View>
-                          {/* <Text numberOfLines={1} style={styles.cuisineText}>{item.cuisines || 'Fried Rice, Chinese, Italian'}</Text> */}
-                          <Text style={styles.addressText} numberOfLines={3}>{item.shop_address || 'Tilak Road • 3.0 km'}</Text>
-
-                          {/* Optional Offer Tag */}
-                          {item.offer && (
-                            <View style={styles.offerTag}>
-                              <Text style={styles.offerText}>{item.offer}</Text>
-                            </View>
-                          )}
-                        </View>
-
-                        {/* More menu */}
-                        {/* <TouchableOpacity style={styles.menuButton}>
-                      <Icon name="more-vert" size={24} color="black" />
-                      </TouchableOpacity> */}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                }}
-              />
-            </ScrollView>
+              initialNumToRender={6}
+              maxToRenderPerBatch={6}
+              windowSize={10}
+              removeClippedSubviews={true}
+            />
           </>
         ) : serviceAvailable === false ? (
           <ServiceUnavailableScreen />

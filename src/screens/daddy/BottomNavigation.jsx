@@ -125,31 +125,31 @@ export default function BottomNavigation() {
             },
           }}
         />
+          <Tab.Screen
+            name="Categories"
+            component={CategoriesScreen}
+            options={{
+              tabBarLabel: 'Menu',
+              contentStyle: {
+                // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+              },
+            }}
+          />
+          <Tab.Screen
+            name="Cart"
+            component={CartScreen}
+            options={{
+              tabBarLabel: 'Cart',
+              contentStyle: {
+                // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+              },
+            }}
+          />
         <Tab.Screen
           name="Reorder"
           component={ReorderScreen}
           options={{
             tabBarLabel: 'Orders',
-            contentStyle: {
-              // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
-            },
-          }}
-        />
-        <Tab.Screen
-          name="Categories"
-          component={CategoriesScreen}
-          options={{
-            tabBarLabel: 'Menu',
-            contentStyle: {
-              // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
-            },
-          }}
-        />
-        <Tab.Screen
-          name="Cart"
-          component={CartScreen}
-          options={{
-            tabBarLabel: 'Cart',
             contentStyle: {
               // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
             },

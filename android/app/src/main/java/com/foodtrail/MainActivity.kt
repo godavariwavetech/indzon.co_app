@@ -1,4 +1,4 @@
-package com.melocal
+package com.amaraa
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

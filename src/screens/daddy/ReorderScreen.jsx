@@ -208,45 +208,73 @@ const ReorderScreen = ({ navigation }) => {
     return colorMap[status] || '#666'; // Default gray
   };
 
+
+  console.log(filteredOrders,">>>>>>>>>>>>>>>>>>>>filteredOrders");
+
   // Update the renderRestaurantCard function to include status
   const renderRestaurantCard = useCallback(({ item }) => {
-    const isLoading = loading[item.id];
+    const cardLoading = loading[item.id];
+    const statusColor = getStatusColor(item.order_status);
+    const statusLabel = STATUS_MAP[item.order_status];
 
     return (
-      <View style={styles.card}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <Text style={styles.date}>{item.order_date}</Text>
-          <Text style={[styles.statusText, { color: getStatusColor(item.order_status) }]}>
-            {STATUS_MAP[item.order_status]}
-          </Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 7 }}>
-          <Image source={{ uri: item.shop_image }} style={{ width: 72, height: 72, borderRadius: 8 }} />
-          <View style={styles.restaurantInfo}>
-            <Text style={styles.restaurantName}>{item.shop_name}</Text>
-            <Text style={[styles.details, { fontSize: 10 }]}>{item?.order_id} / {item?.id}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <Text style={styles.details}>₹ {item.grand_total}</Text>
+      <TouchableOpacity
+        activeOpacity={0.95}
+        style={styles.card}
+        onPress={() => navigation.navigate('OrderDetails', { orderDetails: item })}
+        disabled={cardLoading}
+      >
+        {/* Top row: image + order id + status badge */}
+        <View style={styles.cardTopRow}>
+          <View style={styles.shopImageWrapper}>
+            <Image source={{ uri: item.shop_image }} style={styles.shopImage} />
+          </View>
+          <View style={styles.orderMeta}>
+            <Text style={styles.orderIdLabel}>Order ID:</Text>
+            <Text style={styles.orderIdValue} numberOfLines={1}>#{item.order_id}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+              <MaterialIcons name="check-circle" size={14} color="#fff" />
+              <Text style={styles.statusBadgeText}>{statusLabel}</Text>
             </View>
-            <Text style={styles.details}>{item.location_name}</Text>
           </View>
         </View>
 
-        {/* ( */}
-        <TouchableOpacity
-          style={styles.viewDetailsButton}
-          onPress={() => {
-            // fetchOrderItems(item.id);
-            navigation.navigate('OrderDetails', { orderDetails: item });
-          }}
-          disabled={isLoading}
-        >
-          <Text style={styles.viewDetailsButtonText}>View Order Details</Text>
-        </TouchableOpacity>
-        {/* )  */}
-      </View>
+        {/* Date & Total row */}
+        <View style={styles.dateAmountRow}>
+          <View>
+            <Text style={styles.metaLabel}>Date & Time:</Text>
+            <Text style={styles.metaValue}>{item.order_date}</Text>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={styles.metaLabel}>Total Amount:</Text>
+            <Text style={styles.metaValue}>₹{item.grand_total}/-</Text>
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        {/* Delivery Address */}
+        <View style={styles.addressSection}>
+          <View style={styles.addressHeader}>
+            <Text style={styles.addressIcon}>📍</Text>
+            <Text style={styles.addressTitle}>Delivery Address</Text>
+          </View>
+          <Text style={styles.addressText}>{item.delivery_address}</Text>
+        </View>
+
+        <View style={styles.divider} />
+
+        {/* Restaurant Address */}
+        <View style={styles.addressSection}>
+          <View style={styles.addressHeader}>
+            <Text style={styles.addressIcon}>🏪</Text>
+            <Text style={styles.addressTitle}>Restaurant Address</Text>
+          </View>
+          <Text style={styles.addressText}>{item.shop_address || item.shop_name}</Text>
+        </View>
+      </TouchableOpacity>
     );
-  }, [expandedRestaurants, orderItems, loading, renderMenuItem, toggleExpand, fetchOrderItems, navigation]);
+  }, [loading, navigation]);
 
   const keyExtractor = useCallback((item) => item.id, []);
 
@@ -422,42 +450,111 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   card: {
-    backgroundColor: '#fff',
-    margin: 12,
-    padding: 18,
-    borderRadius: 16,
-    borderWidth: 0,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 12,
+    marginVertical: 8,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: '#85360B',
+    gap: 16,
   },
-  date: {
-    fontSize: 13,
-    color: '#666',
-    fontWeight: '500',
-    textAlign: "left"
+  cardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
-  restaurantInfo: {
+  shopImageWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 6.4,
+    borderWidth: 0.5,
+    borderColor: '#85360B',
+    backgroundColor: '#FEF1E6',
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shopImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 6.4,
+  },
+  orderMeta: {
     flex: 1,
-    marginLeft: 12,
+    gap: 8,
+  },
+  orderIdLabel: {
+    fontSize: 12,
+    color: '#757575',
+    fontWeight: '400',
+    lineHeight: 20,
+  },
+  orderIdValue: {
+    fontSize: 12,
+    color: '#757575',
+    fontWeight: '400',
+    lineHeight: 20,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 32,
     gap: 4,
-    justifyContent: 'center'
   },
-  restaurantName: {
-    fontSize: 18,
+  statusBadgeText: {
+    fontSize: 14,
     fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 2
+    color: '#FFFFFF',
+    lineHeight: 20,
   },
-  details: {
-    fontSize: 13,
-    color: '#666',
-    fontWeight: '500'
+  dateAmountRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  metaLabel: {
+    fontSize: 12,
+    color: '#757575',
+    fontWeight: '400',
+    lineHeight: 20,
+  },
+  metaValue: {
+    fontSize: 12,
+    color: '#757575',
+    fontWeight: '400',
+    lineHeight: 20,
+  },
+  divider: {
+    height: 0.5,
+    backgroundColor: '#B0B0B0',
+    alignSelf: 'stretch',
+  },
+  addressSection: {
+    gap: 4,
+  },
+  addressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  addressIcon: {
+    fontSize: 16,
+  },
+  addressTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#85360B',
+    lineHeight: 20,
+  },
+  addressText: {
+    fontSize: 12,
+    color: '#545454',
+    fontWeight: '400',
+    lineHeight: 16,
   },
   moreItems: {
     color: '#C3A710',
