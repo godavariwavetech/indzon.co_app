@@ -73,3 +73,7 @@ yarn-error.log
 !.yarn/sdks
 !.yarn/versions
 .aider*
+
+# Project-specific
+Amaraa Public App APIs.postman_collection.json
+CLAUDE.md

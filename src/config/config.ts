@@ -15,7 +15,7 @@ export const endpoints = {
   GET_BANNER: 'public_app/getbannerslist',
   GET_SHOPS: 'public_app/getshoplist',
   GET_ITEMS_LIST: "public_app/getitemslist",
-  VERIFY_CUSTOMER_MOBILE: 'public_app/customerlogin',
+  VERIFY_CUSTOMER_MOBILE: 'public_app/customerlogin', 
   VERIFY_CUSTOMER_OTP: 'public_app/customerlogin',
   GET_ORDERS: 'public_app/getorderlist',
   GET_ALL_CATEGORIES: 'public_app/getsubcategoryall',
