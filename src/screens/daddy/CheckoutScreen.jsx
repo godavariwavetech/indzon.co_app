@@ -260,7 +260,7 @@ const CheckoutScreen = ({ navigation, route }) => {
           : 'No address selected',
         order_latitude: selectedAddress?.customer_latitude || '0',
         order_longitude: selectedAddress?.customer_longitude || '0',
-        slot_timings: 'Fast Delivery',
+        // slot_timings: 'Fast Delivery',
         order_distance: distance,
         ext_del_charge: '0',
         shop_id: cartItems[0]?.shop_id,
@@ -298,6 +298,8 @@ const CheckoutScreen = ({ navigation, route }) => {
       // 🔹 Case 1: COD
       if (selectedPaymentMethod === 'COD') {
         const responseCod = await dispatch(placeOrder({ orderDetails: payload }));
+
+        console.log(responseCod,">>>>>>>>>>>>>>>RESPONSEEE COD");
 
         if (!responseCod?.payload) {
           Alert.alert("Order Failed", "Unable to place COD order. Please try again.");
@@ -340,7 +342,7 @@ const CheckoutScreen = ({ navigation, route }) => {
           key: razorpayOrder.key_id,
           amount: razorpayOrder.amount,
           order_id: razorpayOrder.id,
-          name: 'Melocal',
+          name: 'Amaraa',
           prefill: {
             email: selectedAddress?.customer_email || 'test@example.com',
             contact: selectedAddress?.customer_mobile_number,

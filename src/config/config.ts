@@ -1,4 +1,4 @@
-export const baseURL = "https://melocalapp.com:2630/";
+export const baseURL = "https://apiamara.godavariwave.com/";
 //2630
 // export const baseURL = 'https://melocalapp.com:1035/';
 
@@ -41,5 +41,6 @@ export const endpoints = {
   GET_SEARCH_SHOP_LIST: "public_app/getsearchshoplist",
   GET_SINGLE_SHOP_DETAILS: "public_app/getsingleshopdetails",
   GET_SEARCH_SUB_CATEGORIES: "public_app/getsearchsubcategoriesshoplist",
-  GET_SEARCH_CATEGORIES: "public_app/getsearchcategoriesshoplist"
+  GET_SEARCH_CATEGORIES: "public_app/getsearchcategoriesshoplist",
+  UPDATE_CUSTOMER_PROFILE: 'public_app/update_customer_profile'
 };

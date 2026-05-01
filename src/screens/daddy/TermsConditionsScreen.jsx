@@ -20,15 +20,15 @@ const TermsConditionsScreen = () => {
       <ScrollView style={{padding: 20}}>
         <Text style={styles.effectiveDate}>Last Updated: 20/05/2025</Text>
         <Text style={styles.content}>
-          Welcome to Food Trail! These Terms and Conditions govern your use of our platform, including our website and mobile application. By accessing or using Food Trail, you agree to comply with these Terms. If you do not agree, please refrain from using our services.
+          Welcome to Amaraa! These Terms and Conditions govern your use of our platform, including our website and mobile application. By accessing or using Amaraa, you agree to comply with these Terms. If you do not agree, please refrain from using our services.
         </Text>
 
         <View style={styles.separator} />
 
         <Text style={styles.sectionTitle}>1. Definitions</Text>
         <Text style={styles.content}>
-          <Text style={styles.subsectionTitle}>• "Food Trail"</Text> refers to our food delivery platform, including the mobile application and website.{"\n"}
-          <Text style={styles.subsectionTitle}>• "User"</Text> refers to any individual who accesses or uses Food Trail.{"\n"}
+          <Text style={styles.subsectionTitle}>• "Amaraa"</Text> refers to our food delivery platform, including the mobile application and website.{"\n"}
+          <Text style={styles.subsectionTitle}>• "User"</Text> refers to any individual who accesses or uses Amaraa.{"\n"}
           <Text style={styles.subsectionTitle}>• "Restaurant Partner"</Text> refers to the restaurants listed on our platform.{"\n"}
           <Text style={styles.subsectionTitle}>• "Delivery Partner"</Text> refers to the individuals responsible for delivering orders.
         </Text>
@@ -37,14 +37,14 @@ const TermsConditionsScreen = () => {
 
         <Text style={styles.sectionTitle}>2. Eligibility</Text>
         <Text style={styles.content}>
-          You must be at least 18 years old to use Food Trail. By accessing our platform, you represent that you meet this requirement.
+          You must be at least 18 years old to use Amaraa. By accessing our platform, you represent that you meet this requirement.
         </Text>
 
         <View style={styles.separator} />
 
         <Text style={styles.sectionTitle}>3. Use of Services</Text>
         <Text style={styles.content}>
-          • You agree to use Food Trail for lawful purposes only.{"\n"}
+          • You agree to use Amaraa for lawful purposes only.{"\n"}
           • You shall not engage in fraudulent activities, abuse promotions, or interfere with the platform's functionality.{"\n"}
           • We reserve the right to suspend or terminate your account if we detect suspicious activity.
         </Text>
@@ -53,9 +53,9 @@ const TermsConditionsScreen = () => {
 
         <Text style={styles.sectionTitle}>4. Orders and Payments</Text>
         <Text style={styles.content}>
-          • Orders placed through Food Trail are subject to restaurant availability.{"\n"}
+          • Orders placed through Amaraa are subject to restaurant availability.{"\n"}
           • Prices listed on the platform may change at any time.{"\n"}
-          • Payments must be made through the available payment methods. Food Trail is not responsible for payment failures due to banking issues.{"\n"}
+          • Payments must be made through the available payment methods. Amaraa is not responsible for payment failures due to banking issues.{"\n"}
           • Orders cannot be canceled once confirmed, unless explicitly allowed by the restaurant.
         </Text>
 
@@ -65,7 +65,7 @@ const TermsConditionsScreen = () => {
         <Text style={styles.content}>
           • Estimated delivery times are approximate and may vary due to factors such as traffic, weather, or restaurant preparation time.{"\n"}
           • If an order cannot be delivered due to incorrect address details, the user may still be charged.{"\n"}
-          • Food Trail is not liable for delays caused by third-party service providers.
+          • Amaraa is not liable for delays caused by third-party service providers.
         </Text>
 
         <View style={styles.separator} />
@@ -86,7 +86,7 @@ const TermsConditionsScreen = () => {
         <Text style={styles.content}>
           • Refunds will be processed only in cases where an order is undelivered, incomplete, or incorrect.{"\n"}
           • Any refund request must be made within 24 hours of order delivery.{"\n"}
-          • The final decision on refunds rests with Food Trail.
+          • The final decision on refunds rests with Amaraa.
         </Text>
 
         <View style={styles.separator} />
@@ -101,7 +101,7 @@ const TermsConditionsScreen = () => {
 
         <Text style={styles.sectionTitle}>9. Intellectual Property</Text>
         <Text style={styles.content}>
-          • All content on Food Trail, including logos, trademarks, and text, is the property of Food Trail and protected by copyright laws.{"\n"}
+          • All content on Amaraa, including logos, trademarks, and text, is the property of Amaraa and protected by copyright laws.{"\n"}
           • You may not use our content without prior written consent.
         </Text>
 
@@ -109,7 +109,7 @@ const TermsConditionsScreen = () => {
 
         <Text style={styles.sectionTitle}>10. Limitation of Liability</Text>
         <Text style={styles.content}>
-          • Food Trail is not responsible for food quality, preparation, or hygiene standards of restaurant partners.{"\n"}
+          • Amaraa is not responsible for food quality, preparation, or hygiene standards of restaurant partners.{"\n"}
           • We are not liable for any direct, indirect, or incidental damages arising from the use of our services.
         </Text>
 
@@ -117,14 +117,14 @@ const TermsConditionsScreen = () => {
 
         <Text style={styles.sectionTitle}>11. Privacy Policy</Text>
         <Text style={styles.content}>
-          Your use of Food Trail is also governed by our Privacy Policy. By using our platform, you consent to the collection and processing of your data as outlined in the policy.
+          Your use of Amaraa is also governed by our Privacy Policy. By using our platform, you consent to the collection and processing of your data as outlined in the policy.
         </Text>
 
         <View style={styles.separator} />
 
         <Text style={styles.sectionTitle}>12. Modifications to Terms</Text>
         <Text style={styles.content}>
-          We reserve the right to update these Terms at any time. Continued use of Food Trail after modifications constitutes acceptance of the updated Terms.
+          We reserve the right to update these Terms at any time. Continued use of Amaraa after modifications constitutes acceptance of the updated Terms.
         </Text>
 
         <View style={styles.separator} />
@@ -139,8 +139,8 @@ const TermsConditionsScreen = () => {
         <Text style={styles.sectionTitle}>14. Contact Us</Text>
         <Text style={[styles.content,{marginBottom:responsiveHeight(10)}]}>
           For any queries or concerns regarding these Terms:{"\n"}
-          <TouchableOpacity onPress={() => Linking.openURL('mailto:foodtrailpro@gmail.com')}>
-            <Text style={[styles.link, styles.bold]}>Email: foodtrailpro@gmail.com</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('mailto:amaraasupport@gmail.com')}>
+            <Text style={[styles.link, styles.bold]}>Email: amaraasupport@gmail.com</Text>
           </TouchableOpacity>{"\n"}
           <TouchableOpacity onPress={() => Linking.openURL('tel:8688104157')}>
             <Text style={[styles.link, styles.bold]}>Phone: 86881 04157</Text>
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     paddingBottom:20
   },
   header: { 
-    backgroundColor: commonStyles.yellowColor,
+    backgroundColor: '#85360B',
     height: responsiveHeight(15),
     flexDirection: "row",
     alignItems: "flex-end",
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   title: { 
     fontSize: 16, 
     fontWeight: '600', 
-    color: '#000',
+    color: '#fff',
     textAlign: "left" 
   },
   effectiveDate: {

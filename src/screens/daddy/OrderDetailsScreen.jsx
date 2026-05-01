@@ -68,6 +68,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     const response = await dispatch(
       getOrderDetails({ orderId: orderDetails.id }),
     );
+    console.log(response.payload, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>RESPONSEEEEE PAYLOADDDD",orderDetails);
     if (response.payload?.data) {
       setSubOrderData(response.payload.data);
     }
@@ -321,7 +322,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
           ))}
 
           {/* RE-ORDER button */}
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.reorderButton}
             onPress={() =>
               navigation.navigate('RestaurantScreen', {
@@ -332,7 +333,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
             }
           >
             <Text style={styles.reorderButtonText}>RE-ORDER</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         {/* Card 3: Rate This Order */}
@@ -496,14 +497,14 @@ const OrderDetailsScreen = ({ navigation, route }) => {
                 </Text>
               </View>
 
-              <View style={styles.summaryRow}>
+           {orderDetails?.handling_charges &&   <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Taxes & Charges:</Text>
-                <Text style={styles.summaryValueBold}>
+                {<Text style={styles.summaryValueBold}>
                   {Number(orderDetails?.handling_charges) === 0
                     ? '₹0.00 (Included)'
                     : `₹${orderDetails?.handling_charges}`}
-                </Text>
-              </View>
+                </Text>}
+              </View>}
 
               <View style={styles.summaryTotalRow}>
                 <Text style={styles.summaryTotalLabel}>Total Payable:</Text>
@@ -518,7 +519,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
       </ScrollView>
 
       {/* WhatsApp Floating Button */}
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={[styles.whatsappButton, { bottom: 20 + insets.bottom }]}
         onPress={() => {
           const phoneNumber = '+91' + (chargesList?.[0]?.contact_number || '');
@@ -528,7 +529,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         }}
       >
         <FontAwesome name="whatsapp" size={32} color="#fff" />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       <CustomModal
         visible={showCancelModal}

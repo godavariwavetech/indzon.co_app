@@ -68,6 +68,8 @@ const ServicesAvailableScreen = ({ navigation, route }) => {
     }
   };
 
+  console.log(filteredAreas,">>>>>>>>>>>>>>>filteredAreas");
+
 
   return (
     <SafeAreaView style={[styles.container]}>

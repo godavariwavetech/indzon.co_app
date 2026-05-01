@@ -305,7 +305,9 @@ export const getAllCategories = createAsyncThunk(
     _,
     { getState, rejectWithValue, fulfillWithValue }
   ) => {
-    const response = await api.post(endpoints.GET_ALL_CATEGORIES)
+    const response = await api.post(endpoints.GET_ALL_CATEGORIES,{
+          "veg_mode": 0
+    })
     if (response) {
       if (response.data) {
         return fulfillWithValue(response.data);

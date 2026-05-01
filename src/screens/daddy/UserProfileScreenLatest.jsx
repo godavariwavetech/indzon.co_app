@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  Modal,
 } from 'react-native';
 import {
   responsiveHeight,
@@ -22,6 +23,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import commonStyles from '../../commonstyles/CommonStyles';
 import LinearGradient from 'react-native-linear-gradient';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+// Import the new getCustomerProfile thunk
+import { updateCustomerProfile, getCustomerProfile } from '../../redux/reducers/auth';
 
 const UserProfileScreenLatest = () => {
   const navigation = useNavigation();
@@ -29,52 +32,72 @@ const UserProfileScreenLatest = () => {
   const insets = useSafeAreaInsets();
 
   // Get user data from Redux
-  const { mobileNumber } = useSelector(state => state.Auth);
-  const { selectedAddress } = useSelector(state => state.address);
-  const { addressList } = useSelector(state => state.Dashboard);
-
-  const addressData = selectedAddress || (addressList && addressList.length > 0 ? addressList[0] : null);
+  const { mobileNumber, customerId, profileData } = useSelector(state => state.Auth);
 
   // Form state
   const [name, setName] = useState('');
-  const [image, setImage] = useState(null);
+  const [image, setImage] = useState(null); // Local picked image
   const [mobile, setMobile] = useState('');
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
+  const [isImageModalVisible, setIsImageModalVisible] = useState(false);
   const [errors, setErrors] = useState({
     name: '',
     mobile: '',
   });
 
-  // Initialize form with existing data
+  // Fetch Profile Data on Mount
   useEffect(() => {
-    if (addressData) {
-      setName(addressData.customer_name || '');
-      setMobile(addressData.customer_mobile_number || mobileNumber || '');
-      setEmail(addressData.email || '');
+    if (customerId) {
+      setIsFetching(true);
+      dispatch(getCustomerProfile({ customer_id: customerId })).finally(() => {
+        setIsFetching(false);
+      });
     }
-  }, [addressData, mobileNumber]);
+  }, [dispatch, customerId]);
+
+  // Initialize form with existing data from the profileData response
+  useEffect(() => {
+    if (profileData) {
+      setName(profileData.customer_name || '');
+      setMobile(profileData.customer_mobile_number || mobileNumber || '');
+      setEmail(profileData.customer_email || '');
+    }
+  }, [profileData, mobileNumber]);
 
   const handleUpdateProfile = async () => {
-     if (!validate()) return
- 
+    if (!validate()) return;
+
     try {
       setIsLoading(true);
-       const payload = {
-      name,
-      mobile,
-      email,
-      imageBase64: image?.base64 || null,
-      imageType: image?.type || null,
-      fileName: image?.fileName || null,
-    };
 
-    console.log('Submitted Data:', payload);
+      const imageEvent = image && image.base64 ? 1 : 0;
+      
+      const payload = {
+        customer_id: customerId,
+        customer_name: name,
+        customer_mobile_number: mobile,
+        customer_email: email,
+        imageevent: imageEvent,
+        image: imageEvent === 1 ? `data:image/png;base64,${image.base64}` : '',
+        previous_image: profileData?.profile_image || '',
+      };
 
-      // TODO: Dispatch update profile action
-      // await dispatch(updateProfile({ name, mobile, email }));
-      // Alert.alert('Success', 'Profile updated successfully');
-      navigation.goBack();
+      const resultAction = await dispatch(updateCustomerProfile(payload));
+
+      if (updateCustomerProfile.fulfilled.match(resultAction)) {
+        if (resultAction.payload?.status === 200) {
+          Alert.alert('Success', 'Profile updated successfully');
+          // Refresh profile data to reflect changes
+          dispatch(getCustomerProfile({ customer_id: customerId }));
+          navigation.goBack();
+        } else {
+          Alert.alert('Error', resultAction.payload?.message || 'Failed to update profile');
+        }
+      } else {
+        Alert.alert('Error', resultAction.payload || 'Failed to update profile');
+      }
     } catch (error) {
       console.error('Error updating profile:', error);
       Alert.alert('Error', 'Failed to update profile. Please try again.');
@@ -84,33 +107,25 @@ const UserProfileScreenLatest = () => {
   };
 
   const pickImageFromGallery = () => {
-    launchImageLibrary({ mediaType: 'photo',includeBase64: true }, response => {
-      if (!response.didCancel && !response.errorCode) {
-        const asset = response.assets[0];
-        setImage(asset);
+    setIsImageModalVisible(false);
+    launchImageLibrary({ mediaType: 'photo', includeBase64: true }, response => {
+      if (!response.didCancel && !response.errorCode && response.assets?.length > 0) {
+        setImage(response.assets[0]);
       }
     });
   };
 
   const pickImageFromCamera = () => {
+    setIsImageModalVisible(false);
     launchCamera({ mediaType: 'photo', includeBase64: true }, response => {
-      if (!response.didCancel && !response.errorCode) {
-        const asset = response.assets[0];
-        setImage(asset);
+      if (!response.didCancel && !response.errorCode && response.assets?.length > 0) {
+        setImage(response.assets[0]);
       }
     });
   };
 
   const handleImagePick = () => {
-    Alert.alert(
-      'Upload Profile Picture',
-      'Choose an option',
-      [
-        { text: 'Camera', onPress: pickImageFromCamera },
-        { text: 'Gallery', onPress: pickImageFromGallery },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+    setIsImageModalVisible(true);
   };
 
   const validate = () => {
@@ -138,7 +153,6 @@ const UserProfileScreenLatest = () => {
     <View style={styles.container}>
       {/* Header - Orange/Red background */}
       <LinearGradient colors={['#DF4F00', '#D14A00', '#6C2600']} style={[styles.headerContainer, { paddingTop: insets.top }]} >
-        {/* <View style={[styles.headerContainer, { paddingTop: insets.top }]}> */}
         <View style={styles.headerRow}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -150,17 +164,12 @@ const UserProfileScreenLatest = () => {
         </View>
 
         {/* Avatar positioned on top of header */}
-        {/* <View style={styles.avatarSection}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarLetter}>
-              {name ? name.charAt(0).toUpperCase() : 'N'}
-            </Text>
-          </View>
-        </View> */}
         <TouchableOpacity onPress={handleImagePick} style={styles.avatarSection}>
           <View style={styles.avatarCircle}>
             {image ? (
               <Image source={{ uri: image.uri }} style={styles.avatarImage} />
+            ) : profileData?.profile_image ? (
+              <Image source={{ uri: profileData.profile_image }} style={styles.avatarImage} />
             ) : (
               <Text style={styles.avatarLetter}>
                 {name ? name.charAt(0).toUpperCase() : 'N'}
@@ -168,90 +177,129 @@ const UserProfileScreenLatest = () => {
             )}
           </View>
         </TouchableOpacity>
-        {/* </View> */}
       </LinearGradient>
 
-      <ScrollView
-        style={styles.scrollContainer}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
+      {isFetching ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#D14A00" />
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.scrollContainer}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}>
 
-        {/* White Card Container */}
-        <View style={styles.profileCard}>
-          {/* Top spacing for avatar */}
-          <View style={styles.topSpacer} />
+          {/* White Card Container */}
+          <View style={styles.profileCard}>
+            {/* Top spacing for avatar */}
+            <View style={styles.topSpacer} />
 
-          {/* User Info Section */}
-          <Text style={styles.displayName}>{name || 'Nithin'}</Text>
-          <Text style={styles.displayContact}>
-            {mobile ? `+91 ${mobile}` : '+91 9965841257'} | {email || 'Nithin@gmail.com'}
-          </Text>
+            {/* User Info Section */}
+            <Text style={styles.displayName}>{name || 'Guest'}</Text>
+            <Text style={styles.displayContact}>
+              {mobile ? `+91 ${mobile}` : 'No Mobile'} | {email || 'No Email'}
+            </Text>
 
-          {/* Edit Profile Button */}
-          <TouchableOpacity style={styles.editButton}>
-            <Text style={styles.editButtonText}>Edit Profile</Text>
-            <AntDesign name="right" size={12} color="#888" />
-          </TouchableOpacity>
+            {/* Form Fields */}
+            <View style={styles.formFields}>
+              {/* Name Field */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Name</Text>
+                <TextInput
+                  style={styles.inputField}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="Enter Your Name"
+                  placeholderTextColor="#CCC"
+                />
+                {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
+              </View>
 
-          {/* Form Fields */}
-          <View style={styles.formFields}>
-            {/* Name Field */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Name</Text>
-              <TextInput
-                style={styles.inputField}
-                value={name}
-                onChangeText={setName}
-                placeholder="Enter Your Name"
-                placeholderTextColor="#CCC"
-              />
-              {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
-            </View>
+              {/* Mobile Number Field */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Mobile Number</Text>
+                <TextInput
+                  style={[styles.inputField, { backgroundColor: '#F0F0F0' }]}
+                  value={mobile}
+                  onChangeText={setMobile}
+                  placeholder="Enter Your Mobile"
+                  placeholderTextColor="#CCC"
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  editable={false}
+                />
+                {errors.mobile ? <Text style={styles.errorText}>{errors.mobile}</Text> : null}
+              </View>
 
-            {/* Mobile Number Field */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Mobile Number</Text>
-              <TextInput
-                style={styles.inputField}
-                value={mobile}
-                onChangeText={setMobile}
-                placeholder="Enter Your Mobile"
-                placeholderTextColor="#CCC"
-                keyboardType="phone-pad"
-                maxLength={10}
-              />
-              {errors.mobile ? <Text style={styles.errorText}>{errors.mobile}</Text> : null}
-            </View>
-
-            {/* Email Field */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.inputField}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Enter Your Email"
-                placeholderTextColor="#CCC"
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-
+              {/* Email Field */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={styles.inputField}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Enter Your Email"
+                  placeholderTextColor="#CCC"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
             </View>
           </View>
-        </View>
 
-        {/* Update Profile Button - Outside card */}
+          {/* Update Profile Button - Outside card */}
+          <TouchableOpacity
+            style={styles.updateProfileButton}
+            onPress={handleUpdateProfile}
+            disabled={isLoading}>
+            {isLoading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.updateProfileButtonText}>Update Profile</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      )}
+
+      {/* Image Selection Modal */}
+      <Modal
+        visible={isImageModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsImageModalVisible(false)}>
         <TouchableOpacity
-          style={styles.updateProfileButton}
-          onPress={handleUpdateProfile}
-          disabled={isLoading}>
-          {isLoading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={styles.updateProfileButtonText}>Update Profile</Text>
-          )}
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setIsImageModalVisible(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Upload Profile Picture</Text>
+            <View style={styles.modalOptions}>
+              <TouchableOpacity
+                style={styles.modalOption}
+                onPress={pickImageFromCamera}>
+                <View style={[styles.iconCircle, { backgroundColor: '#E3F2FD' }]}>
+                  <AntDesign name="camerao" size={24} color="#2196F3" />
+                </View>
+                <Text style={styles.modalOptionText}>Camera</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalOption}
+                onPress={pickImageFromGallery}>
+                <View style={[styles.iconCircle, { backgroundColor: '#F1F8E9' }]}>
+                  <AntDesign name="picture" size={24} color="#4CAF50" />
+                </View>
+                <Text style={styles.modalOptionText}>Gallery</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setIsImageModalVisible(false)}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
         </TouchableOpacity>
-      </ScrollView>
+      </Modal>
     </View>
   );
 };
@@ -261,8 +309,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F5F5',
   },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerContainer: {
-    // backgroundColor: '#D84315',
     paddingBottom: responsiveHeight(15),
     position: 'relative',
     borderBottomLeftRadius: 26,
@@ -316,6 +368,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 5,
     borderColor: '#fff',
+    overflow: 'hidden',
   },
   avatarLetter: {
     fontSize: responsiveFontSize(8),
@@ -350,18 +403,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: responsiveHeight(0.8),
   },
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: responsiveHeight(0.5),
-    marginBottom: responsiveHeight(2.5),
-  },
-  editButtonText: {
-    fontSize: responsiveFontSize(1.8),
-    color: '#888',
-    marginRight: 5,
-  },
   formFields: {
     marginTop: responsiveHeight(0.5),
   },
@@ -392,11 +433,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    // elevation: 4,
-    // shadowColor: '#000',
-    // shadowOffset: { width: 0, height: 2 },
-    // shadowOpacity: 0.25,
-    // shadowRadius: 4,
   },
   updateProfileButtonText: {
     color: '#fff',
@@ -409,10 +445,62 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   avatarImage: {
-  width: '100%',
-  height: '100%',
-  borderRadius: responsiveWidth(17.5),
-},
+    width: '100%',
+    height: '100%',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: responsiveWidth(6),
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: responsiveFontSize(2.2),
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: responsiveHeight(3),
+  },
+  modalOptions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginBottom: responsiveHeight(3),
+  },
+  modalOption: {
+    alignItems: 'center',
+  },
+  iconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: responsiveHeight(1),
+  },
+  modalOptionText: {
+    fontSize: responsiveFontSize(1.8),
+    color: '#555',
+    fontWeight: '500',
+  },
+  cancelButton: {
+    marginTop: responsiveHeight(1),
+    paddingVertical: responsiveHeight(1.5),
+    width: '100%',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#EEE',
+  },
+  cancelButtonText: {
+    fontSize: responsiveFontSize(2),
+    color: '#FF3B30',
+    fontWeight: '600',
+  },
 });
 
 export default UserProfileScreenLatest;

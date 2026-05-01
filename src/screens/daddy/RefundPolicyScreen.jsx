@@ -23,7 +23,7 @@ const RefundPolicyScreen = () => {
         <Text style={styles.content}>
           • Orders can only be canceled before the restaurant starts preparing your food{"\n"}
           • Check order status in the app for cancellation availability{"\n"}
-          • Food Trail reserves the right to cancel orders in special cases (full refund issued)
+          • Amaraa reserves the right to cancel orders in special cases (full refund issued)
         </Text>
 
         <View style={styles.separator} />
@@ -60,8 +60,8 @@ const RefundPolicyScreen = () => {
         <Text style={styles.sectionTitle}>5. Contact Us</Text>
         <Text style={[styles.content,{marginBottom:responsiveHeight(10)}]}>
           For refund-related queries:{"\n"}
-          <TouchableOpacity onPress={() => Linking.openURL('mailto:foodtrailpro@gmail.com')}>
-            <Text style={[styles.link, styles.bold]}>Email: foodtrailpro@gmail.com</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('mailto:amaraasupport@gmail.com')}>
+            <Text style={[styles.link, styles.bold]}>Email: amaraasupport@gmail.com</Text>
           </TouchableOpacity>{"\n"}
           <TouchableOpacity onPress={() => Linking.openURL('tel:8688104157')}>
             <Text style={[styles.link, styles.bold]}>Phone: 8688104157</Text>
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     paddingBottom:20
   },
   header: { 
-    backgroundColor: commonStyles.yellowColor,
+    backgroundColor: '#85360B',
     height: responsiveHeight(15),
     flexDirection: "row",
     alignItems: "flex-end",
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   title: { 
     fontSize: 16, 
     fontWeight: '600', 
-    color: '#000',
+    color: '#fff',
     textAlign: "left" 
   },
   effectiveDate: {

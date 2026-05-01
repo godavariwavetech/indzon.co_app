@@ -27,7 +27,7 @@ const SplashScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.imgContainer}>
-        <Image source={require('../daddy/tabassets/SplashChilbro.png')} style={{height: 200, width: 200}} />
+        <Image source={require('../daddy/tabassets/amaraaLogobanner.png')} resizeMode='contain' style={{height: responsiveHeight(7), width: responsiveWidth(80)}} />
       </View>
     </SafeAreaView>
 
@@ -39,7 +39,7 @@ export default SplashScreen
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E7432D',
+    backgroundColor: '#fff',
     position: 'relative'
   },
   imgContainer: {

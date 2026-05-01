@@ -13,16 +13,16 @@ const AboutUsScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <FontAwesome6 name="arrow-left-long" size={20} color="#000" />
+          <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.title}>About Us</Text>
       </View>
       <ScrollView style={{padding: 20}}>
         <Text style={styles.content}>
-          Welcome to Food Trail, your ultimate food delivery companion! We are committed to bringing the best meals from your favorite local restaurants straight to your doorstep.
+          Welcome to Amaraa, your ultimate food delivery companion! We are committed to bringing the best meals from your favorite local restaurants straight to your doorstep.
         </Text>
 
-        <Text style={styles.sectionTitle}>Why Choose Food Trail?</Text>
+        <Text style={styles.sectionTitle}>Why Choose Amaraa?</Text>
         
         <View style={styles.featureItem}>
           <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.appMainColor} />
@@ -55,7 +55,7 @@ const AboutUsScreen = () => {
         </View>
 
         <Text style={[styles.content, {marginTop: 20}]}>
-          At Food Trail, we believe food is more than just a meal – it's an experience. Join us in revolutionizing food delivery, where great food is always within reach!
+          At Amaraa, we believe food is more than just a meal – it's an experience. Join us in revolutionizing food delivery, where great food is always within reach!
         </Text>
       </ScrollView>
     </View>
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: { 
-    backgroundColor: commonStyles.yellowColor,
+    backgroundColor: '#85360B',
     height: responsiveHeight(15),
     flexDirection: "row",
     alignItems: "flex-end",
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   title: { 
     fontSize: 16, 
     fontWeight: '600', 
-    color: '#000',
+    color: '#fff',
     textAlign: "left" 
   },
   sectionTitle: {

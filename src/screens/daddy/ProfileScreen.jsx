@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -20,13 +20,13 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Feather from 'react-native-vector-icons/Feather';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import VersionCheck from 'react-native-version-check';
 
 import CustomModal from '../../components/CustomModal';
-import { actionLogout } from '../../redux/reducers/auth';
+import { actionLogout, getCustomerProfile } from '../../redux/reducers/auth';
 import { clearCart, getOrders } from '../../redux/reducers/daddy';
 import commonStyles from '../../commonstyles/CommonStyles';
 
@@ -35,15 +35,17 @@ const ProfileScreen = () => {
   const dispatch = useDispatch();
   const insets = useSafeAreaInsets();
 
-  const { customerId, mobileNumber } = useSelector((state) => state.Auth);
+  const { customerId, mobileNumber, profileData } = useSelector((state) => state.Auth);
   const { userDetails, selectedAddress } = useSelector((state) => state.address);
   const addressList = useSelector((state) => state.Dashboard?.addressList);
 
   const addressData = selectedAddress || (addressList && addressList.length > 0 ? addressList[0] : null);
 
-  const displayName = userDetails?.name || addressData?.customer_name || 'Guest User';
-  const displayPhone = userDetails?.phone || addressData?.customer_mobile_number || mobileNumber || 'N/A';
-  const displayEmail = userDetails?.email || addressData?.email || 'N/A';
+  // Prioritize profileData from the API, fallback to addressData or userDetails
+  const displayName = profileData?.customer_name || userDetails?.name || addressData?.customer_name || 'Guest User';
+  const displayPhone = profileData?.customer_mobile_number || userDetails?.phone || addressData?.customer_mobile_number || mobileNumber || 'N/A';
+  const displayEmail = profileData?.customer_email || userDetails?.email || addressData?.email || 'N/A';
+  const displayAvatar = profileData?.profile_image ? { uri: profileData.profile_image } : require('../daddy/tabassets/dummy-profile.png');
 
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
@@ -51,8 +53,14 @@ const ProfileScreen = () => {
   const [appVersion, setAppVersion] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
-  console.log('userDetails', userDetails);
-  console.log('addressData', addressData);
+  // Fetch the latest profile data every time the user navigates to this screen
+  useFocusEffect(
+    useCallback(() => {
+      if (customerId) {
+        dispatch(getCustomerProfile({ customer_id: customerId }));
+      }
+    }, [dispatch, customerId])
+  );
 
   useEffect(() => {
     const getVersion = async () => {
@@ -97,6 +105,14 @@ const ProfileScreen = () => {
     }
   };
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    if (customerId) {
+      await dispatch(getCustomerProfile({ customer_id: customerId }));
+    }
+    setRefreshing(false);
+  }, [dispatch, customerId]);
+
   // --- Menu Configurations ---
 
   const generalMenuItems = [
@@ -110,14 +126,14 @@ const ProfileScreen = () => {
       id: '2',
       title: 'Your Orders',
       icon: <Feather name="box" size={22} color="#85360B" />,
-      onPress: () => navigation.navigate('Reorder'), // Or your Orders screen
+      onPress: () => navigation.navigate('Reorder'), 
     },
-    {
-      id: '3',
-      title: 'Saved Lists',
-      icon: <MaterialCommunityIcons name="bookmark" size={24} color="#85360B" />,
-      onPress: () => { }, // Define navigation
-    },
+    // {
+    //   id: '3',
+    //   title: 'Saved Lists',
+    //   icon: <MaterialCommunityIcons name="bookmark" size={24} color="#85360B" />,
+    //   onPress: () => { }, 
+    // },
     {
       id: '4',
       title: 'Address',
@@ -137,32 +153,32 @@ const ProfileScreen = () => {
       id: '6',
       title: 'About Us',
       icon: <MaterialCommunityIcons name="information-outline" size={24} color="#85360B" />,
-      onPress: () => Linking.openURL('https://melocalapp.com/about/'),
+      onPress: () => navigation.navigate('AboutUs'),
     },
     {
       id: '7',
       title: 'Terms & Conditions',
       icon: <MaterialCommunityIcons name="file-document-outline" size={24} color="#85360B" />,
-      onPress: () => Linking.openURL('https://melocalapp.com/terms/'),
+      onPress: () => navigation.navigate('TermsConditions'),
     },
     {
       id: '8',
       title: 'Privacy Policy',
       icon: <MaterialCommunityIcons name="shield-check-outline" size={24} color="#85360B" />,
-      onPress: () => Linking.openURL('https://melocalapp.com/privacypolicy/'),
+      onPress: () => navigation.navigate('PrivacyPolicy'),
     },
-    {
-      id: '9',
-      title: 'Language',
-      icon: <MaterialCommunityIcons name="translate" size={24} color="#85360B" />,
-      onPress: () => { }, // Define navigation
-    },
-    {
-      id: '10',
-      title: 'Settings',
-      icon: <Ionicons name="settings-sharp" size={24} color="#85360B" />,
-      onPress: () => { }, // Define navigation
-    },
+    // {
+    //   id: '9',
+    //   title: 'Language',
+    //   icon: <MaterialCommunityIcons name="translate" size={24} color="#85360B" />,
+    //   onPress: () => { }, 
+    // },
+    // {
+    //   id: '10',
+    //   title: 'Settings',
+    //   icon: <Ionicons name="settings-sharp" size={24} color="#85360B" />,
+    //   onPress: () => { }, 
+    // },
     // Login/Logout appended to the bottom
     customerId
       ? {
@@ -207,7 +223,7 @@ const ProfileScreen = () => {
 
           <View style={styles.profileImageContainer}>
             <Image
-              source={require('../daddy/tabassets/dummy-profile.png')} // Replace with proper avatar
+              source={displayAvatar}
               style={styles.profileImage}
             />
           </View>
@@ -222,11 +238,8 @@ const ProfileScreen = () => {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={async () => {
-              setRefreshing(true);
-              // Handle any necessary refreshes here
-              setRefreshing(false);
-            }}
+            onRefresh={onRefresh}
+            colors={['#DF4F00']}
           />
         }
       >
@@ -276,7 +289,7 @@ const ProfileScreen = () => {
           </View>
         </View>
 
-        {/* Version Check Row (Optional based on design, placed at bottom) */}
+        {/* Version Check Row */}
         <TouchableOpacity style={styles.versionContainer} onPress={handleCheckForUpdate}>
           <Text style={styles.versionText}>App Version: {appVersion || '1.0.0'} (Tap to check update)</Text>
         </TouchableOpacity>
@@ -290,7 +303,7 @@ const ProfileScreen = () => {
         message={
           showUpdateModal
             ? 'A new version is available. Please update now!'
-            : "You're using the latest version of MeLocal"
+            : "You're using the latest version of Amaraa"
         }
         confirmText="OK"
         onConfirm={() => setUpdateModalVisible(false)}
@@ -311,7 +324,7 @@ const ProfileScreen = () => {
       <CustomModal
         visible={showUpdateModal}
         title="Update Available"
-        message="A new version of MeLocal is available. Please update to continue using all features."
+        message="A new version of Amaraa is available. Please update to continue using all features."
         confirmText="Update Now"
         onConfirm={handleUpdate}
         onCancel={() => setShowUpdateModal(false)}
@@ -380,11 +393,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
+    overflow: 'hidden'
   },
   profileImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 40,
+    resizeMode: 'cover',
   },
   scrollView: {
     flex: 1,

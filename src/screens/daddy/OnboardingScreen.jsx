@@ -18,7 +18,13 @@ const OnboardingScreen = () => {
         <Ionicons name="arrow-forward-circle" size={24} color="#FF9800" />
       </TouchableOpacity>
       <View style={styles.imgContainer}>
-        <OnboardingLogo1 />
+        <Image 
+        source={require("../daddy/tabassets/onBoard1.png")}
+        // style={{
+        //   height
+        // }}
+        />
+        {/* <OnboardingLogo1 /> */}
       </View>
 
       <ImageBackground
@@ -99,7 +105,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end', // <-- This pushes children to the bottom
     paddingBottom: 50, // <-- Add space from bottom if needed
-    marginTop: responsiveHeight(1),
+    marginTop: responsiveHeight(-3),
   },
   title: {
     fontSize: 25,

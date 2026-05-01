@@ -17,6 +17,7 @@ const initialState = {
   shouldNavigate: false,
   orderOfferAmount: 0,
   reaturantDetails: null,
+  profileData: null, // Added to store profile response
 };
 
 export const verifyMobile = createAsyncThunk(
@@ -25,7 +26,6 @@ export const verifyMobile = createAsyncThunk(
     const data = {
       mobile: mobileNumber,
     };
-    // const response = await api.post(endpoints.VERIFY_MOBILE, data);
     const response = {
       data: {data: [{}], status: true},
     };
@@ -46,7 +46,6 @@ export const addCustomer = createAsyncThunk(
     { getState, rejectWithValue, fulfillWithValue }
   ) => {
     try {
-     
       const data = {
         customer_mobile_number: mobileNumber,
         customer_otp: otp,
@@ -148,6 +147,39 @@ export const deleteAccount = createAsyncThunk(
   },
 );
 
+export const updateCustomerProfile = createAsyncThunk(
+  'updateCustomerProfile',
+  async (payload, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.post(endpoints.UPDATE_CUSTOMER_PROFILE, payload);
+      if (response?.data) {
+        return fulfillWithValue(response.data);
+      } else {
+        return rejectWithValue('Something went wrong!');
+      }
+    } catch (error) {
+      return rejectWithValue(error.message || 'Something went wrong!');
+    }
+  },
+);
+
+// NEW THUNK: Fetch Customer Profile
+export const getCustomerProfile = createAsyncThunk(
+  'getCustomerProfile',
+  async ({ customer_id }, { rejectWithValue, fulfillWithValue }) => {
+    try {
+      const response = await api.post(endpoints.GET_PROFILE || '/public_app/getprofile', { customer_id });
+      if (response?.data) {
+        return fulfillWithValue(response.data);
+      } else {
+        return rejectWithValue('Something went wrong!');
+      }
+    } catch (error) {
+      return rejectWithValue(error.message || 'Something went wrong!');
+    }
+  },
+);
+
 export const AuthSlice = createSlice({
   name: 'authlice',
   initialState,
@@ -155,6 +187,7 @@ export const AuthSlice = createSlice({
     actionLogout: state => {
       state.token = null;
       state.customerId = null;
+      state.profileData = null;
     },
     actionLogin: state => {
       state.token = 'sample token';
@@ -169,11 +202,9 @@ export const AuthSlice = createSlice({
       state.location = action.payload;
     },
     setLocationName: (state, action) => {
-      
       state.locationName = action.payload;
     },
     setLocationId: (state, action) => {
-      
       state.locationId = action.payload;
     },
     setRestaurnatDetails: (state, action) => {
@@ -182,7 +213,6 @@ export const AuthSlice = createSlice({
     clearNavigationFlag: state => {
       state.shouldNavigate = false;
     },
-   
     setOrderOfferAmount: (state, action) => {
       state.orderOfferAmount = action.payload;
     },
@@ -213,7 +243,6 @@ export const AuthSlice = createSlice({
     builder.addCase(verifyMobile.fulfilled, (state, action) => {
       state.loading = false;
       state.message = null;
-     
       if (action.payload?.data[0]?.mobile) {
         state.mobileNumber = action.payload?.data[0]?.mobile;
       }
@@ -231,9 +260,6 @@ export const AuthSlice = createSlice({
     builder.addCase(verifyCustomerMobile.fulfilled, (state, action) => {
       state.loading = false;
       state.message = null;
-      // if (action.payload?.data?.[0]?.customer_mobile_number) {
-      //   state.mobileNumber = action.payload.data[0].customer_mobile_number;
-      // }
     });
     builder.addCase(verifyCustomerMobile.rejected, (state, action) => {
       state.loading = false;
@@ -270,6 +296,34 @@ export const AuthSlice = createSlice({
     builder.addCase(addCustomer.rejected, (state, action) => {
       state.loading.categories = false;
       state.message = 'Please try again!';
+    });
+
+    // Update Profile
+    builder.addCase(updateCustomerProfile.pending, (state, action) => {
+      state.loading = true;
+      state.message = null;
+    });
+    builder.addCase(updateCustomerProfile.fulfilled, (state, action) => {
+      state.loading = false;
+      state.message = null;
+    });
+    builder.addCase(updateCustomerProfile.rejected, (state, action) => {
+      state.loading = false;
+      state.message = action.payload || 'Failed to update profile';
+    });
+
+    // Get Profile
+    builder.addCase(getCustomerProfile.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(getCustomerProfile.fulfilled, (state, action) => {
+      state.loading = false;
+      if (action.payload?.status === 200 && action.payload?.data?.length > 0) {
+        state.profileData = action.payload.data[0];
+      }
+    });
+    builder.addCase(getCustomerProfile.rejected, (state) => {
+      state.loading = false;
     });
   },
 });

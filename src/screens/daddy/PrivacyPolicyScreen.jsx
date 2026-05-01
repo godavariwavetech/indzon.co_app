@@ -12,14 +12,14 @@ const PrivacyPolicyScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <AntDesign name="arrowleft" size={24} color="#000" />
+          <AntDesign name="arrowleft" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.title}>Privacy Policy</Text>
       </View>
       <ScrollView style={{padding: 20,paddingBottom:100}}>
         <Text style={styles.effectiveDate}>Effective Date: 20/05/2025</Text>
         <Text style={styles.content}>
-          Welcome to Food Trail! Your privacy is important to us. This Privacy Policy explains how Food Trail ("we," "our," or "us") collects, uses, shares, and protects your information when you use our mobile application and services.
+          Welcome to Amaraa! Your privacy is important to us. This Privacy Policy explains how Amaraa ("we," "our," or "us") collects, uses, shares, and protects your information when you use our mobile application and services.
         </Text>
 
         <Text style={styles.subtitle}>1. Information We Collect</Text>
@@ -80,8 +80,8 @@ const PrivacyPolicyScreen = () => {
         <Text style={styles.subtitle}>8. Contact Us</Text>
         <Text style={[styles.content,{marginBottom:responsiveHeight(10)}]}>
           For questions about this policy:{"\n"}
-          <TouchableOpacity onPress={() => Linking.openURL('mailto:foodtrailpro@gmail.com')}>
-            <Text style={[styles.link, styles.bold]}>Email: foodtrailpro@gmail.com</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('mailto:amaraasupport@gmail.com')}>
+            <Text style={[styles.link, styles.bold]}>Email: amaraasupport@gmail.com</Text>
           </TouchableOpacity>{"\n"}
           <TouchableOpacity onPress={() => Linking.openURL('tel:8688104157')}>
             <Text style={[styles.link, styles.bold]}>Phone: 86881 04157</Text>
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     paddingBottom:20
   },
   header: { 
-    backgroundColor: commonStyles.yellowColor,
+    backgroundColor: '#85360B',
     height: responsiveHeight(15),
     flexDirection: "row",
     alignItems: "flex-end",
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     width: responsiveWidth(7),
   },
   title: {
-    color: '#000',
+    color: '#fff',
     fontSize: 20,
     fontWeight: '700',
     marginLeft: 10,
