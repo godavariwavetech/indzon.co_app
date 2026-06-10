@@ -94,6 +94,7 @@ export const getServices = createAsyncThunk(
     { getState, rejectWithValue, fulfillWithValue }
   ) => {
     const response = await api.get(endpoints.GET_SERVICES_LIST);
+    console.log(response,">>>>>>>>>>>>>>RESPONSSSSSS SERVICES");
     if (response) {
       if (response.data) {
         return fulfillWithValue(response.data);
@@ -524,11 +525,13 @@ export const Dashboard = createSlice({
       state.activeCategoryIndex = action.payload
     },
     addToCart: (state, action) => {
+      const { id, shop_id, selling_price, actualitem_price } = action.payload;
+      
       if (state.cartItems.length === 0) {
-        state.cartRestaurant = action.payload.shop_id;
+        state.cartRestaurant = shop_id;
       }
 
-      const itemIndex = state.cartItems.findIndex(item => item.id === action.payload.id);
+      const itemIndex = state.cartItems.findIndex(item => item.id === id);
 
       if (itemIndex >= 0) {
         state.cartItems[itemIndex].quantity += 1;
@@ -537,19 +540,24 @@ export const Dashboard = createSlice({
       }
 
       state.totalPrice = state.cartItems.reduce((total, item) =>
-        total + (Number(item.selling_price || item.actualitem_price) * Number(item.quantity)), 0
+        total + (Number(item.selling_price || item.actualitem_price || 0) * Number(item.quantity)), 0
       );
     },
     removeFromCart: (state, action) => {
-      const itemIndex = state.cartItems.findIndex(item => item.id === action.payload.id);
+      const { id } = action.payload;
+      const itemIndex = state.cartItems.findIndex(item => item.id === id);
+      
       if (itemIndex >= 0) {
         if (state.cartItems[itemIndex].quantity > 1) {
           state.cartItems[itemIndex].quantity -= 1;
         } else {
-          state.cartItems.splice(itemIndex, 1);
+          state.cartItems = state.cartItems.filter((_, index) => index !== itemIndex);
         }
       }
-      state.totalPrice = state.cartItems.reduce((total, item) => total + (item.selling_price || item.actualitem_price) * item.quantity, 0)
+      
+      state.totalPrice = state.cartItems.reduce((total, item) =>
+        total + (Number(item.selling_price || item.actualitem_price || 0) * Number(item.quantity)), 0
+      );
     },
 
     setCartRestaurant: (state, action) => {

@@ -25,7 +25,7 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import { useDispatch } from 'react-redux';
 import { checkAddressExistence, setAddressList, updateUserAddress } from '../../redux/reducers/daddy';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
-import Geolocation from '@react-native-community/geolocation';
+import Geolocation from 'react-native-geolocation-service';
 import CustomModal from '../../components/CustomModal';
 import { setUserDetails } from '../../redux/reducers/addressSlice';
 import commonStyles from '../../commonstyles/CommonStyles';
@@ -217,7 +217,7 @@ const AddAddressScreen = ({ navigation, route }) => {
     setIsLoadingLocation(true);
     Geolocation.setRNConfiguration({
       enableHighAccuracy: false,
-      timeout: 2000,
+      timeout: 20000,
       maximumAge: 1000,
     });
 

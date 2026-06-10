@@ -31,7 +31,7 @@ import {
   getRestaurantsHome,
 } from '../../redux/reducers/daddy';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
-import Geolocation from '@react-native-community/geolocation';
+import Geolocation from 'react-native-geolocation-service';
 import { setLocation, setLocationId, setLocationName, setOrderOfferAmount } from '../../redux/reducers/auth';
 import ServiceUnavailableScreen from './ServiceUnavailableScreen';
 import NetInfo from '@react-native-community/netinfo';
@@ -197,7 +197,7 @@ const RestaurantCard = memo(({ item, onPress }) => {
 });
 
 export default function UserHome({ navigation }) {
-  const { categories, subCategories, banners, restaurants, activeCategoryIndex, loading, userAddress, serviceAvailable, homeRestaurnats } = useSelector(state => state.Dashboard);
+  const { categories, subCategories, banners, restaurants, activeCategoryIndex, loading, userAddress, serviceAvailable, homeRestaurnats, cartItems } = useSelector(state => state.Dashboard);
   const { locationName } = useSelector(state => state.Auth);
   const { isNetworkConnected } = useSelector(state => state.address);
   const [selectedAddress, setSelectedAddress] = useState(userAddress || "");
@@ -211,7 +211,12 @@ export default function UserHome({ navigation }) {
   const [serviceCheckFailed, setServiceCheckFailed] = useState(false);
   const [errorOccured, setErrorOccured] = useState(false);
   const networkStatusRef = useRef(isNetworkConnected);
+  const isCheckingRef = useRef(false);
   const insets = useSafeAreaInsets();
+
+  const cartCount = useMemo(() => {
+    return cartItems?.reduce((total, item) => total + item.quantity, 0) || 0;
+  }, [cartItems]);
 
   useEffect(() => {
     networkStatusRef.current = isNetworkConnected;
@@ -234,7 +239,7 @@ export default function UserHome({ navigation }) {
 
   const getCurrentLocation = useCallback(() => {
     setIsLoadingLocation(true);
-    Geolocation.setRNConfiguration({ enableHighAccuracy: false, timeout: 2000, maximumAge: 1000 });
+    Geolocation.setRNConfiguration({ enableHighAccuracy: false, timeout: 20000, maximumAge: 1000 });
     Geolocation.getCurrentPosition(
       async position => {
         const { latitude, longitude } = position.coords;
@@ -280,12 +285,14 @@ export default function UserHome({ navigation }) {
     }
   }, [getCurrentLocation, navigation]);
 
-  const getCategoreis = async () => {
+  const getCategoriesData = async () => {
     try {
       setErrorOccured(false);
-      dispatch(getCategories());
-      dispatch(getSubCategories({ categoryId: activeCategoryIndex }));
-      dispatch(getBanners());
+      await Promise.all([
+        dispatch(getCategories()),
+        dispatch(getBanners()),
+        dispatch(getSubCategories({ categoryId: activeCategoryIndex }))
+      ]);
       if (!restaurants || restaurants.length === 0) {
         dispatch(getRestaurantsHome({ categoryId: activeCategoryIndex }));
       }
@@ -318,6 +325,45 @@ export default function UserHome({ navigation }) {
   useFocusEffect(useCallback(() => { dispatch(getAddressList()); }, [dispatch]));
   useFocusEffect(useCallback(() => { dispatch(setActiveCategoryIndex(1)); }, [dispatch]));
   
+  const checkServiceAvailability = async (force = false) => {
+    if (!authLocation || !mounted || (isCheckingRef.current && !force)) return;
+    
+    isCheckingRef.current = true;
+    try {
+      setErrorOccured(false);
+      const response = await dispatch(checkAddressExistence({ latitude: authLocation.latitude, longitude: authLocation.longitude }));
+      
+      if (mounted) {
+        if (checkAddressExistence.fulfilled.match(response)) {
+          setServiceCheckFailed(false);
+          const payload = response.payload;
+          if (!payload?.data || payload.data.length === 0 || payload.data[0]?.active_status === 1) {
+            if (networkStatusRef.current) {
+              navigation.replace('ServicesAvailable', { locationNotAvailable: true, latitude: authLocation.latitude, longitude: authLocation.longitude });
+            }
+            return;
+          }
+          await dispatch(setLocationName(payload.data[0].location_name));
+          await dispatch(setLocationId(payload.data[0].id));
+          
+          // Refresh data in background
+          getCategoriesData();
+        } else {
+          // Only show error if we have no categories and no restaurants
+          if ((!categories || categories.length === 0) && (!homeRestaurnats || homeRestaurnats.length === 0)) {
+            setServiceCheckFailed(true);
+          }
+        }
+      }
+    } catch (error) {
+      if (mounted && (!categories || categories.length === 0)) {
+        setServiceCheckFailed(true);
+      }
+    } finally {
+      isCheckingRef.current = false;
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       if (authLocation) checkServiceAvailability();
@@ -331,47 +377,15 @@ export default function UserHome({ navigation }) {
     dispatch(setOrderOfferAmount(category.order_offer_amount));
   }, [dispatch]);
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    getCategoreis();
-    setRefreshing(false);
-    dispatch(setActiveCategoryIndex(1));
-  }, []);
-
-  const checkServiceAvailability = async () => {
-    const abortController = new AbortController();
-    if (!authLocation || !mounted) return;
-    try {
-      setErrorOccured(false);
-      const response = await dispatch(checkAddressExistence({ latitude: authLocation.latitude, longitude: authLocation.longitude }));
-      if (mounted) {
-        const payload = response?.payload;
-        if (!payload?.data || payload.data.length === 0 || payload.data[0]?.active_status === 1) {
-          if (networkStatusRef.current) {
-            navigation.replace('ServicesAvailable', { locationNotAvailable: true, latitude: authLocation.latitude, longitude: authLocation.longitude });
-          }
-          return;
-        }
-        await dispatch(setLocationName(payload.data[0].location_name));
-        await dispatch(setLocationId(payload.data[0].id));
-        const result = await dispatch(getCategories());
-        dispatch(setOrderOfferAmount(result.payload?.data[0]?.order_offer_amount));
-        dispatch(getBanners());
-        if (!restaurants || restaurants.length === 0) dispatch(getRestaurantsHome({ categoryId: activeCategoryIndex }));
-        dispatch(getSubCategories({ categoryId: activeCategoryIndex }));
-      }
-    } catch (error) {
-      setErrorOccured(true);
-      if (error.name !== 'AbortError' && mounted && networkStatusRef.current) {
-        navigation.replace('ServicesAvailable', { serviceCheckFailed: true, latitude: authLocation?.latitude, longitude: authLocation?.longitude });
-      }
+    if (authLocation) {
+      await checkServiceAvailability(true);
+    } else {
+      await getCategoriesData();
     }
-    return () => { abortController.abort(); setMounted(false); };
-  };
-
-  useEffect(() => {
-    if (authLocation) checkServiceAvailability();
-  }, [authLocation, serviceAvailable]);
+    setRefreshing(false);
+  }, [authLocation]);
 
   const handleBannerPress = useCallback(async (banner) => {
     const resp = await dispatch(indiviadualShop({ shopId: banner?.shop_id }));
@@ -385,18 +399,12 @@ export default function UserHome({ navigation }) {
     const unsubscribe = NetInfo.addEventListener(async state => {
       if (state.isConnected && !isNetworkConnected) {
         setInitialNetLoad(true);
-        await checkServiceAvailability();
-        await Promise.all([
-          dispatch(getCategories()),
-          dispatch(getBanners()),
-          dispatch(getRestaurantsHome({ categoryId: activeCategoryIndex })),
-          dispatch(getSubCategories({ categoryId: activeCategoryIndex }))
-        ]);
+        await checkServiceAvailability(true);
         setTimeout(() => setInitialNetLoad(false), 500);
       }
     });
     return () => unsubscribe();
-  }, [isNetworkConnected, activeCategoryIndex, dispatch]);
+  }, [isNetworkConnected, authLocation]);
 
   const renderSubCategoryItem = useCallback(({ item }) => (
     <TouchableOpacity onPress={() => { dispatch(setsubCategory(item)); navigation.navigate('CategorieItems'); }} style={styles.subCatWrapper}>
@@ -526,6 +534,11 @@ export default function UserHome({ navigation }) {
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.navigate('Cart')}>
                     <SimpleLineIcons name="handbag" size={16} color="#333" />
+                    {cartCount > 0 && (
+                      <View style={styles.cartBadge}>
+                        <Text style={styles.cartBadgeText}>{cartCount}</Text>
+                      </View>
+                    )}
                   </TouchableOpacity>
                 </View>
               </View>
@@ -549,8 +562,12 @@ export default function UserHome({ navigation }) {
               keyExtractor={restaurantKeyExtractor}
               renderItem={renderRestaurantItem}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 40 }}
+              contentContainerStyle={{ paddingBottom: 110 }}
               ListHeaderComponent={ListHeader}
+              initialNumToRender={6}
+              maxToRenderPerBatch={10}
+              windowSize={5}
+              removeClippedSubviews={Platform.OS === 'android'}
               ListEmptyComponent={() => (
                 <View style={styles.emptyContainer}><Text style={styles.emptyText}>No popular restaurants/shops available</Text></View>
               )}
@@ -560,7 +577,7 @@ export default function UserHome({ navigation }) {
         ) : serviceAvailable === false ? <ServiceUnavailableScreen /> : !categories && !errorOccured ? <Skeleton /> : (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>Something went wrong</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={() => { checkServiceAvailability(); getCategoreis(); }}>
+            <TouchableOpacity style={styles.retryButton} onPress={() => { checkServiceAvailability(true); getCategoriesData(); }}>
               <Text style={styles.retryText}>Try Again</Text>
             </TouchableOpacity>
           </View>
@@ -606,6 +623,27 @@ const styles = StyleSheet.create({
   rightHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerCircleBtn: { width: 34, height: 34, backgroundColor: '#FFFFFF', borderRadius: 17, justifyContent: 'center', alignItems: 'center', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4 },
   notificationDotMarker: { position: 'absolute', top: 8, right: 8, width: 6, height: 6, backgroundColor: '#FF3B30', borderRadius: 3, borderWidth: 1, borderColor: '#FFF' },
+  cartBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#FF3B30',
+    borderRadius: 9,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 1,
+    borderColor: '#FFF',
+    zIndex: 1,
+  },
+  cartBadgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'SF Pro Display',
+  },
 
   /* Search Pill Styles (Now clickable) */
   searchPillContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 24, marginHorizontal: 16, marginTop: 5, height: 48, paddingHorizontal: 16, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10 },

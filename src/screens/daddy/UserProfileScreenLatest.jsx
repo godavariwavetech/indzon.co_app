@@ -45,6 +45,7 @@ const UserProfileScreenLatest = () => {
   const [errors, setErrors] = useState({
     name: '',
     mobile: '',
+    email: '',
   });
 
   // Fetch Profile Data on Mount
@@ -130,10 +131,13 @@ const UserProfileScreenLatest = () => {
 
   const validate = () => {
     let valid = true;
-    let tempErrors = { name: '', mobile: '' };
+    let tempErrors = { name: '', mobile: '', email: '' };
 
     if (!name.trim()) {
       tempErrors.name = 'Name is required';
+      valid = false;
+    } else if (!/^[a-zA-Z\s]{2,50}$/.test(name.trim())) {
+      tempErrors.name = 'Enter a valid name (letters only, min 2 chars)';
       valid = false;
     }
 
@@ -142,6 +146,11 @@ const UserProfileScreenLatest = () => {
       valid = false;
     } else if (!/^[6-9]\d{9}$/.test(mobile)) {
       tempErrors.mobile = 'Enter valid 10-digit mobile number';
+      valid = false;
+    }
+
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      tempErrors.email = 'Enter a valid email address';
       valid = false;
     }
 
@@ -243,6 +252,7 @@ const UserProfileScreenLatest = () => {
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
+                {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
               </View>
             </View>
           </View>

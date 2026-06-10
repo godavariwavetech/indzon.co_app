@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, memo } from 'react';
 import {
   View,
   Text,
@@ -98,11 +98,9 @@ const CartScreen = ({ navigation, route }) => {
     navigation.navigate('CategoriesScreen');
   };
 
-  const renderCartItem = ({ item }) => {
+  const CartItem = memo(({ item, onAdd, onRemove }) => {
     const eachPrice = Number(item.selling_price) * Number(item.quantity);
-
     return (
-
       <View>
         <View style={styles.cartItem}>
           <Image
@@ -115,13 +113,12 @@ const CartScreen = ({ navigation, route }) => {
             <View style={styles.priceContainer}>
               <Text style={styles.actualPrice}>₹{item.actual_price}</Text>
               <Text style={styles.sellingPrice}>₹{item.selling_price}</Text>
-
             </View>
           </View>
           <View>
             <View style={styles.quantityContainer}>
               <TouchableOpacity
-                onPress={() => handleRemoveFromCart(item)}
+                onPress={() => onRemove(item)}
                 style={styles.quantityButton}>
                 <AntDesign name="minus" size={16} color={commonStyles.appMainColor} />
               </TouchableOpacity>
@@ -129,7 +126,7 @@ const CartScreen = ({ navigation, route }) => {
                 {item.quantity}
               </Text>
               <TouchableOpacity
-                onPress={() => handleAddToCart(item)}
+                onPress={() => onAdd(item)}
                 style={styles.quantityButton}>
                 <AntDesign name="plus" size={16} color={commonStyles.appMainColor} />
               </TouchableOpacity>
@@ -145,6 +142,16 @@ const CartScreen = ({ navigation, route }) => {
             ))}
         </View>
       </View>
+    );
+  });
+
+  const renderCartItem = ({ item }) => {
+    return (
+      <CartItem 
+        item={item} 
+        onAdd={handleAddToCart} 
+        onRemove={handleRemoveFromCart} 
+      />
     );
   };
 
@@ -207,6 +214,7 @@ const CartScreen = ({ navigation, route }) => {
             keyExtractor={item => item.id}
             renderItem={renderCartItem}
             scrollEnabled
+            contentContainerStyle={{ paddingBottom: 220 }}
             ListEmptyComponent={() => (
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>No items found</Text>
@@ -214,7 +222,7 @@ const CartScreen = ({ navigation, route }) => {
             )}
           />
 
-          <View style={[styles.bottomContainer, { bottom: route.params?.isFromRestaurant ? 0 : "12%", paddingBottom: insets.bottom}]}>
+          <View style={[styles.bottomContainer, { bottom: 0, paddingBottom: (route.params?.isFromRestaurant ? 0 : (Platform.OS === 'ios' ? 85 : 60)) + insets.bottom }]}>
             <View style={styles.totalContainer}>
               <TouchableOpacity
                 onPress={() => navigation.goBack()}

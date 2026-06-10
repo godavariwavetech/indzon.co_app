@@ -1,4 +1,4 @@
-export const baseURL = "https://apiamara.godavariwave.com/";
+export const baseURL = "https://amaraa.co.in:2026/";
 //2630
 // export const baseURL = 'https://melocalapp.com:1035/';
 

@@ -21,7 +21,7 @@ import {
 } from 'react-native-responsive-dimensions';
 import { useDispatch } from 'react-redux';
 import { actionLogin, addCustomer, verifyCustomerMobile } from '../../redux/reducers/auth';
-import Geolocation from '@react-native-community/geolocation';
+import Geolocation from 'react-native-geolocation-service';
 import { checkAddressExistence } from '../../redux/reducers/daddy';
 import commonStyles from '../../commonstyles/CommonStyles';
 

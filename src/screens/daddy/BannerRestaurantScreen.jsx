@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {memo, useEffect, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -383,7 +383,7 @@ const BannerRestaurantScreen = ({navigation, route}) => {
     />
   );
 
-  const renderItem = ({item}) => {
+  const RenderItem = memo(({ item, isInCart, quantity, onAdd, onRemove }) => {
     return (
       <View style={styles.itemContainer}>
         <View
@@ -414,46 +414,50 @@ const BannerRestaurantScreen = ({navigation, route}) => {
             </View>
           </View>
 
-          {/* <View style={styles.itemRatingContainer}>
-            <Icon name="star" size={17} color="#D0A50F" />
-            <Text style={styles.itemRating}>4.7</Text>
-            <Text style={styles.itemReviewCount}>(12)</Text>
-          </View> */}
-
           <View style={styles.itemFooter}>
-          <View>
-            <View style={{flexDirection: 'row',justifyContent:"flex-start"}}>
-              {item.actual_price !== item.selling_price && (
-                <Text style={[styles.price, {textDecorationLine: 'line-through', color: '#888',fontSize:10,textAlign:"left"}]}>₹{item.actual_price}</Text>
-              )}
+            <View>
+              <View style={{flexDirection: 'row', justifyContent: "flex-start"}}>
+                {item.actual_price !== item.selling_price && (
+                  <Text style={[styles.price, {textDecorationLine: 'line-through', color: '#888', fontSize: 10, textAlign: "left"}]}>₹{item.actual_price}</Text>
+                )}
               </View>
-
               <Text style={styles.price}>₹{item.selling_price}</Text>
             </View>
-            {cartItems.findIndex(value => value.id === item.id) !== -1 ? (
+            {isInCart ? (
               <View style={styles.counterContainer}>
-                <TouchableOpacity onPress={() => decreaseItem(item)}>
+                <TouchableOpacity onPress={() => onRemove(item)}>
                   <AntDesign name="minus" size={18} color="#065E2C" />
                 </TouchableOpacity>
                 <Text style={styles.counterText}>
-                  {cartItems.find(value => value.id === item.id).quantity}
+                  {quantity}
                 </Text>
-                <TouchableOpacity onPress={() => handleAddToCart(item)}>
+                <TouchableOpacity onPress={() => onAdd(item)}>
                   <AntDesign name="plus" size={18} color="#065E2C" />
                 </TouchableOpacity>
               </View>
             ) : (
               <TouchableOpacity
                 style={styles.addButton}
-                onPress={() => {
-                  handleAddToCart(item);
-                }}>
+                onPress={() => onAdd(item)}>
                 <Text style={styles.addButtonText}>ADD</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
       </View>
+    );
+  });
+
+  const renderItem = ({item}) => {
+    const cartItem = cartItems.find(value => value.id === item.id);
+    return (
+      <RenderItem 
+        item={item}
+        isInCart={!!cartItem}
+        quantity={cartItem?.quantity || 0}
+        onAdd={handleAddToCart}
+        onRemove={decreaseItem}
+      />
     );
   };
 
@@ -536,6 +540,10 @@ const BannerRestaurantScreen = ({navigation, route}) => {
             style={[styles.itemList]}
             columnWrapperStyle={styles.columnWrapper}
             renderItem={renderItem}
+            initialNumToRender={6}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+            removeClippedSubviews={Platform.OS === 'android'}
             onScrollToIndexFailed={({index, averageItemLength}) => {
               flatListRef.current?.scrollToOffset({
                 offset: index * averageItemLength,

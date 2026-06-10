@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, memo } from 'react';
 import {
   View,
   Text,
@@ -55,100 +55,57 @@ const RestaurantScreen = ({ navigation, route }) => {
   const [initialFilter, setSetInitialFilter] = useState(true);
   const flatListRef = useRef(null);
   const [selectedFilter, setSelectedFilter] = useState("All");
-  // state for active filters
-  // const [activeFilters, setActiveFilters] = useState([]);
-
-  // state for subcategory filter (if you want only one subcategory active at a time)
   const [activeSubCategoryFilter, setActiveSubCategoryFilter] = useState(null);
 
-  console.log("yemoooooooooooooooooooooooooo", filteredData)
-
-  // Restore original mergedFilters
-  // const mergedFilters = [
-  //   { filter_name: 'All', id: 'all' },
-  //   ...[...new Set((restaurantItems || [])
-  //     .map(item => item.filter_one)
-  //     .filter(Boolean))]
-  //     .map(filterName => ({
-  //       filter_name: filterName,
-  //       id: filterName.toLowerCase().replace(' ', '-')
-  //     }))
-  // ]; 
-  // Collect unique values for filters
-  const allFilters = [
+  const allFilters = useMemo(() => [
     { filter_name: 'All', id: 'all', type: 'general' },
-
-    // filter_one (Veg/Non Veg)
     ...[...new Set((restaurantItems || []).map(item => item.filter_one).filter(Boolean))]
       .map(f => ({ filter_name: f, id: f.toLowerCase().replace(/\s+/g, '-'), type: 'filter_one' })),
-
-    // category_name
-    // ...[...new Set((restaurantItems || []).map(item => item.category_name).filter(Boolean))]
-    //   .map(c => ({ filter_name: c, id: c.toLowerCase().replace(/\s+/g, '-'), type: 'category' })),
-
-    // sub_category_name
     ...[...new Set((restaurantItems || []).map(item => item.sub_category_name).filter(Boolean))]
       .map(sc => ({ filter_name: sc, id: sc.toLowerCase().replace(/\s+/g, '-'), type: 'subcategory' })),
-  ];
+  ], [restaurantItems]);
 
-
-  const shopId = route.params
-  console.log("shopId", shopId)
   const getItems = async () => {
-
     try {
       setIsLoading(true);
       const response = await dispatch(getItemsList({ shopId: route.params.shopId, shopItem: route.params.shopItem }))
       setFilterData(response.payload.data);
-
       route?.params?.selectedFilter && setSetInitialFilter(!initialFilter)
     } catch (error) {
       console.error('Error loading items:', error);
     } finally {
       setIsLoading(false);
     }
-
-  }
+  };
 
   useEffect(() => {
     if (!restaurantItems) return;
-
     const filtered = restaurantItems.filter(item => {
       const matchesSearch =
         item.item_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.item_description?.toLowerCase().includes(searchQuery.toLowerCase());
-
       const matchesFilter =
         selectedFilter === "All" ||
         item.filter_one === selectedFilter ||
         item.category_name === selectedFilter;
-
       const matchesSubCategory =
         !activeSubCategoryFilter || activeSubCategoryFilter === item.sub_category_name;
-
       return matchesSearch && matchesFilter && matchesSubCategory;
     });
-
     setFilterData(filtered);
   }, [searchQuery, selectedFilter, activeSubCategoryFilter, restaurantItems, initialFilter]);
 
-
-
-
   useEffect(() => {
     route.params && getItems();
-
-  }, [route.params])
+  }, [route.params]);
 
   useEffect(() => {
     if (route.params?.highlightItemId) {
       const itemId = route.params.highlightItemId;
       setHighlightedItemId(itemId);
-
       if (!scaleAnims.has(itemId)) {
         scaleAnims.set(itemId, new Animated.Value(1));
       }
-
       const timer = setTimeout(() => {
         setHighlightedItemId(null);
         setRenderedItems(prev => {
@@ -158,22 +115,23 @@ const RestaurantScreen = ({ navigation, route }) => {
         });
         scaleAnims.get(itemId)?.setValue(1);
       }, 2000);
-
-      return () => {
-        clearTimeout(timer);
-      };
+      return () => clearTimeout(timer);
     }
   }, [route.params]);
 
   const calculateDeliveryTime = (distance) => {
-    if (distance < 3) {
-      return '15-20 mins';
-    } else if (distance < 5) {
-      return '20-30 mins';
-    } else {
-      return '30-45 mins';
-    }
+    if (distance < 3) return '15-20 mins';
+    if (distance < 5) return '20-30 mins';
+    return '30-45 mins';
   };
+
+  const addItem = (item) => {
+    dispatch(addToCart(item))
+  }
+
+  const decreaseItem = (item) => {
+    dispatch(removeFromCart(item))
+  }
 
   const handleAddToCart = (item) => {
     if (cartItems.length === 0 || cartRestaurant == route.params.shopId) {
@@ -198,7 +156,6 @@ const RestaurantScreen = ({ navigation, route }) => {
     setSelectedItem(null);
   };
 
-
   const startAnim = () => {
     Animated.timing(translateY, {
       toValue: 0,
@@ -214,71 +171,18 @@ const RestaurantScreen = ({ navigation, route }) => {
     }).start();
   }
 
-
-
-  const addItem = (item) => {
-    // dispatch(setCartRestaurant())
-    dispatch(addToCart(item))
-  }
-
-  const decreaseItem = (item) => {
-    dispatch(removeFromCart(item))
-  }
-
   useEffect(() => {
     Object.keys(cartItems).length > 0 ? startAnim() : stopAnim()
-  }, [Object.keys(cartItems).length])
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-
-        pan.setOffset({ x: pan.x._value, y: pan.y._value });
-        pan.setValue({ x: 0, y: 0 });
-      },
-      onPanResponderMove: Animated.event([
-        null,
-        { dx: pan.x, dy: pan.y }
-      ], { useNativeDriver: false }),
-      onPanResponderRelease: () => {
-
-        pan.flattenOffset();
-      }
-    })
-  ).current;
-
-  const handleDraggableMenuAction = (subCategory) => {
-    if (subCategory.sub_category_name === 'All') {
-      setFilterType('All');
-      setFilterData(restaurantItems);
-    } else {
-      setFilterType(subCategory.sub_category_name);
-      const filteredItems = restaurantItems.filter(item =>
-        item.sub_category_name === subCategory.sub_category_name
-      );
-      setFilterData(filteredItems);
-    }
-    setDraggableMenuVisible(false);
-  };
-
-
-  useEffect(() => {
-    return () => {
-      clearTimeout(timeoutRef.current);
-    };
-  }, []);
+  }, [Object.keys(cartItems).length]);
 
   const handleFilter = (item) => {
     if (item.type === "subcategory") {
-      // toggle subcategory
       if (activeSubCategoryFilter === item.filter_name) {
-        setActiveSubCategoryFilter(null); // deselect if clicked again
+        setActiveSubCategoryFilter(null);
       } else {
         setActiveSubCategoryFilter(item.filter_name);
       }
     } else {
-      // handle main Veg/Non Veg/All filter
       if (item.id === "all") {
         setSelectedFilter("All");
       } else {
@@ -287,10 +191,8 @@ const RestaurantScreen = ({ navigation, route }) => {
     }
   };
 
-
   const renderFilters = () => (
     <View>
-      {/* Veg/Non-Veg Filters */}
       <FlatList
         data={allFilters.filter(f => f.type === 'filter_one' || f.id === 'all')}
         horizontal
@@ -326,8 +228,6 @@ const RestaurantScreen = ({ navigation, route }) => {
           );
         }}
       />
-
-      {/* Subcategory Filters */}
       <FlatList
         data={allFilters.filter(f => f.type === 'subcategory')}
         horizontal
@@ -357,11 +257,7 @@ const RestaurantScreen = ({ navigation, route }) => {
     </View>
   );
 
-
-  const renderItem = ({ item }) => {
-    const isHighlighted = item.id === highlightedItemId;
-    const scaleAnim = scaleAnims.get(item.id) || new Animated.Value(1);
-
+  const RenderItem = memo(({ item, isHighlighted, scaleAnim, isInCart, quantity, onAdd, onRemove }) => {
     return (
       <Animated.View
         style={[
@@ -369,43 +265,16 @@ const RestaurantScreen = ({ navigation, route }) => {
           isHighlighted && styles.highlightedItem,
           { transform: [{ scale: scaleAnim }] }
         ]}
-        onLayout={() => {
-          if (isHighlighted && !renderedItems.has(item.id)) {
-            setRenderedItems(prev => new Set(prev).add(item.id));
-            scaleAnim.stopAnimation();
-            requestAnimationFrame(() => {
-              Animated.sequence([
-                Animated.spring(scaleAnim, {
-                  toValue: 1.1,
-                  stiffness: 100,
-                  damping: 7,
-                  useNativeDriver: true,
-                }),
-                Animated.spring(scaleAnim, {
-                  toValue: 1,
-                  stiffness: 200,
-                  damping: 10,
-                  useNativeDriver: true,
-                }),
-              ]).start();
-            });
-          }
-        }}
       >
-
         <View
           style={[styles.card, item.active_status === "1" && styles.unavailableCard]}
         >
-          {/* Overlay when unavailable */}
           {item.active_status === "1" && (
             <View style={styles.unavailableOverlay}>
               <Text style={styles.unavailableText}>Currently Unavailable</Text>
             </View>
           )}
 
-
-
-          {/* Details Right */}
           <View style={styles.itemDetails}>
             <View style={styles.itemHeader}>
               <HeaderPick2 color={item.filter_one === "Veg" ? "#0EAF50" : "#CD2A2A"} />
@@ -433,7 +302,6 @@ const RestaurantScreen = ({ navigation, route }) => {
                 <Text style={styles.price}>₹{item.selling_price}</Text>
               </View>
             </View>
-
           </View>
           <View>
             <Image
@@ -443,45 +311,53 @@ const RestaurantScreen = ({ navigation, route }) => {
                 item.active_status === "1" && styles.unavailableImage
               ]}
             />
-            {cartItems.findIndex(value => value.id === item.id) !== -1 ? (
+            {isInCart ? (
               <View style={styles.counterContainer}>
-                <TouchableOpacity onPress={() => decreaseItem(item)}>
+                <TouchableOpacity onPress={() => onRemove(item)}>
                   <AntDesign name="minus" size={20} color={commonStyles.appMainColor} />
                 </TouchableOpacity>
                 <Text style={styles.counterText}>
-                  {cartItems.find(value => value.id === item.id).quantity}
+                  {quantity}
                 </Text>
-                <TouchableOpacity onPress={() => handleAddToCart(item)}>
+                <TouchableOpacity onPress={() => onAdd(item)}>
                   <AntDesign name="plus" size={20} color={commonStyles.appMainColor} />
                 </TouchableOpacity>
               </View>
             ) : (
               <TouchableOpacity
                 style={styles.addButton}
-                onPress={() => handleAddToCart(item)}
+                onPress={() => onAdd(item)}
               >
                 <Text style={styles.addButtonText}>ADD</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
-
-
       </Animated.View>
+    );
+  });
+
+  const renderItem = ({ item }) => {
+    const isHighlighted = item.id === highlightedItemId;
+    const scaleAnim = scaleAnims.get(item.id) || new Animated.Value(1);
+    const cartItem = cartItems.find(v => v.id === item.id);
+
+    return (
+      <RenderItem 
+        item={item}
+        isHighlighted={isHighlighted}
+        scaleAnim={scaleAnim}
+        isInCart={!!cartItem}
+        quantity={cartItem?.quantity || 0}
+        onAdd={handleAddToCart}
+        onRemove={decreaseItem}
+      />
     );
   };
 
-  useEffect(() => {
-    return () => {
-      scaleAnims.forEach(anim => anim.stopAnimation());
-    };
-  }, []);
-
-  // Memoized cart calculations for better performance
   const cartCalculations = useMemo(() => {
     const itemCount = cartItems?.reduce((sum, item) => sum + Number(item.quantity), 0) || 0;
     const totalPrice = cartItems?.reduce((sum, item) => sum + (Number(item.selling_price) * Number(item.quantity)), 0) || 0;
-
     return {
       itemCount,
       totalPrice: totalPrice.toFixed(2),
@@ -489,128 +365,99 @@ const RestaurantScreen = ({ navigation, route }) => {
     };
   }, [cartItems]);
 
+  const ListHeader = useMemo(() => (
+    <View>
+      <ImageBackground
+        source={{ uri: route.params?.item?.shop_image }}
+        style={styles.imageBackground}>
+        <View style={styles.imageOverlay}>
+          <View style={styles.headerRow}>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <MaterialCommunityIcons
+                name="keyboard-backspace"
+                size={30}
+                color="#fff"
+                style={styles.backIcon}
+              />
+            </TouchableOpacity>
+            <View style={styles.header}>
+              <Text style={styles.title}>{route.params?.item?.shop_name}</Text>
+              <Text style={styles.subtitle}>{calculateDeliveryTime(route.params?.item?.distance.toFixed(1))} | {route.params?.item?.distance.toFixed(1)} km | {route.params?.item?.shop_address}</Text>
+              <View style={{ backgroundColor: 'rgba(238, 235, 204, 0.20)', padding: 4, borderRadius: 4, width: 95 }}>
+                <StarRating rating={route.params?.item?.shop_rating} width={15} gap={4} />
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.searchContainer}>
+            <View style={styles.inputWrapper}>
+              <MaterialIcons
+                name="search"
+                size={24}
+                color="#666"
+                style={styles.searchIcon}
+              />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search food items..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity
+                  style={styles.clearButton}
+                  onPress={() => setSearchQuery('')}
+                >
+                  <MaterialIcons name="close" size={20} color="#666" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </View>
+      </ImageBackground>
+      <View>
+        {renderFilters()}
+      </View>
+    </View>
+  ), [route.params, searchQuery, selectedFilter, activeSubCategoryFilter, allFilters]);
+
   return (
     <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-        bounces={true}
-        nestedScrollEnabled={true}
-      >
-        <ImageBackground
-          source={{ uri: route.params?.item?.shop_image }}
-          style={styles.imageBackground}>
-          <View style={styles.imageOverlay}>
-            <View style={styles.headerRow}>
-              <TouchableOpacity onPress={() => navigation.goBack()}>
-                <MaterialCommunityIcons
-                  name="keyboard-backspace"
-                  size={30}
-                  color="#fff"
-                  style={styles.backIcon}
-                />
-              </TouchableOpacity>
-              <View style={styles.header}>
-                <Text style={styles.title}>{route.params?.item?.shop_name}</Text>
-                <Text style={styles.subtitle}>{calculateDeliveryTime(route.params?.item?.distance.toFixed(1))} | {route.params?.item?.distance.toFixed(1)} km | {route.params?.item?.shop_address}</Text>
-                {/* <View style={styles.ratingContainer}>
-                  <Icon name="star" size={18} color="gold" />
-                  <Text style={styles.rating}>{route.params?.item?.shop_rating}</Text>
-                </View> */}
-                <View style={{ backgroundColor: 'rgba(238, 235, 204, 0.20)', padding: 4, borderRadius: 4, width: 95 }}>
-                  <StarRating rating={route.params?.item?.shop_rating} width={15} gap={4} />
-                </View>
-              </View>
-              <View style={styles.headerIcons}>
-                {/* <TouchableOpacity 
-                  style={styles.iconButton}
-                  onPress={() => handleMenuAction('favorites')}
-                >
-                  <EvilIcons name="heart" color={'#000'} size={15} />
-                </TouchableOpacity> */}
-                {/* <TouchableOpacity 
-                  style={styles.iconButton}
-                  onPress={() => setMenuVisible(!menuVisible)}
-                >
-                  <Entypo name="dots-three-vertical" color="#313131" size={7} />
-                </TouchableOpacity> */}
-              </View>
-            </View>
-
-            <View style={styles.searchContainer}>
-              <View style={styles.inputWrapper}>
-                <MaterialIcons
-                  name="search"
-                  size={24}
-                  color="#666"
-                  style={styles.searchIcon}
-                />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search food items..."
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-                {searchQuery.length > 0 && (
-                  <TouchableOpacity
-                    style={styles.clearButton}
-                    onPress={() => setSearchQuery('')}
-                  >
-                    <MaterialIcons name="close" size={20} color="#666" />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          </View>
-        </ImageBackground>
-
-        <View>
-          {renderFilters()}
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={commonStyles.appMainColor} />
         </View>
-
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={commonStyles.appMainColor} />
-          </View>
-        ) : filteredData?.length === 0 ? (
-          <View style={styles.noItemsContainer}>
-            <MaterialCommunityIcons name="food-off" size={50} color="#A3A3A3" />
-            <Text style={styles.noItemsText}>No items found</Text>
-            <Text style={styles.noItemsSubText}>We couldn't find any items matching your search</Text>
-          </View>
-        ) : (
-          <View style={styles.itemListContainer}>
-            <View style={styles.itemListContainer}>
-              <FlatList
-                ref={flatListRef}
-                data={filteredData}
-                keyExtractor={(item, index) => `${item.id}_${index}`}
-                style={styles.itemList}
-                contentContainerStyle={{ paddingBottom: Platform.OS === 'ios' ? 160 : 150 }}
-                renderItem={renderItem}
-                scrollEnabled={false}
-                nestedScrollEnabled={true}
-                // 👇 Remove grid props
-                // numColumns={2}
-                // columnWrapperStyle={styles.columnWrapper}
-                onScrollToIndexFailed={({ index, averageItemLength }) => {
-                  flatListRef.current?.scrollToOffset({
-                    offset: index * averageItemLength,
-                    animated: true
-                  });
-                  setTimeout(() => {
-                    flatListRef.current?.scrollToIndex({ index, animated: true });
-                  }, 100);
-                }}
-              />
+      ) : (
+        <FlatList
+          ref={flatListRef}
+          data={filteredData}
+          keyExtractor={(item, index) => `${item.id}_${index}`}
+          style={styles.itemList}
+          contentContainerStyle={{ paddingBottom: Platform.OS === 'ios' ? 160 : 150 }}
+          renderItem={renderItem}
+          ListHeaderComponent={ListHeader}
+          ListEmptyComponent={!isLoading && filteredData?.length === 0 ? (
+            <View style={styles.noItemsContainer}>
+              <MaterialCommunityIcons name="food-off" size={50} color="#A3A3A3" />
+              <Text style={styles.noItemsText}>No items found</Text>
+              <Text style={styles.noItemsSubText}>We couldn't find any items matching your search</Text>
             </View>
-
-          </View>
-        )}
-      </ScrollView>
-
-
-
+          ) : null}
+          initialNumToRender={8}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS === 'android'}
+          onScrollToIndexFailed={({ index, averageItemLength }) => {
+            flatListRef.current?.scrollToOffset({
+              offset: index * averageItemLength,
+              animated: true
+            });
+            setTimeout(() => {
+              flatListRef.current?.scrollToIndex({ index, animated: true });
+            }, 100);
+          }}
+        />
+      )}
 
       {cartCalculations.hasItems && (
         <Animated.View

@@ -78,13 +78,13 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.amaraa"
+    namespace "com.amaraa.user"
     defaultConfig {
-        applicationId "com.amaraa"
+        applicationId "com.amaraa.user"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 31
-        versionName "3.1.0"
+        versionCode 1
+        versionName "1.0.0"
     }
     signingConfigs {
         debug {

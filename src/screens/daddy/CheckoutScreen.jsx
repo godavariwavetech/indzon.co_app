@@ -229,7 +229,7 @@ const CheckoutScreen = ({ navigation, route }) => {
 
       console.log("ammo", cartItems)
 
-      // 🔹 Common payload (COD or Razorpay)
+      // 🔹 Common payload (Cash On Delivery or Razorpay)
       let payload = {
         order_status: 0,
         actual_total_amount: itemsTotalPrice,
@@ -250,7 +250,7 @@ const CheckoutScreen = ({ navigation, route }) => {
         location_id: locationId,
         location_name: locationName,
         payment_type: selectedPaymentMethod,
-        payment_id: selectedPaymentMethod,
+        payment_id: null,
         razorpay_order_id: null,
         order_instructions: 'test order',
         coupon_type: appliedCoupon?.coupon_type || "0",
@@ -295,8 +295,8 @@ const CheckoutScreen = ({ navigation, route }) => {
 
       console.log("order payload chargesssssssssssssssssssssssssss", payload)
 
-      // 🔹 Case 1: COD
-      if (selectedPaymentMethod === 'COD') {
+      // 🔹 Case 1: Cash On Delivery
+      if (selectedPaymentMethod === 'Cash On Delivery') {
         const responseCod = await dispatch(placeOrder({ orderDetails: payload }));
 
         console.log(responseCod,">>>>>>>>>>>>>>>RESPONSEEE COD");
@@ -315,6 +315,9 @@ const CheckoutScreen = ({ navigation, route }) => {
         // Step 1: Generate Razorpay Order ID
         const razorpayOrderResponse = await dispatch(generateOrderId({ orderAmount: grandTotal }));
         const razorpayOrder = razorpayOrderResponse?.payload;
+
+
+        console.log(razorpayOrder,">>>>>>>>>>>>>>>>>>>>>>>>>>>>razorpayOrder");
 
         if (!razorpayOrder?.id) {
           Alert.alert("Payment Error", "Failed to generate Razorpay Order ID. Please try again.");
@@ -457,7 +460,7 @@ const CheckoutScreen = ({ navigation, route }) => {
   }, [cartItems, appliedCoupon]);
 
   useEffect(() => {
-    if (grandTotal > 700 && selectedPaymentMethod === "COD") {
+    if (grandTotal > 700 && selectedPaymentMethod === "Cash On Delivery") {
       setSelectedPaymentMethod("Pay Online");
     }
   }, [grandTotal, selectedPaymentMethod]);
@@ -743,14 +746,14 @@ const CheckoutScreen = ({ navigation, route }) => {
                 </Text>
               </TouchableOpacity>
 
-              {/* COD Button */}
+              {/* Cash On Delivery Button */}
               <TouchableOpacity
                 style={[
                   styles.paymentMethodButton,
-                  selectedPaymentMethod === 'COD' && styles.paymentMethodButtonSelected,
+                  selectedPaymentMethod === 'Cash On Delivery' && styles.paymentMethodButtonSelected,
                   Number(grandTotal) > 700 && styles.paymentMethodButtonDisabled
                 ]}
-                onPress={() => setSelectedPaymentMethod('COD')}
+                onPress={() => setSelectedPaymentMethod('Cash On Delivery')}
                 disabled={isProcessingPayment || Number(grandTotal) > 700}>
                 <MaterialIcons
                   name="money"
@@ -758,14 +761,14 @@ const CheckoutScreen = ({ navigation, route }) => {
                   color={
                     Number(grandTotal) > 700
                       ? '#ccc'
-                      : selectedPaymentMethod === 'COD'
+                      : selectedPaymentMethod === 'Cash On Delivery'
                         ? '#fff'
                         : commonStyles.appMainColor
                   }
                 />
                 <Text style={[
                   styles.paymentMethodButtonText,
-                  selectedPaymentMethod === 'COD' && styles.paymentMethodButtonTextSelected,
+                  selectedPaymentMethod === 'Cash On Delivery' && styles.paymentMethodButtonTextSelected,
                   Number(grandTotal) > 700 && styles.paymentMethodButtonTextDisabled
                 ]}>
                   COD

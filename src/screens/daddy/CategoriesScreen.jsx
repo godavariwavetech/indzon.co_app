@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, memo } from 'react';
 import {
   View,
   Text,
@@ -156,14 +156,13 @@ const CategoriesScreen = ({ navigation, route }) => {
     navigation.navigate('CategorieItems');
   }
 
-  const renderItem = (item, subItem) => {
+  const CategoryItem = memo(({ item, subItem, onNavigate }) => {
     if (typeof item?.category_id === 'string' && item.category_id.startsWith('search-')) {
       return (
         <TouchableOpacity
           style={styles.itemContainer}
           onPress={() => handleSearchResultPress(subItem)}
         >
-
           <View style={styles.itemCard}>
             <Image
               source={{ uri: subItem.sub_category_image }}
@@ -179,8 +178,7 @@ const CategoriesScreen = ({ navigation, route }) => {
     }
 
     return (
-      <TouchableOpacity onPress={() => handleNavigation(item, subItem)} style={styles.itemContainer}>
-
+      <TouchableOpacity onPress={() => onNavigate(item, subItem)} style={styles.itemContainer}>
         <View style={styles.itemCard}>
           <Image source={{ uri: subItem.sub_category_image }} resizeMode='stretch' style={styles.itemImage} />
         </View>
@@ -189,20 +187,40 @@ const CategoriesScreen = ({ navigation, route }) => {
         </Text>
       </TouchableOpacity>
     );
-  };
+  });
 
-  const renderCategory = ({ item }) => (
+  const CategorySection = memo(({ item, onNavigate }) => (
     <View style={styles.categorySection}>
       <Text style={styles.categoryTitle}>{item.category_name}</Text>
       <FlatList
         data={item.sub_categories}
-        renderItem={({ item: subItem }) => renderItem(item, subItem)}
+        renderItem={({ item: subItem }) => (
+          <CategoryItem 
+            item={item} 
+            subItem={subItem} 
+            onNavigate={onNavigate} 
+          />
+        )}
         keyExtractor={item => item.id}
         numColumns={3}
         columnWrapperStyle={styles.itemsGrid}
         scrollEnabled={false}
       />
     </View>
+  ));
+
+  const renderItem = (item, subItem) => {
+    return (
+      <CategoryItem 
+        item={item} 
+        subItem={subItem} 
+        onNavigate={handleNavigation} 
+      />
+    );
+  };
+
+  const renderCategory = ({ item }) => (
+    <CategorySection item={item} onNavigate={handleNavigation} />
   );
 
   const renderSearchResult = ({ item }) => (
@@ -356,7 +374,7 @@ const CategoriesScreen = ({ navigation, route }) => {
               data={filteredCategories}
               renderItem={renderCategory}
               keyExtractor={item => item.category_id}
-              contentContainerStyle={[styles.categoriesList, !route?.params?.isFromHome && { paddingBottom: 90, marginTop: responsiveHeight(2) }]}
+              contentContainerStyle={[styles.categoriesList, !route?.params?.isFromHome && { paddingBottom: 120, marginTop: responsiveHeight(2) }]}
               showsVerticalScrollIndicator={false}
             />
           )}

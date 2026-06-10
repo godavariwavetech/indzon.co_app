@@ -29,7 +29,7 @@ const persistedAuth = persistReducer(persistConfig, AuthSlice);
 const dashboardPersistConfig = {
   key: 'dashboardCart',
   storage: AsyncStorage,
-  whitelist: ['cartItems', 'cartRestaurant','totalPrice']
+  whitelist: ['cartItems', 'cartRestaurant', 'totalPrice', 'categories', 'banners', 'homeRestaurnats']
 };
 
 export const store = configureStore({

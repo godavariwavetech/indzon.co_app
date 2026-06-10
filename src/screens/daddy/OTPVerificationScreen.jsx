@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {verifyOTP, checkAddressExistence} from '../../redux/reducers/daddy';
-import Geolocation from '@react-native-community/geolocation';
+import Geolocation from 'react-native-geolocation-service';
 
 export default function OTPVerificationScreen({navigation}) {
   const [otp, setOtp] = useState('');

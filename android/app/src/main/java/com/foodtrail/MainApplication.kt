@@ -1,4 +1,4 @@
-package com.amaraa
+package com.amaraa.user
 
 import android.app.Application
 import com.facebook.react.PackageList
