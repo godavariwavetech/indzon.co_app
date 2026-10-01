@@ -59,6 +59,8 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Install CocoaPods dependencies
+        env:
+          USE_FRAMEWORKS: static
         run: bundle exec pod install --project-directory=ios
 
       - name: Import signing certificate and provisioning profile
