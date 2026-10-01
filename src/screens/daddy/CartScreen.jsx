@@ -8,7 +8,6 @@ import {
   StyleSheet,
   TextInput,
   KeyboardAvoidingView,
-  Platform,
   Alert,
   Modal,
 } from 'react-native';
@@ -221,7 +220,7 @@ const CartScreen = ({ navigation, route }) => {
             )}
           />
 
-          <View style={[styles.bottomContainer, { bottom: 0, paddingBottom: (route.params?.isFromRestaurant ? 0 : (Platform.OS === 'ios' ? 85 : 60)) + insets.bottom }]}>
+          <View style={[styles.bottomContainer, { bottom: 0, paddingBottom: route.params?.isFromRestaurant ? insets.bottom : 0 }]}>
             <View style={styles.totalContainer}>
               <TouchableOpacity
                 onPress={() => navigation.goBack()}
@@ -341,7 +340,6 @@ const styles = StyleSheet.create({
   },
   cartContainer: {
     flex: 1,
-    paddingBottom: Platform.OS === 'ios' ? 85 : 60,
   },
   bottomContainer: {
     position: 'absolute',

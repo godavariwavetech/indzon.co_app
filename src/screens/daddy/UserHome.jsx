@@ -161,9 +161,9 @@ const RestaurantCard = memo(({ item, onPress }) => {
       style={[styles.restaurantCard, isUnavailable && styles.unavailableCard]}
       onPress={() => !isUnavailable && onPress(item)}
     >
-      {/* {item.special_offer_status == "1" && (
-        <SpecialOfferScroller offerText={item.special_offer_name} />
-      )} */}
+      {item.special_offer_status == "1" && item.special_offer_name?.trim() && (
+        <SpecialOfferScroller offerText={item.special_offer_name.trim()} />
+      )}
       <View style={styles.restaurantContent}>
         <View style={styles.restaurantImageContainer}>
           <Image source={item?.shop_image ? { uri: item.shop_image } : undefined} style={styles.restaurantImage} />

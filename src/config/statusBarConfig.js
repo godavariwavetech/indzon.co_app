@@ -57,6 +57,18 @@ export const statusBarConfig = {
     translucent: true,
     animated: true
   },
+  checkout: {
+    backgroundColor: 'transparent',
+    barStyle: 'light-content',
+    translucent: true,
+    animated: true
+  },
+  coupons: {
+    backgroundColor: 'transparent',
+    barStyle: 'light-content',
+    translucent: true,
+    animated: true
+  },
   
   cart: {
     backgroundColor: '#E7432D',

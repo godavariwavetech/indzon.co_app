@@ -51,13 +51,19 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   const [summaryExpanded, setSummaryExpanded] = useState(true);
 
   const { chargesList } = useSelector((state) => state.address);
+  const orderId = route.params?.orderDetails?.id
+    ?? route.params?.orderDetails?.order_id
+    ?? route.params?.orderId;
 
   const getOrderData = async () => {
-    const response = await dispatch(
-      getOrders({ orderId: route.params?.orderDetails?.id }),
-    );
-    if (response.payload?.data) {
-      setOrderDetails(response.payload.data[0]);
+    if (!orderId) return;
+    try {
+      const response = await dispatch(getOrders({ orderId }));
+      const data = response.payload?.data;
+      const details = Array.isArray(data) ? data[0] : data;
+      if (details) setOrderDetails(details);
+    } catch (error) {
+      console.error('Unable to load order details:', error);
     }
   };
 
@@ -67,8 +73,10 @@ const OrderDetailsScreen = ({ navigation, route }) => {
       getOrderDetails({ orderId: orderDetails.id }),
     );
     console.log(response.payload, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>RESPONSEEEEE PAYLOADDDD",orderDetails);
-    if (response.payload?.data) {
-      setSubOrderData(response.payload.data);
+    if (Array.isArray(response.payload?.data)) {
+      setSubOrderData(response.payload.data.filter(Boolean));
+    } else {
+      setSubOrderData([]);
     }
   };
 
@@ -78,7 +86,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     getOrderData();
-  }, [route.params?.orderDetails?.id]);
+  }, [orderId]);
 
   useEffect(() => {
     if (orderDetails?.order_status === 3 && orderDetails?.order_rating_status !== null) {
@@ -101,10 +109,11 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   }, [route.params]);
 
   useEffect(() => {
-    const unsubscribe = getMessaging().onMessage(async () => {
-      onRefresh();
-    });
-    return unsubscribe;
+    try {
+      return getMessaging().onMessage(async () => onRefresh());
+    } catch (error) {
+      console.warn('Order detail message listener unavailable:', error);
+    }
   }, []);
 
   const handleBackPress = () => {
@@ -146,7 +155,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
       await dispatch(
         submitReview({
           shopId: orderDetails?.shop_id,
-          orderId: route.params?.orderDetails?.id,
+          orderId,
           rating,
           comment,
         }),
@@ -279,7 +288,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
 
         {/* Card 2: Cart Items + RE-ORDER */}
         <View style={[styles.card, styles.borderedCard]}>
-          {subOrderData?.map((item, idx) => (
+          {subOrderData.map((item, idx) => (
             <View key={item.id || idx} style={styles.cartItemRow}>
               {/* Image Box */}
               <View style={styles.itemImageContainer}>

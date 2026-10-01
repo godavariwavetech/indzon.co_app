@@ -7,10 +7,8 @@ import {
   ScrollView,
   Image,
   FlatList,
-  StatusBar,
   Modal,
   ActivityIndicator,
-  SafeAreaView,
   Alert
 } from 'react-native';
 import {
@@ -40,9 +38,11 @@ import RestaurantScreen from './RestaurantScreen';
 import commonStyles from '../../commonstyles/CommonStyles';
 import StatusBarManager from '../../components/StatusBarManager';
 import RazorpayCheckout from 'react-native-razorpay';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 const CheckoutScreen = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
   const { cartItems, totalPrice } = useSelector(state => state.Dashboard);
   const { appliedCoupon } = useSelector(state => state.coupons);
   const { chargesList, selectedAddress } = useSelector(
@@ -468,10 +468,10 @@ const CheckoutScreen = ({ navigation, route }) => {
 
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <View style={styles.container}>
         <StatusBarManager screenName="checkout" />
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
           <View style={styles.headerTop}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <AntDesign name="arrowleft" size={24} color="#fff" />
@@ -720,7 +720,7 @@ const CheckoutScreen = ({ navigation, route }) => {
         </ScrollView>
 
         {/* Bottom Payment Section */}
-        <View style={[styles.paymentSection, { position: 'absolute', bottom: "5%", width: '100%' }]}>
+        <View style={[styles.paymentSection, { position: 'absolute', bottom: insets.bottom + 8, width: '100%' }]}>
           {/* Payment Method Selection */}
           <View style={styles.paymentMethodContainer}>
             <Text style={styles.paymentMethodTitle}>Choose Payment Method</Text>
@@ -860,7 +860,7 @@ const CheckoutScreen = ({ navigation, route }) => {
         </Modal>
 
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -875,7 +875,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'space-between',
     paddingHorizontal: responsiveWidth(5),
-    paddingTop: responsiveHeight(6),
     paddingBottom: responsiveHeight(2),
   },
   backButton: {

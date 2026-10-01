@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   Keyboard,
   StatusBar,
+  Platform,
+  PermissionsAndroid,
 } from 'react-native';
 import MapView from 'react-native-maps';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -30,6 +32,7 @@ import {
 } from '../../redux/reducers/auth';
 import commonStyles from '../../commonstyles/CommonStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PERMISSIONS, RESULTS, check, request } from 'react-native-permissions';
 
 const DEFAULT_REGION = {
   latitude: 16.9979679,
@@ -123,16 +126,45 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
 
       setRegion(newRegion);
       mapRef.current?.animateToRegion(newRegion, 1000);
-      await getAddressFromCoordinates(newRegion.latitude, newRegion.longitude);
+      const currentAddress = await getAddressFromCoordinates(newRegion.latitude, newRegion.longitude);
       dispatch(setLocation(newRegion));
-      dispatch(setLocationName(address));
+      dispatch(setLocationName(currentAddress));
       dispatch(setLocationId(null));
     } catch (error) {
       console.error('Error getting location:', error);
+      setAddress('Unable to retrieve your location. Check location services and permissions.');
     } finally {
       setIsLoadingLocation(false);
     }
   }, [dispatch]);
+
+  const requestLocationPermission = useCallback(async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const status = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Location permission',
+            message: 'Amaraa uses your location to find available delivery and service areas.',
+            buttonPositive: 'Allow',
+            buttonNegative: 'Not now',
+          },
+        );
+        if (status === PermissionsAndroid.RESULTS.GRANTED) await getCurrentLocation();
+        else setAddress('Allow location access in Settings to use your current location.');
+        return;
+      }
+
+      const permission = PERMISSIONS.IOS.LOCATION_WHEN_IN_USE;
+      const currentStatus = await check(permission);
+      const status = currentStatus === RESULTS.GRANTED ? currentStatus : await request(permission);
+      if (status === RESULTS.GRANTED || status === RESULTS.LIMITED) await getCurrentLocation();
+      else setAddress('Allow location access in Settings to use your current location.');
+    } catch (error) {
+      console.error('Unable to request location permission:', error);
+      setAddress('Unable to request location permission. Check your device settings.');
+    }
+  }, [getCurrentLocation]);
 
   const handleSearch = useCallback(text => {
     setSearchQuery(text);
@@ -355,7 +387,7 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
             isLoadingLocation && styles.currentLocationButtonLoading,
             isKeyboardVisible && { bottom: 20 },
           ]}
-          onPress={getCurrentLocation}
+          onPress={requestLocationPermission}
           disabled={isLoadingLocation}>
           {isLoadingLocation ? (
             <ActivityIndicator color={commonStyles.appMainColor} size="small" />

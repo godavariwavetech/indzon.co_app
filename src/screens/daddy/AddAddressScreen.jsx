@@ -31,6 +31,7 @@ import { setUserDetails } from '../../redux/reducers/addressSlice';
 import commonStyles from '../../commonstyles/CommonStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'react-native';
+import { PERMISSIONS, RESULTS, check, request } from 'react-native-permissions';
 
 const AddAddressScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
@@ -165,32 +166,30 @@ const AddAddressScreen = ({ navigation, route }) => {
   }, []);
 
   const requestLocationPermission = useCallback(async () => {
-    if (Platform.OS === 'ios') {
-      getCurrentLocation();
-    } else {
-      try {
+    try {
+      if (Platform.OS === 'android') {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
           {
-            title: 'Location Permission',
-            message:
-              'This app needs access to your location to provide delivery services.',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
+            title: 'Location permission',
+            message: 'Amaraa needs your location to save a delivery address.',
+            buttonPositive: 'Allow',
+            buttonNegative: 'Not now',
           },
         );
-        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-          getCurrentLocation();
-        } else {
-          showCustomModal(
-            'Permission Denied',
-            'Location permission is required to use this feature.',
-          );
-        }
-      } catch (err) {
-        console.warn(err);
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) getCurrentLocation();
+        else showCustomModal('Permission Denied', 'Location permission is required to use your current location.');
+        return;
       }
+
+      const permission = PERMISSIONS.IOS.LOCATION_WHEN_IN_USE;
+      const currentStatus = await check(permission);
+      const status = currentStatus === RESULTS.GRANTED ? currentStatus : await request(permission);
+      if (status === RESULTS.GRANTED || status === RESULTS.LIMITED) getCurrentLocation();
+      else showCustomModal('Permission Denied', 'Allow location access in Settings to use your current location.');
+    } catch (error) {
+      console.warn('Unable to request location permission:', error);
+      showCustomModal('Location Unavailable', 'Check location permissions and device location services, then try again.');
     }
   }, []);
 

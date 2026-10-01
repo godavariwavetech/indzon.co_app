@@ -5,10 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  StatusBar,
   Modal,
   Alert,
-  SafeAreaView,
 } from 'react-native';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import AntDesign from 'react-native-vector-icons/AntDesign';
@@ -17,16 +15,18 @@ import { useDispatch, useSelector } from 'react-redux';
 import { applyCoupon, fetchCoupons, removeCoupon } from '../../redux/reducers/coupons';
 import StatusBarManager from '../../components/StatusBarManager';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 const CouponsScreen = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
   const [selectedCoupon, setSelectedCoupon] = useState(null);
   const {appliedCoupon} = useSelector(state => state.coupons);
   const {totalPrice} = useSelector(state => state.Dashboard);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
   const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const {coupons} = useSelector(state=>state.coupons)
+  const coupons = useSelector(state => state.coupons.coupons) || [];
   const dispatch = useDispatch();
 
   
@@ -70,20 +70,22 @@ const CouponsScreen = ({ navigation, route }) => {
     }
   };
 
-  useEffect(()=>{
-    dispatch(fetchCoupons({shop_id:reaturantDetails.shop_id,location_id:selectedAddress.location_id,category_id:reaturantDetails.category_id    }))
-  },[])
+  useEffect(() => {
+    const shopId = reaturantDetails?.shop_id;
+    const locationId = selectedAddress?.location_id;
+    const categoryId = reaturantDetails?.category_id;
+    if (shopId && locationId && categoryId) {
+      dispatch(fetchCoupons({ shop_id: shopId, location_id: locationId, category_id: categoryId }));
+    }
+  }, [dispatch, reaturantDetails?.shop_id, reaturantDetails?.category_id, selectedAddress?.location_id]);
 
 
   return (
     <>
-    <StatusBarManager barStyle='light-content'  screenName="Coupons" />
-    <SafeAreaView style={styles.container}> 
+    <StatusBarManager screenName="coupons" />
     <View style={styles.container}>
-      {/* <StatusBar barStyle={'light-content'} backgroundColor={'#065E2C'} /> */}
-      
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
               <AntDesign name="arrowleft" size={24} color="#fff" />
@@ -92,7 +94,10 @@ const CouponsScreen = ({ navigation, route }) => {
         </View>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: selectedCoupon ? 140 : 24 }}
+      >
         {coupons.length === 0 ? (
           <View style={{flex: 1, alignItems: 'center', justifyContent: 'center',height:responsiveHeight(80)}}>
             <MaterialIcons name="local-offer" size={60} color="#E0E0E0" />
@@ -138,7 +143,7 @@ const CouponsScreen = ({ navigation, route }) => {
       </ScrollView>
 
       {selectedCoupon && (
-        <View style={styles.bottomContainer}>
+        <View style={[styles.bottomContainer, { bottom: insets.bottom + 8 }]}>
           <TouchableOpacity 
             style={styles.applyButton}
             onPress={handleConfirmApply}
@@ -200,7 +205,6 @@ const CouponsScreen = ({ navigation, route }) => {
         </View>
       </Modal>
     </View>
-    </SafeAreaView>
     </>
   );
 };
@@ -216,7 +220,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'space-between',
     paddingHorizontal: responsiveWidth(5),
-    paddingTop: responsiveHeight(6),
     paddingBottom: responsiveHeight(2),
   },
   headerTop: {
@@ -302,7 +305,6 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     position: 'absolute',
-    bottom: "5%",
     left: 0,
     right: 0,
     backgroundColor: '#fff',
