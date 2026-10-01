@@ -328,7 +328,9 @@ const styles = StyleSheet.create({
     paddingBottom: responsiveHeight(15),
     position: 'relative',
     borderBottomLeftRadius: 26,
-    borderBottomRightRadius: 26
+    borderBottomRightRadius: 26,
+    width: '100%',
+    flexShrink: 0,
   },
   headerRow: {
     flexDirection: 'row',

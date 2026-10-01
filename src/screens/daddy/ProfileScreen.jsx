@@ -343,6 +343,8 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderBottomLeftRadius: 16,
     borderBottomRightRadius: 16,
+    width: '100%',
+    flexShrink: 0,
   },
   backButton: {
     paddingHorizontal: 20,

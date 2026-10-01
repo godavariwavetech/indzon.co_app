@@ -10,7 +10,6 @@ import {
   RefreshControl,
   Alert,
   TextInput,
-  SafeAreaView,
 } from 'react-native';
 import {
   responsiveHeight,
@@ -232,13 +231,13 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   const timelineSteps = getTimelineSteps();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBarManager screenName="orderDetails" />
 
       {/* Gradient Header */}
       <LinearGradient
         colors={['#DF4F00', '#D14A00', '#6C2600']}
-        style={[styles.header, { paddingTop: insets.top > 0 ? 0 : 10 }]}
+        style={[styles.header, { paddingTop: insets.top + 10 }]}
       >
         <TouchableOpacity
           style={styles.backButton}
@@ -252,7 +251,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Card 1: Order ID + Status + Date + Total */}
@@ -567,7 +566,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         onConfirm={handleCancelSuccess}
         showCancel={false}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -577,7 +576,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F2F2',
   },
   header: {
-    height: 100,
+    minHeight: 100,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -585,6 +584,8 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 16,
     borderBottomRightRadius: 16,
     justifyContent: 'center',
+    width: '100%',
+    flexShrink: 0,
   },
   backButton: {
     position: 'absolute',

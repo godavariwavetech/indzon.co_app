@@ -7,8 +7,14 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-  [FIRApp configure];
-  self.moduleName = @"localdaddy";
+  NSString *firebaseConfigPath = [[NSBundle mainBundle] pathForResource:@"GoogleService-Info" ofType:@"plist"];
+  if (firebaseConfigPath != nil && [FIRApp defaultApp] == nil) {
+    [FIRApp configure];
+  } else if (firebaseConfigPath == nil) {
+    NSLog(@"GoogleService-Info.plist is missing; starting without Firebase configuration.");
+  }
+  // Keep this in sync with the name registered in index.js via app.json.
+  self.moduleName = @"melocal";
   // You can add your custom initial props in the dictionary below.
   // They will be passed down to the ViewController used by React Native.
   self.initialProps = @{};

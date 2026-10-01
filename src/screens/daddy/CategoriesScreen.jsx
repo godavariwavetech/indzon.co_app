@@ -391,9 +391,10 @@ const styles = StyleSheet.create({
   },
   gradientContainer: {
     paddingBottom: 0,
-   
     borderBottomLeftRadius:20,
-    borderBottomRightRadius:20
+    borderBottomRightRadius:20,
+    width: '100%',
+    flexShrink: 0,
   },
   headerContainer: {
     flexDirection: 'row',

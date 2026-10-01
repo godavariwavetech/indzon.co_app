@@ -28,9 +28,11 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {getSearchCategory, getSearchShopList, getSearchSubCategory} from '../../redux/reducers/search';
 import {indiviadualShop} from '../../redux/reducers/addressSlice';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 export default function SearchShopList({navigation, route}) {
   const dispatch = useDispatch();
+  const insets = useSafeAreaInsets();
   const {activeSubCategory} = useSelector(state => state.Dashboard);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -333,7 +335,7 @@ export default function SearchShopList({navigation, route}) {
       />
       <LinearGradient
         colors={['#FFCC00', '#F7F2F2']}
-        style={styles.gradientContainer}>
+        style={[styles.gradientContainer, { paddingTop: insets.top + 8 }]}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -351,7 +353,7 @@ export default function SearchShopList({navigation, route}) {
               Where Briyani fall in love!
             </Text> */}
           </View>
-          <View style={{width:100,height:100,backgroundColor:'red',overflow:'hidden',borderRadius:10}}> 
+          <View style={styles.headerImageContainer}>
             <Image
             source={{uri:route?.params?.search_image}}
             resizeMode="contain"
@@ -400,27 +402,39 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   gradientContainer: {
-    paddingTop: 40,
     paddingBottom: 10,
+    width: '100%',
+    alignSelf: 'stretch',
+    flexShrink: 0,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    // marginBottom: responsiveHeight(2),
     paddingHorizontal: responsiveWidth(5),
+    minHeight: 88,
+  },
+  headerImageContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
   },
   headerLeft: {
     flex: 1,
-    paddingLeft: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 12,
   },
   backButton: {
-    marginBottom: 5,
+    padding: 4,
   },
   headerTitle: {
-    fontSize: 24,
+    flex: 1,
+    fontSize: 20,
     fontWeight: '700',
     color: '#000',
-    marginBottom: 4,
+    marginLeft: 12,
   },
   headerSubtitle: {
     fontSize: 14,
@@ -428,12 +442,10 @@ const styles = StyleSheet.create({
     color: '#3D3D3D',
   },
   headerImage: {
-    width: 191,
-    height: 131,
+    width: '100%',
+    height: '100%',
     borderRadius: 10,
-    alignSelf: 'flex-end',
-    marginRight: 10,
-    overflow:'hidden'
+    overflow: 'hidden',
   },
   filterList: {
     paddingHorizontal: 16,

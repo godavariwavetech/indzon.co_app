@@ -29,7 +29,7 @@ import Geolocation from 'react-native-geolocation-service';
 import CustomModal from '../../components/CustomModal';
 import { setUserDetails } from '../../redux/reducers/addressSlice';
 import commonStyles from '../../commonstyles/CommonStyles';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
@@ -927,11 +927,13 @@ const styles = StyleSheet.create({
   header: {
     // backgroundColor: commonStyles.btn2Color,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     paddingHorizontal: responsiveWidth(6),
     paddingTop: responsiveHeight(6),
     paddingBottom: 15,
-    gap: 10
+    gap: 10,
+    width: '100%',
+    flexShrink: 0,
   },
   backButton: {
     width: responsiveWidth(7),

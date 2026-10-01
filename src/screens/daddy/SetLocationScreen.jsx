@@ -7,7 +7,7 @@ import {
   Image,
   Dimensions,
   TouchableOpacity,
-  SafeAreaView,StatusBar,Text
+  StatusBar,Text
 } from 'react-native';
 import { Svg, Path } from 'react-native-svg'; // For the arrow icon
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,7 +33,7 @@ const SetLocationScreen = () => {
     {/* <StatusBar barStyle="dark-content" backgroundColor={'transparent'} translucent /> */}
 
 
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.imageContainer}>
         <Image
           source={require('./svg/deliveryBoy.png')}
@@ -74,7 +74,7 @@ const SetLocationScreen = () => {
           <AntDesign name="arrowright" size={25} color="#fff" />
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   </View>
   );
 };

@@ -7,7 +7,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch } from'react-redux';
 import { getChargesList } from '../../redux/reducers/addressSlice';
 import commonStyles from '../../commonstyles/CommonStyles';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';  
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SupportScreen = ({ navigation }) => {
   const dispatch = useDispatch(); 
@@ -86,7 +86,9 @@ const styles = StyleSheet.create({
     // paddingTop: 10,
     paddingVertical: responsiveHeight(3),
     borderBottomLeftRadius:16,
-    borderBottomRightRadius:16
+    borderBottomRightRadius:16,
+    width: '100%',
+    flexShrink: 0,
   },
   headerContainer: {
     flexDirection: 'row',

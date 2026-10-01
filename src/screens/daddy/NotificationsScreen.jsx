@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, RefreshControl, ActivityIndicator, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, RefreshControl, ActivityIndicator } from 'react-native';
 import { useDispatch } from 'react-redux';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   header: {
     // backgroundColor: commonStyles.appMainColor,
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
     paddingVertical: responsiveHeight(3),
     paddingHorizontal: responsiveWidth(5),
     borderBottomLeftRadius:16,
@@ -124,6 +124,8 @@ const styles = StyleSheet.create({
   
     marginBottom: responsiveHeight(2),
     // marginTop:responsiveHeight(3)
+    width: '100%',
+    flexShrink: 0,
   },
   backButton: {
     width: responsiveWidth(7),
@@ -217,4 +219,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default NotificationsScreen; 
+export default NotificationsScreen;

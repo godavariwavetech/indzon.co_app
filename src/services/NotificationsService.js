@@ -79,26 +79,35 @@ const handleNotificationNavigation = (data, navigation) => {
 // }; 
 
 export const getFCMToken = async () => {
-  const token = await messaging().getToken();
+  try {
+    const token = await messaging().getToken();
 
-  messaging().onMessage(async (remoteMessage) => {
-    await notifee.createChannel({
-      id: 'default1',
-      name: 'Default Channel',
-      importance: AndroidImportance.HIGH, // Ensures high priority notifications
-      sound: 'default', // You can add a custom sound here
-      vibration: true,
-    });
-   
-    await notifee.displayNotification({
-      title: remoteMessage.notification.title,
-      body: remoteMessage.notification.body,
-      android: {
-        channelId: "default1",
-        importance: AndroidImportance.HIGH,
-      },
-    });
-  });
+    messaging().onMessage(async remoteMessage => {
+      try {
+        await notifee.createChannel({
+          id: 'default1',
+          name: 'Default Channel',
+          importance: AndroidImportance.HIGH,
+          sound: 'default',
+          vibration: true,
+        });
 
- return token
+        await notifee.displayNotification({
+          title: remoteMessage.notification?.title,
+          body: remoteMessage.notification?.body,
+          android: {
+            channelId: 'default1',
+            importance: AndroidImportance.HIGH,
+          },
+        });
+      } catch (error) {
+        console.warn('Unable to display foreground notification:', error);
+      }
+    });
+
+    return token;
+  } catch (error) {
+    console.warn('FCM is unavailable; continuing without a notification token:', error);
+    return null;
+  }
 };

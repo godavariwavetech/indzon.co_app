@@ -27,7 +27,7 @@ import CartInactive from './tabassets/CartInactive';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { globalSearch } from '../../redux/reducers/addressSlice';
 import commonStyles from '../../commonstyles/CommonStyles';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import StatusBarManager from '../../components/StatusBarManager';
 import { ScrollView } from 'react-native-gesture-handler';
 
@@ -381,7 +381,9 @@ const styles = StyleSheet.create({
   gradientContainer: {
    paddingVertical: responsiveHeight(3),
    borderBottomLeftRadius:20,
-   borderBottomRightRadius:20
+   borderBottomRightRadius:20,
+   width: '100%',
+   flexShrink: 0,
   },
   headerContainer: {
     flexDirection: 'row',

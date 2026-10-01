@@ -29,6 +29,7 @@ import {
 } from '../../redux/reducers/auth';
 import commonStyles from '../../commonstyles/CommonStyles';
 import LinearGradient from 'react-native-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DEFAULT_REGION = {
   latitude: 16.9979679,
@@ -38,6 +39,7 @@ const DEFAULT_REGION = {
 };
 
 const SelectServiceFromLocation = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
   const mapRef = useRef(null);
   const dispatch = useDispatch();
   const [region, setRegion] = useState(DEFAULT_REGION);
@@ -310,7 +312,7 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#D14A00', '#6C2600']} style={styles.header}>
+      <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.header, { paddingTop: insets.top + 10 }]}>
         {/* <View style={styles.header}> */}
           <TouchableOpacity
             style={styles.backButton}
@@ -480,11 +482,13 @@ const styles = StyleSheet.create({
   },
   header: {
     // backgroundColor: "#E7432D",
-    height: responsiveHeight(13),
+    minHeight: 100,
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingBottom: responsiveHeight(3),
+    alignItems: 'center',
+    paddingBottom: 16,
     paddingLeft: responsiveWidth(5),
+    width: '100%',
+    flexShrink: 0,
   },
   backButton: {
     width: responsiveWidth(7),

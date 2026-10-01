@@ -391,7 +391,9 @@ const styles = StyleSheet.create({
   gradientHeader:{
     borderBottomLeftRadius:20,
     borderBottomRightRadius:20,
-    paddingBottom:10
+    paddingBottom:10,
+    width: '100%',
+    flexShrink: 0,
   },
   headerTitle: {
     color: "#fff",

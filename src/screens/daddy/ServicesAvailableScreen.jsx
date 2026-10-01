@@ -11,7 +11,6 @@ import {
   Dimensions,
   BackHandler,
   RefreshControl,
-  SafeAreaView,
   StatusBar,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
@@ -72,10 +71,9 @@ const ServicesAvailableScreen = ({ navigation, route }) => {
 
 
   return (
-    <SafeAreaView style={[styles.container]}>
+    <View style={[styles.container]}>
       <StatusBar backgroundColor={commonStyles.appMainColor} translucent={true} barStyle="light-content" />
-      <View style={styles.container}>
-        <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.header, { paddingTop: Math.max(insets.top+5, responsiveHeight(2)) }]}>
+      <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.header, { paddingTop: insets.top + 10 }]}>
           {/* <View style={[styles.header, { paddingTop: Math.max(insets.top, responsiveHeight(2)) }]}> */}
             <TouchableOpacity
               style={styles.backButton}
@@ -85,7 +83,7 @@ const ServicesAvailableScreen = ({ navigation, route }) => {
             </TouchableOpacity>
             <Text style={styles.title}>Available Service Areas</Text>
           {/* </View> */}
-        </LinearGradient>
+      </LinearGradient>
 
         <View style={styles.searchContainer}>
           <TextInput
@@ -112,7 +110,7 @@ const ServicesAvailableScreen = ({ navigation, route }) => {
             }
             data={filteredAreas}
             keyExtractor={item => item.id.toString()}
-            contentContainerStyle={styles.listContainer}
+            contentContainerStyle={[styles.listContainer, { paddingBottom: insets.bottom + 16 }]}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.areaCard}
@@ -142,8 +140,7 @@ const ServicesAvailableScreen = ({ navigation, route }) => {
             }
           />
         )}
-      </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -156,10 +153,12 @@ const styles = StyleSheet.create({
   header: {
     // backgroundColor: commonStyles.appMainColor,
     flexDirection: "row",
-    alignItems: "flex-end",
-    paddingBottom: responsiveHeight(3),
+    alignItems: "center",
+    paddingBottom: 16,
     paddingLeft: responsiveWidth(5),
-    gap: 10
+    gap: 10,
+    width: '100%',
+    flexShrink: 0,
   },
   backButton: {
     width: responsiveWidth(7)

@@ -8,7 +8,6 @@ import { useDispatch } from 'react-redux';
 import { submitAppReview } from '../../redux/reducers/reviews';
 import CustomModal from '../../components/CustomModal';
 import commonStyles from '../../commonstyles/CommonStyles';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const FeedbackScreen = ({ navigation }) => {
@@ -100,7 +99,9 @@ const styles = StyleSheet.create({
   gradientContainer: {
    paddingVertical: responsiveHeight(3),
    borderBottomLeftRadius:16,
-   borderBottomRightRadius:16
+   borderBottomRightRadius:16,
+   width: '100%',
+   flexShrink: 0,
   //  paddingTop: 40
   },
   headerContainer: {
@@ -171,4 +172,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FeedbackScreen; 
+export default FeedbackScreen;

@@ -27,7 +27,7 @@ import { setSelectedAddress as setSelectedAddressAction, setUserDetails } from '
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import { haversineDistance } from './distanceCalculator';
 import commonStyles from '../../commonstyles/CommonStyles';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 
 const AddressListScreen = ({ navigation, route }) => {
@@ -371,14 +371,16 @@ const styles = StyleSheet.create({
   header: {
     // backgroundColor: commonStyles.appMainColor,
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
     paddingHorizontal: responsiveWidth(6),
      paddingVertical: responsiveHeight(3),
     // paddingTop: responsiveHeight(6),
     // paddingBottom: 20,
     gap: 10,
     borderBottomLeftRadius:16,
-    borderBottomRightRadius:16
+    borderBottomRightRadius:16,
+    width: '100%',
+    flexShrink: 0,
   },
   backButton: {
     width: responsiveWidth(7)

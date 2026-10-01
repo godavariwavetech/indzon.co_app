@@ -6,7 +6,7 @@ import {
   Image,
   Dimensions,
   TouchableOpacity,
-  SafeAreaView,StatusBar,Text,
+  StatusBar,Text,
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
@@ -62,7 +62,7 @@ const LoginScreen = () => {
       <View style={{ flex: 1, backgroundColor: commonStyles.bgColor }}>
         <StatusBarManager screenName="login" />
 
-        <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={[styles.container, { paddingTop: insets.top }]}>
           <View style={styles.imageContainer}>
             <Image
               source={require('./svg/LoginImg.png')}
@@ -90,7 +90,7 @@ const LoginScreen = () => {
               <AntDesign name="arrowright" size={25} color="#fff" />
             </TouchableOpacity>
           </View>
-        </SafeAreaView>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
