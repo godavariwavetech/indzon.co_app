@@ -5,7 +5,6 @@ import {
   TextInput,
   FlatList,
   Image,
-  StatusBar,
   StyleSheet,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -15,7 +14,6 @@ import {
   Keyboard,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import LinearGradient from 'react-native-linear-gradient';
 import {
   responsiveHeight,
   responsiveWidth,
@@ -266,8 +264,9 @@ const CategoriesScreen = ({ navigation, route }) => {
       style={styles.container}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
+      <StatusBarManager screenName="categories" />
       {/* <LinearGradient colors={['#FD0', '#F7F2F2']} style={styles.gradientContainer}> */}
-      <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.gradientContainer, { paddingTop: insets.top }]}>
+      <View style={[styles.gradientContainer, { paddingTop: insets.top, backgroundColor: '#D14A00' }]}>
         <View style={styles.headerContainer}>
           {route.params?.isFromHome ? (
             <TouchableOpacity
@@ -316,7 +315,7 @@ const CategoriesScreen = ({ navigation, route }) => {
             )}
           </View>
         </View>
-      </LinearGradient>
+      </View>
 
       {loading ? (
         <View style={styles.loaderContainer}>

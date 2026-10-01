@@ -56,8 +56,8 @@ const TabNavigator=()=>{
           },
           tabBarActiveTintColor: commonStyles.appMainColor,
           tabBarInactiveTintColor: "#64748B",
-          tabBarStyle: { backgroundColor: "#fff", paddingBottom: 5, height: 60 ,borderTopWidth:1,borderColor:commonStyles.mainColor},
-          tabBarLabelStyle: { fontSize: 12,fontWeight:400,marginTop:4 },
+          tabBarStyle: { backgroundColor: "#fff", borderTopWidth: 1, borderColor: commonStyles.mainColor },
+          tabBarLabelStyle: { fontSize: 12, fontWeight: '400', marginTop: 0 },
         })}
       >
         <Tab.Screen name="Home" component={UserHome}  options={{headerShown:false}} />

@@ -8,7 +8,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import commonStyles from '../../commonstyles/CommonStyles';
 import StatusBarManager from '../../components/StatusBarManager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import LinearGradient from 'react-native-linear-gradient';
 
 const NotificationsScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -58,14 +57,15 @@ const NotificationsScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.header, { paddingTop: insets.top }]} >
+      <StatusBarManager backgroundColor="transparent" barStyle="light-content" translucent />
+      <View style={[styles.header, { paddingTop: insets.top, backgroundColor: '#D14A00' }]}>
       <>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.title}>Notifications</Text>
       </>
-      </LinearGradient>
+      </View>
 
       <View style={styles.contentContainer}>
         {loading ? (

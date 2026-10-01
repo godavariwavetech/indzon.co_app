@@ -71,11 +71,29 @@
   <string>This app needs access to your location even when the app is in the background for better service recommendations.</string>
   <key>NSUserNotificationUsageDescription</key>
   <string>This app would like to send you notifications about your orders and offers.</string>
-  <key>UIBackgroundModes</key>
-  <array>
-    <string>location</string>
-    <string>fetch</string>
-  </array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>fetch</string>
+	</array>
+	<key>UIAppFonts</key>
+	<array>
+		<string>AntDesign.ttf</string>
+		<string>Entypo.ttf</string>
+		<string>EvilIcons.ttf</string>
+		<string>Feather.ttf</string>
+		<string>FontAwesome.ttf</string>
+		<string>FontAwesome5_Brands.ttf</string>
+		<string>FontAwesome5_Regular.ttf</string>
+		<string>FontAwesome5_Solid.ttf</string>
+		<string>FontAwesome6_Brands.ttf</string>
+		<string>FontAwesome6_Regular.ttf</string>
+		<string>FontAwesome6_Solid.ttf</string>
+		<string>Ionicons.ttf</string>
+		<string>MaterialCommunityIcons.ttf</string>
+		<string>MaterialIcons.ttf</string>
+		<string>SimpleLineIcons.ttf</string>
+	</array>
   <key>NSPhotoLibraryUsageDescription</key>
   <string>This app requires access to your photo library for profile and order images.</string>
   <key>NSCameraUsageDescription</key>

@@ -11,7 +11,6 @@ import {
   Dimensions,
   StatusBar
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import commonStyles from '../../commonstyles/CommonStyles';
 import { useNavigation } from '@react-navigation/native';
@@ -20,6 +19,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import ReviewStar from '../daddy/tabassets/ReviewStar';
 import DotsVertical from '../daddy/svg/DotsVertical';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import VegIcon from '../daddy/svg/VegIcon';
 import NonVegIcon from '../daddy/svg/NonVEgIcon';
 
@@ -115,6 +115,7 @@ const RestaurantCard = ({ item }) => (
 );
 
 const RestaurantsScreen = () => {
+  const insets = useSafeAreaInsets();
     const [selectedFilter, setSelectedFilter] = useState(null);
     const [searchText, setSearchText] = useState('');
 
@@ -126,15 +127,9 @@ const RestaurantsScreen = () => {
 
   return (
     <View style={styles.container}>
-        {/* <StatusBar barStyle="light-content" backgroundColor={'transparent'} translucent /> */}
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       {/* Header */}
-      <LinearGradient
-        // colors={['#ff5f6d', '#ffc371']}
-        colors={['#ff417f', '#ffc371']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.headerContainer}
-      >
+      <View style={[styles.headerContainer, { paddingTop: insets.top + 16, backgroundColor: '#ff417f' }]}>
         <View style={styles.headerContent}>
           <View>
             <TouchableOpacity onPress={()=>navigation.goBack()}>
@@ -148,7 +143,7 @@ const RestaurantsScreen = () => {
             style={styles.headerImage}
           />
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Filters */}
       <View>
@@ -208,7 +203,7 @@ const styles = StyleSheet.create({
     // paddingTop: 16,
   },
   headerContainer: {
-    height: 166,
+    minHeight: 166,
     padding: 16,
     borderBottomLeftRadius: 16,
     borderBottomRightRadius: 16,

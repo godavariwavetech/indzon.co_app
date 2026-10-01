@@ -28,7 +28,6 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
 import { haversineDistance } from './distanceCalculator';
 import commonStyles from '../../commonstyles/CommonStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import LinearGradient from 'react-native-linear-gradient';
 
 const AddressListScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
@@ -211,16 +210,16 @@ const AddressListScreen = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      {/* <StatusBar backgroundColor={commonStyles.btn2Color} barStyle="light-content" translucent /> */}
+      <StatusBar backgroundColor="transparent" barStyle="light-content" translucent />
 
-      <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.header, { paddingTop: insets.top+10 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: '#D14A00' }]}>
       {/* <View style={[styles.header, { paddingTop: insets.top }]}> */}
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.title}>Address List</Text>
       {/* </View> */}
-      </LinearGradient>
+      </View>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>

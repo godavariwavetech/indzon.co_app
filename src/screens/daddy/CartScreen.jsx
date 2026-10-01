@@ -6,7 +6,6 @@ import {
   Image,
   FlatList,
   StyleSheet,
-  StatusBar,
   TextInput,
   KeyboardAvoidingView,
   Platform,
@@ -22,7 +21,6 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from 'react-native-responsive-dimensions';
-import LinearGradient from 'react-native-linear-gradient';
 import CartInactive from './tabassets/CartInactive';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { globalSearch } from '../../redux/reducers/addressSlice';
@@ -157,6 +155,7 @@ const CartScreen = ({ navigation, route }) => {
 
   return (
     <View style={[styles.container]}>
+      <StatusBarManager screenName="cart" />
       {route.params?.isFromRestaurant ? (
         <View style={[styles.header,{paddingTop: insets.top}]}>
           <View style={styles.headerTop}>
@@ -170,7 +169,7 @@ const CartScreen = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
       ) : (
-        <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.gradientContainer,{paddingTop: insets.top+10}]}>
+        <View style={[styles.gradientContainer, { paddingTop: insets.top + 10, backgroundColor: '#D14A00' }]}>
           <View style={styles.headerContainer}>
             <CartInactive color="#fff" />
             <Text style={styles.headerTitle}>Your Cart</Text>
@@ -194,7 +193,7 @@ const CartScreen = ({ navigation, route }) => {
               )}
             </View>
           </View>}
-        </LinearGradient>
+        </View>
       )}
 
       {cartItems.length == 0 ? (

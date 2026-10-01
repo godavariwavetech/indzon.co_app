@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
+  StatusBar,
   Text,
   StyleSheet,
   ScrollView,
@@ -21,7 +22,6 @@ import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import commonStyles from '../../commonstyles/CommonStyles';
-import LinearGradient from 'react-native-linear-gradient';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 // Import the new getCustomerProfile thunk
 import { updateCustomerProfile, getCustomerProfile } from '../../redux/reducers/auth';
@@ -160,8 +160,9 @@ const UserProfileScreenLatest = () => {
 
   return (
     <View style={styles.container}>
+      <StatusBar backgroundColor="transparent" barStyle="light-content" translucent />
       {/* Header - Orange/Red background */}
-      <LinearGradient colors={['#DF4F00', '#D14A00', '#6C2600']} style={[styles.headerContainer, { paddingTop: insets.top }]} >
+      <View style={[styles.headerContainer, { paddingTop: insets.top, backgroundColor: '#D14A00' }]}>
         <View style={styles.headerRow}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -186,7 +187,7 @@ const UserProfileScreenLatest = () => {
             )}
           </View>
         </TouchableOpacity>
-      </LinearGradient>
+      </View>
 
       {isFetching ? (
         <View style={styles.loaderContainer}>

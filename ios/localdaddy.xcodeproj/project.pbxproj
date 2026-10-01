@@ -183,6 +183,7 @@
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
+				B36E38A39C264EC4B82A9F17 /* Copy Vector Icon Fonts */,
 				00EEFC60759A1932668264C0 /* [CP] Embed Pods Frameworks */,
 				E235C05ADACE081382539298 /* [CP] Copy Pods Resources */,
 			);
@@ -251,6 +252,18 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		B36E38A39C264EC4B82A9F17 /* Copy Vector Icon Fonts */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			name = "Copy Vector Icon Fonts";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nFONT_SOURCE=\"${SRCROOT}/../node_modules/react-native-vector-icons/Fonts\"\nFONT_DESTINATION=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}\"\nmkdir -p \"$FONT_DESTINATION\"\nfor FONT in AntDesign.ttf Entypo.ttf EvilIcons.ttf Feather.ttf FontAwesome.ttf FontAwesome5_Brands.ttf FontAwesome5_Regular.ttf FontAwesome5_Solid.ttf FontAwesome6_Brands.ttf FontAwesome6_Regular.ttf FontAwesome6_Solid.ttf Ionicons.ttf MaterialCommunityIcons.ttf MaterialIcons.ttf SimpleLineIcons.ttf; do\n  if [ ! -f \"$FONT_SOURCE/$FONT\" ]; then\n    echo \"error: Missing vector icon font $FONT in $FONT_SOURCE\" >&2\n    exit 1\n  fi\n  cp \"$FONT_SOURCE/$FONT\" \"$FONT_DESTINATION/$FONT\"\ndone\n";
+		};
 		00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;

@@ -20,7 +20,6 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import LinearGradient from 'react-native-linear-gradient';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getMessaging } from '@react-native-firebase/messaging';
@@ -234,11 +233,8 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     <View style={styles.container}>
       <StatusBarManager screenName="orderDetails" />
 
-      {/* Gradient Header */}
-      <LinearGradient
-        colors={['#DF4F00', '#D14A00', '#6C2600']}
-        style={[styles.header, { paddingTop: insets.top + 10 }]}
-      >
+      {/* Header content starts below the iPhone notch. */}
+      <View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: '#D14A00' }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => (route.params?.fromOrderSuccess ? handleBackPress() : navigation.goBack())}
@@ -246,7 +242,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
           <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Your Orders</Text>
-      </LinearGradient>
+      </View>
 
       <ScrollView
         style={styles.content}

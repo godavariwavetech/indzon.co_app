@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, StatusBar } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -27,15 +26,15 @@ const FeedbackScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* <StatusBar backgroundColor={commonStyles.btn2Color} barStyle={'light-content'} /> */}
-      <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.gradientContainer, { paddingTop: insets.top }]}>
+      <StatusBar backgroundColor="transparent" barStyle="light-content" translucent />
+      <View style={[styles.gradientContainer, { paddingTop: insets.top, backgroundColor: '#D14A00' }]}>
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <FontAwesome6 name="arrow-left-long" size={20} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Feedback</Text>
         </View>
-      </LinearGradient>
+      </View>
 
       <View style={styles.content}>
         <Text style={styles.title}>How was your experience?</Text>

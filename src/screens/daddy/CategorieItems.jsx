@@ -8,10 +8,8 @@ import {
   Image,
   ActivityIndicator,
   TextInput,
-  SafeAreaView,
 } from 'react-native';
 import React, { useCallback, useEffect, useState, useRef } from 'react';
-import LinearGradient from 'react-native-linear-gradient';
 import Feather from 'react-native-vector-icons/Feather';
 import HeaderPick2 from './tabassets/HeaderPick2';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -23,8 +21,10 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CategorieItems({ navigation, route }) {
+  const insets = useSafeAreaInsets();
   const dispatch = useDispatch()
   const { activeCategoryIndex, activeSubCategory } = useSelector(state => state.Dashboard)
   const [filterData, setFilterData] = useState([]);
@@ -274,9 +274,8 @@ export default function CategorieItems({ navigation, route }) {
 
   return (
       <View style={styles.main}>
-        <LinearGradient
-          colors={['#D14A00', '#6C2600']}
-          style={styles.gradientContainer}>
+        <StatusBar backgroundColor="transparent" translucent barStyle="light-content" />
+        <View style={[styles.gradientContainer, { paddingTop: insets.top + 10, backgroundColor: '#D14A00' }]}>
           <View style={styles.headerContent}>
             <View style={styles.headerLeft}>
               <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -313,7 +312,7 @@ export default function CategorieItems({ navigation, route }) {
               )}
             </View>
           </View>
-        </LinearGradient>
+        </View>
 
         {/* {renderFilters()} */}
 
@@ -329,7 +328,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   gradientContainer: {
-    paddingTop: 40,
+    paddingTop: 0,
     paddingBottom: 10,
     borderWidth: 1,
     borderColor: "#ddd"

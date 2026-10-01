@@ -10,7 +10,6 @@ import {
   TextInput,
 } from 'react-native';
 import React, {useCallback, useEffect, useState, useRef} from 'react';
-import LinearGradient from 'react-native-linear-gradient';
 import Feather from 'react-native-vector-icons/Feather';
 import HeaderPick1 from './tabassets/HeaderPick1';
 import HeaderPick2 from './tabassets/HeaderPick2';
@@ -333,9 +332,7 @@ export default function SearchShopList({navigation, route}) {
         translucent
         barStyle={'light-content'}
       />
-      <LinearGradient
-        colors={['#FFCC00', '#F7F2F2']}
-        style={[styles.gradientContainer, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.gradientContainer, { paddingTop: insets.top + 8, backgroundColor: '#FFCC00' }]}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -387,7 +384,7 @@ export default function SearchShopList({navigation, route}) {
             )}
           </View>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* {renderFilters()} */}
 

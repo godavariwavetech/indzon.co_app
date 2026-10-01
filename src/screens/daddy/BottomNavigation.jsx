@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, Pressable, Platform, StyleSheet, SafeAreaView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import User from './User';
 import HomeSvg from './HomeSvg';
 import Reorder from './Reorder';
@@ -29,7 +28,6 @@ const Tab = createBottomTabNavigator();
 export default function BottomNavigation() {
   const { cartItems } = useSelector((state) => state.Dashboard);
   const customerId = useSelector((state) => state.Auth.customerId);
-  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const initFCM = async () => {
@@ -51,7 +49,7 @@ export default function BottomNavigation() {
 
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={['bottom']}>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false,
@@ -99,16 +97,10 @@ export default function BottomNavigation() {
           tabBarInactiveTintColor: 'gray',
           tabBarLabelStyle: { fontSize: 12, fontWeight: '700' },
           tabBarStyle: {
-            height: (Platform.OS === 'ios' ? 85 : 60) + insets.bottom,
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
             elevation: 0,
             backgroundColor: '#fff',
             borderTopWidth: 1,
             borderTopColor: commonStyles.appMainColor,
-            paddingBottom: insets.bottom,
           },
           tabBarHideOnKeyboard: true,
           contentStyle: {
@@ -166,7 +158,7 @@ export default function BottomNavigation() {
           }}
         />
       </Tab.Navigator>
-    </SafeAreaView>
+    </View>
   );
 }
 

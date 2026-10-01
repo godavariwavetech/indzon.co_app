@@ -6,12 +6,12 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  StatusBar,
   Platform,
   ActivityIndicator,
   Linking,
   RefreshControl,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import {
   responsiveHeight,
   responsiveWidth,
@@ -197,11 +197,9 @@ const ProfileScreen = () => {
 
   return (
     <View style={styles.container}>
+      <StatusBar backgroundColor="transparent" barStyle="light-content" translucent />
       {/* Header Section */}
-      <LinearGradient
-        colors={['#DF4F00', '#D14A00', '#6C2600']}
-        style={[styles.headerGradient, { paddingTop: insets.top + 10 }]}
-      >
+      <View style={[styles.headerGradient, { paddingTop: insets.top + 10, backgroundColor: '#D14A00' }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
@@ -228,7 +226,7 @@ const ProfileScreen = () => {
             />
           </View>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Menu Lists */}
       <ScrollView

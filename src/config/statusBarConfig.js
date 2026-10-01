@@ -51,6 +51,12 @@ export const statusBarConfig = {
     translucent: true,
     animated: true
   },
+  orderDetails: {
+    backgroundColor: 'transparent',
+    barStyle: 'light-content',
+    translucent: true,
+    animated: true
+  },
   
   cart: {
     backgroundColor: '#E7432D',
@@ -100,4 +106,4 @@ export const statusBarConfig = {
 // Helper function to get status bar config for a screen
 export const getStatusBarConfig = (screenName) => {
   return statusBarConfig[screenName] || statusBarConfig.default;
-}; 
+};

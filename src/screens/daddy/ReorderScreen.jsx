@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, TextInput, FlatList, StyleSheet, TouchableOpacity, StatusBar, Image, ActivityIndicator, Modal, KeyboardAvoidingView, Platform, ScrollView, RefreshControl } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import ReorderInactive from './tabassets/ReorderInactive';
@@ -288,9 +287,10 @@ const ReorderScreen = ({ navigation }) => {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <StatusBar backgroundColor="transparent" barStyle="light-content" translucent />
       {/* <LinearGradient colors={['#FD0', '#F7F2F2']} style={styles.gradientContainer}> */}
       {/* <LinearGradient colors={['#FE4A31', '#FFD6CD']} style={styles.gradientContainer}> */}
-      <LinearGradient colors={['#D14A00', '#6C2600']} style={[ styles.gradientHeader,{ paddingTop: insets.top+10 }]}>
+      <View style={[styles.gradientHeader, { paddingTop: insets.top + 10, backgroundColor: '#D14A00' }]}>
         <View style={styles.headerContainer}>
           <ReorderInactive color='#fff' />
           <Text style={styles.headerTitle}>Orders</Text>
@@ -316,7 +316,7 @@ const ReorderScreen = ({ navigation }) => {
             )}
           </View>
         </View>
-      </LinearGradient>
+      </View>
       {initialLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={commonStyles.appMainColor} />

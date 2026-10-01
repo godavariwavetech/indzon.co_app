@@ -8,8 +8,9 @@ import {
   ScrollView,
   ActivityIndicator,
   Keyboard,
+  StatusBar,
 } from 'react-native';
-import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView from 'react-native-maps';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
@@ -28,7 +29,6 @@ import {
   setLocationId,
 } from '../../redux/reducers/auth';
 import commonStyles from '../../commonstyles/CommonStyles';
-import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DEFAULT_REGION = {
@@ -312,7 +312,8 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.header, { paddingTop: insets.top + 10 }]}>
+      <StatusBar backgroundColor="transparent" barStyle="light-content" translucent />
+      <View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: '#D14A00' }]}>
         {/* <View style={styles.header}> */}
           <TouchableOpacity
             style={styles.backButton}
@@ -321,14 +322,13 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
           </TouchableOpacity>
           <Text style={styles.title}>Select Service Location</Text>
         {/* </View> */}
-      </LinearGradient>
+      </View>
 
       <View style={styles.mapContainer}>
         {region && (
           <MapView
             // key={`map-${region.latitude}-${region.longitude}`}
             ref={mapRef}
-            provider={PROVIDER_GOOGLE}
             style={styles.map}
             // initialRegion={region}
             region={region}

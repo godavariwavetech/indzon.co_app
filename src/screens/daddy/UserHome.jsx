@@ -197,7 +197,7 @@ const RestaurantCard = memo(({ item, onPress }) => {
 });
 
 export default function UserHome({ navigation }) {
-  const { categories, subCategories, banners, restaurants, activeCategoryIndex, loading, userAddress, serviceAvailable, homeRestaurnats, cartItems } = useSelector(state => state.Dashboard);
+  const { categories, subCategories, banners, activeCategoryIndex, loading, userAddress, serviceAvailable, homeRestaurnats, cartItems } = useSelector(state => state.Dashboard);
   const { locationName } = useSelector(state => state.Auth);
   const { isNetworkConnected } = useSelector(state => state.address);
   const [selectedAddress, setSelectedAddress] = useState(userAddress || "");
@@ -288,14 +288,19 @@ export default function UserHome({ navigation }) {
   const getCategoriesData = async () => {
     try {
       setErrorOccured(false);
-      await Promise.all([
-        dispatch(getCategories()),
-        dispatch(getBanners()),
-        dispatch(getSubCategories({ categoryId: activeCategoryIndex }))
-      ]);
-      if (!restaurants || restaurants.length === 0) {
-        dispatch(getRestaurantsHome({ categoryId: activeCategoryIndex }));
+      const categoriesResult = await dispatch(getCategories());
+      const firstCategory = categoriesResult.payload?.data?.[0];
+      const categoryId = firstCategory?.id ?? activeCategoryIndex;
+
+      if (categoryId != null) {
+        dispatch(setActiveCategoryIndex(categoryId));
+        dispatch(setOrderOfferAmount(firstCategory?.order_offer_amount ?? 0));
+        await Promise.all([
+          dispatch(getSubCategories({ categoryId })),
+          dispatch(getRestaurantsHome({ categoryId })),
+        ]);
       }
+      dispatch(getBanners());
     } catch (error) {
       setErrorOccured(true);
     }
@@ -323,8 +328,7 @@ export default function UserHome({ navigation }) {
   }, [userAddress, authLocation, requestLocationPermission]);
 
   useFocusEffect(useCallback(() => { dispatch(getAddressList()); }, [dispatch]));
-  useFocusEffect(useCallback(() => { dispatch(setActiveCategoryIndex(1)); }, [dispatch]));
-  
+
   const checkServiceAvailability = async (force = false) => {
     if (!authLocation || !mounted || (isCheckingRef.current && !force)) return;
     
@@ -477,15 +481,17 @@ export default function UserHome({ navigation }) {
           )}
         </View>
         <View style={[commonStyles.row, { paddingHorizontal: 16, marginTop: 5, marginBottom: 10 }]}>
-          <Text style={styles.popularShopsTitle}>Popular {activeCategoryIndex === 1 ? "Restaurants" : "Shops"}</Text>
+          <Text style={styles.popularShopsTitle}>
+            Popular {categories?.find(category => category.id === activeCategoryIndex)?.category_name?.toLowerCase().includes('restaurant') ? 'Restaurants' : 'Shops'}
+          </Text>
         </View>
       </View>
     </View>
   ), [categories, banners, visibleSubCategories, subCategories, isSubCategoriesExpanded, activeCategoryIndex, renderCategoryItem, renderSubCategoryItem, navigation, handleBannerPress]);
 
   return (
-    <View style={[styles.mainContainer, { paddingTop: insets.top }]}>
-      <StatusBar backgroundColor={'#85360B'} translucent barStyle={'light-content'} />
+    <View style={styles.mainContainer}>
+      <StatusBar backgroundColor="transparent" translucent barStyle="light-content" />
       <View style={styles.container}>
 
         {/* ABSOLUTE GRADIENT BACKGROUND - Trimmed to sit right below the search bar */}
@@ -513,7 +519,7 @@ export default function UserHome({ navigation }) {
         ) : isLoading || initialNetLoad ? <Skeleton /> : serviceAvailable ? (
           <>
             {/* FIXED TOP HEADER & SEARCH BAR */}
-            <View style={styles.fixedTopSection}>
+            <View style={[styles.fixedTopSection, { paddingTop: insets.top }]}>
               {/* Location & Icons */}
               <View style={styles.newHeaderContent}>
                 <TouchableOpacity onPress={() => navigation.navigate("SelectServiceFromLocation", { selectedAddress })} style={styles.newLocationContainer}>
@@ -562,7 +568,7 @@ export default function UserHome({ navigation }) {
               keyExtractor={restaurantKeyExtractor}
               renderItem={renderRestaurantItem}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 110 }}
+              contentContainerStyle={{ paddingBottom: 12 }}
               ListHeaderComponent={ListHeader}
               initialNumToRender={6}
               maxToRenderPerBatch={10}

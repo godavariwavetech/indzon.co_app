@@ -22,7 +22,6 @@ import { setLocation, setLocationId, setLocationName } from '../../redux/reducer
 import commonStyles from '../../commonstyles/CommonStyles';
 import { colors } from '../../config/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import LinearGradient from 'react-native-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
@@ -72,8 +71,8 @@ const ServicesAvailableScreen = ({ navigation, route }) => {
 
   return (
     <View style={[styles.container]}>
-      <StatusBar backgroundColor={commonStyles.appMainColor} translucent={true} barStyle="light-content" />
-      <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.header, { paddingTop: insets.top + 10 }]}>
+      <StatusBar backgroundColor="transparent" translucent barStyle="light-content" />
+      <View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: '#D14A00' }]}>
           {/* <View style={[styles.header, { paddingTop: Math.max(insets.top, responsiveHeight(2)) }]}> */}
             <TouchableOpacity
               style={styles.backButton}
@@ -83,7 +82,7 @@ const ServicesAvailableScreen = ({ navigation, route }) => {
             </TouchableOpacity>
             <Text style={styles.title}>Available Service Areas</Text>
           {/* </View> */}
-      </LinearGradient>
+      </View>
 
         <View style={styles.searchContainer}>
           <TextInput

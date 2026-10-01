@@ -24,14 +24,13 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import { useDispatch } from 'react-redux';
 import { checkAddressExistence, setAddressList, updateUserAddress } from '../../redux/reducers/daddy';
-import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
 import CustomModal from '../../components/CustomModal';
 import { setUserDetails } from '../../redux/reducers/addressSlice';
 import commonStyles from '../../commonstyles/CommonStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 
 const AddAddressScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
@@ -544,8 +543,8 @@ const AddAddressScreen = ({ navigation, route }) => {
   // },[userDetails])
   return (
     <View style={styles.container}>
-      {/* <StatusBar backgroundColor={commonStyles.btn2Color} barStyle="light-content" translucent /> */}
-      <LinearGradient colors={['#D14A00', '#6C2600']} style={[styles.header,{paddingTop:insets.top+ 10}]}>
+      <StatusBar backgroundColor="transparent" barStyle="light-content" translucent />
+      <View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: '#D14A00' }]}>
         {/* <View style={styles.header}> */}
           <TouchableOpacity
             style={styles.backButton}
@@ -556,12 +555,11 @@ const AddAddressScreen = ({ navigation, route }) => {
             {route.params?.address ? 'Edit Address' : 'Add Address'}
           </Text>
         {/* </View> */}
-      </LinearGradient>
+      </View>
 
       <View style={styles.mapContainer}>
         <MapView
           ref={mapRef}
-          provider={PROVIDER_GOOGLE}
           style={styles.map}
           region={region}
           onRegionChangeComplete={onRegionChangeComplete}
