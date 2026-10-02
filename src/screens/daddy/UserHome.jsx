@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, memo, useMemo } from 'react';
+import { GOOGLE_MAPS_API_KEY } from '../../config/googleMaps';
 import {
   View,
   Text,
@@ -227,7 +228,7 @@ export default function UserHome({ navigation }) {
   const getAddressFromCoordinates = async (latitude, longitude) => {
     try {
       setErrorOccured(false);
-      const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyBjxoAFhr00pjmZ95SEJYoUL98A6iX8hQ4`);
+      const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}`);
       const data = await response.json();
       if (data.results && data.results.length > 0) return data.results[0].formatted_address;
       return 'Address not found';

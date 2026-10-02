@@ -64,6 +64,14 @@ You've successfully run and modified your React Native App. :partying_face:
 - If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
 - If you're curious to learn more about React Native, check out the [Introduction to React Native](https://reactnative.dev/docs/getting-started).
 
+## API key configuration
+
+Do not commit Google API keys. Add `GOOGLE_MAPS_API_KEY` as a repository Actions secret for the iOS TestFlight workflow. Local iOS builds and Metro need the same environment variable set before bundling.
+
+Android builds also need `FIREBASE_ANDROID_API_KEY`. Gradle creates the ignored `android/app/google-services.json` from `google-services.template.json` when this variable is set. Set both variables in the local build environment before running Android.
+
+The Maps key is included in the compiled app because the app calls Google Maps APIs directly. Restrict it in Google Cloud to the Amaraa bundle/package IDs and only the required Maps APIs. Rotate the key that was committed before using the new secret.
+
 # Troubleshooting
 
 If you can't get this to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.

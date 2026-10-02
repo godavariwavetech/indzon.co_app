@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { GOOGLE_MAPS_API_KEY } from '../../config/googleMaps';
 import {
   View,
   Text,
@@ -105,7 +106,7 @@ const AddAddressScreen = ({ navigation, route }) => {
   const getAddressFromCoordinates = async (latitude, longitude) => {
     try {
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyBjxoAFhr00pjmZ95SEJYoUL98A6iX8hQ4`,
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}`,
       );
       const data = await response.json();
 
@@ -479,7 +480,7 @@ const AddAddressScreen = ({ navigation, route }) => {
           const response = await fetch(
             `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
               text,
-            )}&key=AIzaSyBjxoAFhr00pjmZ95SEJYoUL98A6iX8hQ4`,
+            )}&key=${GOOGLE_MAPS_API_KEY}`,
           );
           const data = await response.json();
 
@@ -502,7 +503,7 @@ const AddAddressScreen = ({ navigation, route }) => {
     async placeId => {
       try {
         const response = await fetch(
-          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry,formatted_address&key=AIzaSyBjxoAFhr00pjmZ95SEJYoUL98A6iX8hQ4`,
+          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry,formatted_address&key=${GOOGLE_MAPS_API_KEY}`,
         );
         const data = await response.json();
 

@@ -3,6 +3,23 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 apply plugin: 'com.google.gms.google-services'
 
+def googleMapsApiKey = providers.environmentVariable("GOOGLE_MAPS_API_KEY").orNull
+def firebaseAndroidApiKey = providers.environmentVariable("FIREBASE_ANDROID_API_KEY").orNull
+def googleServicesTemplate = file("google-services.template.json")
+def googleServicesConfig = file("google-services.json")
+
+if (!googleMapsApiKey) {
+    throw new GradleException("Set GOOGLE_MAPS_API_KEY before building Android.")
+}
+if (!firebaseAndroidApiKey) {
+    throw new GradleException("Set FIREBASE_ANDROID_API_KEY before building Android.")
+}
+
+googleServicesConfig.text = googleServicesTemplate.getText("UTF-8").replace(
+    "__FIREBASE_ANDROID_API_KEY__",
+    firebaseAndroidApiKey
+)
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -81,6 +98,7 @@ android {
     namespace "com.amaraa.user"
     defaultConfig {
         applicationId "com.amaraa.user"
+        manifestPlaceholders = [googleMapsApiKey: googleMapsApiKey ?: ""]
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
