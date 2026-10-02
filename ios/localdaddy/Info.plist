@@ -67,13 +67,10 @@
 	<false/>
   <key>NSLocationWhenInUseUsageDescription</key>
   <string>This app requires your location to show nearby restaurants and services.</string>
-  <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-  <string>This app needs access to your location even when the app is in the background for better service recommendations.</string>
   <key>NSUserNotificationUsageDescription</key>
   <string>This app would like to send you notifications about your orders and offers.</string>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>location</string>
 		<string>fetch</string>
 	</array>
 	<key>UIAppFonts</key>

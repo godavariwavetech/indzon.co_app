@@ -24,7 +24,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import commonStyles from '../../commonstyles/CommonStyles';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 // Import the new getCustomerProfile thunk
-import { updateCustomerProfile, getCustomerProfile } from '../../redux/reducers/auth';
+import { updateCustomerProfile, getCustomerProfile, deleteAccount, actionLogout } from '../../redux/reducers/auth';
+import { clearCart } from '../../redux/reducers/daddy';
 
 const UserProfileScreenLatest = () => {
   const navigation = useNavigation();
@@ -42,6 +43,7 @@ const UserProfileScreenLatest = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [isImageModalVisible, setIsImageModalVisible] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [errors, setErrors] = useState({
     name: '',
     mobile: '',
@@ -105,6 +107,33 @@ const UserProfileScreenLatest = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to permanently delete your account? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsDeleting(true);
+              await dispatch(deleteAccount()).unwrap();
+              dispatch(actionLogout());
+              dispatch(clearCart());
+              navigation.reset({ index: 0, routes: [{ name: 'BottomNavigation' }] });
+            } catch (error) {
+              Alert.alert('Unable to Delete Account', 'Please try again. Your account has not been deleted.');
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const pickImageFromGallery = () => {
@@ -269,6 +298,19 @@ const UserProfileScreenLatest = () => {
               <Text style={styles.updateProfileButtonText}>Update Profile</Text>
             )}
           </TouchableOpacity>
+
+          {customerId ? (
+            <TouchableOpacity
+              style={styles.deleteAccountButton}
+              onPress={handleDeleteAccount}
+              disabled={isDeleting}>
+              {isDeleting ? (
+                <ActivityIndicator color="#B3261E" size="small" />
+              ) : (
+                <Text style={styles.deleteAccountButtonText}>Delete Account</Text>
+              )}
+            </TouchableOpacity>
+          ) : null}
         </ScrollView>
       )}
 
@@ -450,6 +492,21 @@ const styles = StyleSheet.create({
   updateProfileButtonText: {
     color: '#fff',
     fontSize: responsiveFontSize(2.2),
+    fontWeight: '700',
+  },
+  deleteAccountButton: {
+    marginHorizontal: responsiveWidth(8),
+    marginTop: responsiveHeight(2),
+    paddingVertical: responsiveHeight(1.5),
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#B3261E',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteAccountButtonText: {
+    color: '#B3261E',
+    fontSize: responsiveFontSize(2),
     fontWeight: '700',
   },
   errorText: {

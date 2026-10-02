@@ -137,13 +137,17 @@ export const deleteAccount = createAsyncThunk(
     const response = await api.post(endpoints.DELETE_ACCOUNT, {
         "user_id":customerId
     });
-    if (response) {
-      if (response.data) {
-        return fulfillWithValue(response.data);
-      } else {
-        return rejectWithValue('Something went wrong!');
-      }
+    const deletionResponse = response?.data;
+    const deletionStatus = deletionResponse?.status;
+    const requestSucceeded =
+      deletionResponse &&
+      deletionResponse.success !== false &&
+      deletionStatus !== false &&
+      (deletionStatus == null || deletionStatus === 200 || deletionStatus === '200' || deletionStatus === true);
+    if (requestSucceeded) {
+      return fulfillWithValue(deletionResponse);
     }
+    return rejectWithValue(deletionResponse?.message || 'Something went wrong!');
   },
 );
 

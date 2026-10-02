@@ -120,7 +120,9 @@ const ProfileScreen = () => {
       id: '1',
       title: 'Account',
       icon: <MaterialCommunityIcons name="account" size={24} color="#85360B" />,
-      onPress: () => navigation.navigate('UserProfileScreenLatest'),
+      onPress: () => customerId
+        ? navigation.navigate('UserProfileScreenLatest')
+        : navigation.navigate('Register1', { isFromCart: true }),
     },
     {
       id: '2',
@@ -212,7 +214,9 @@ const ProfileScreen = () => {
             </Text>
             <TouchableOpacity
               style={styles.editProfileRow}
-              onPress={() => navigation.navigate('UserProfileScreenLatest')}
+              onPress={() => customerId
+                ? navigation.navigate('UserProfileScreenLatest')
+                : navigation.navigate('Register1', { isFromCart: true })}
             >
               <Text style={styles.editProfileText}>Edit Profile</Text>
               <Icon name="chevron-right" size={18} color="#fff" />

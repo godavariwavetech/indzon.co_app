@@ -138,8 +138,9 @@ const MainNavigation = ({ userRole }) => {
 };
 
 const AppNavigation = () => {
-  const { token, userRole } = useSelector(state => state.Auth);
-  return token ? <MainNavigation userRole={2} /> : <AuthNavigation />;
+  // Restaurant menus and other public browsing features are available to guests.
+  // Account and checkout flows request sign-in where it is required.
+  return <RentalNavigation />;
 };
 
 export default AppNavigation;
