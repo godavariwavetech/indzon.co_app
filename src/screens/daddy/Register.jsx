@@ -18,7 +18,7 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from 'react-native-responsive-dimensions';
-import { actionLogin, setInitial, verifyCustomerMobile } from '../../redux/reducers/auth';
+import { setInitial, verifyCustomerMobile } from '../../redux/reducers/auth';
 import { useDispatch, useSelector } from 'react-redux';
 import CustomModal from '../../components/CustomModal';
 import commonStyles from '../../commonstyles/CommonStyles';
@@ -131,14 +131,14 @@ export default function Register({ navigation, route }) {
             <Text style={styles.continueButtonText}>Continue</Text>
           </TouchableOpacity>
 
-          {/* {!route.params?.isFromCart && (
+          {!route.params?.isFromCart && (
             <TouchableOpacity
-              onPress={() => dispatch(actionLogin())}
+              onPress={() => navigation.replace('GuestApp')}
               style={styles.skipButton}
             >
-              <Text style={styles.skipText}>Skip Login</Text>
+              <Text style={styles.skipText}>Continue as Guest</Text>
             </TouchableOpacity>
-          )} */}
+          )}
         </View>
       </View>
         </ScrollView>
