@@ -56,9 +56,15 @@ export default function OTPVerification({ navigation, route }) {
       const enteredOtp = otp.join('');
       setLoader(true);
 
-      if (paramOtp == enteredOtp) {
-        const response = await dispatch(addCustomer({ mobileNumber: route.params?.phoneNumber, otp: enteredOtp }))
-        route.params?.isFromCart ? navigation.pop(2) : dispatch(actionLogin())
+      if (paramOtp === enteredOtp) {
+        await dispatch(addCustomer({
+          mobileNumber: route.params?.phoneNumber,
+          otp: enteredOtp,
+        })).unwrap();
+        dispatch(actionLogin());
+        if (route.params?.isFromCart) {
+          navigation.pop(2);
+        }
       } else {
         setError('Please enter valid OTP');
       }

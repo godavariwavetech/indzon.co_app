@@ -16,6 +16,7 @@ import HeaderPick2 from './tabassets/HeaderPick2';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, removeFromCart } from '../../redux/reducers/daddy';
+import { actionLogin } from '../../redux/reducers/auth';
 import {
   responsiveHeight,
   responsiveWidth,
@@ -64,9 +65,10 @@ const CartScreen = ({ navigation, route }) => {
   };
 
   const handleCheckoutPress = () => {
-    if (!token) {
+    if (!customerId) {
       setShowLoginModal(true);
     } else {
+      if (!token) dispatch(actionLogin());
       navigation.navigate('AddressList', { isFromCart: true });
     }
   };
