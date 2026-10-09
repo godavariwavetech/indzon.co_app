@@ -76,5 +76,8 @@ yarn-error.log
 .aider*
 
 # Project-specific
+.env
+.env.*
+!.env.example
 Amaraa Public App APIs.postman_collection.json
 CLAUDE.md

@@ -66,6 +66,10 @@ You've successfully run and modified your React Native App. :partying_face:
 
 ## API key configuration
 
+Run `npm run check:google-keys` before committing. The Google key scan workflow checks tracked files on pushes and pull requests without printing credentials. Local `.env` files are ignored; they are not loaded automatically by the app.
+
+Before making the repository public, remove exposed keys from every branch and Git history, and rotate previously committed keys in Google Cloud. A clean current branch does not remove keys from older commits or other branches.
+
 Do not commit Google API keys. Add `GOOGLE_MAPS_API_KEY` as a repository Actions secret for the iOS TestFlight workflow. Local iOS builds and Metro need the same environment variable set before bundling.
 
 Android builds also need `FIREBASE_ANDROID_API_KEY`. Gradle creates the ignored `android/app/google-services.json` from `google-services.template.json` when this variable is set. Set both variables in the local build environment before running Android.

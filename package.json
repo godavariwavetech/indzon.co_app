@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "check:google-keys": "node scripts/check-google-keys.js",
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
