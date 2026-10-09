@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -34,6 +34,7 @@ import CustomModal from '../../components/CustomModal';
 import StatusBarManager from '../../components/StatusBarManager';
 import { colors } from '../../config/theme';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { getOrderId } from '../../utils/orderResponse';
 
 const OrderDetailsScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
@@ -42,6 +43,8 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   const [subOrderData, setSubOrderData] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [orderDetails, setOrderDetails] = useState(null);
+  const [loadError, setLoadError] = useState('');
+  const orderId = getOrderId(route.params?.orderDetails);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
 
@@ -54,25 +57,29 @@ const OrderDetailsScreen = ({ navigation, route }) => {
 
   const { chargesList } = useSelector((state) => state.address);
 
-  const getOrderData = async () => {
+  const getOrderData = useCallback(async () => {
+    if (!orderId) {
+      setLoadError('Unable to find this order. Please open it from your order history.');
+      return;
+    }
+    setLoadError('');
     const response = await dispatch(
-      getOrders({ orderId: route.params?.orderDetails?.id }),
+      getOrders({ orderId }),
     );
-    if (response.payload?.data) {
+    if (getOrders.fulfilled.match(response) && response.payload?.data?.[0]) {
       setOrderDetails(response.payload.data[0]);
+      const itemsResponse = await dispatch(
+        getOrderDetails({ orderId: response.payload.data[0].id }),
+      );
+      if (getOrderDetails.fulfilled.match(itemsResponse) && Array.isArray(itemsResponse.payload?.data)) {
+        setSubOrderData(itemsResponse.payload.data);
+      } else {
+        setLoadError('Unable to load the order items. Pull down to try again.');
+      }
+    } else {
+      setLoadError('Unable to load your order. Pull down to try again.');
     }
-  };
-
-  const fetchOrderItems = async () => {
-    if (!orderDetails?.id) return;
-    const response = await dispatch(
-      getOrderDetails({ orderId: orderDetails.id }),
-    );
-    console.log(response.payload, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>RESPONSEEEEE PAYLOADDDD",orderDetails);
-    if (response.payload?.data) {
-      setSubOrderData(response.payload.data);
-    }
-  };
+  }, [dispatch, orderId]);
 
   useEffect(() => {
     dispatch(getChargesList());
@@ -80,7 +87,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     getOrderData();
-  }, [route.params?.orderDetails?.id]);
+  }, [getOrderData]);
 
   useEffect(() => {
     if (orderDetails?.order_status === 3 && orderDetails?.order_rating_status !== null) {
@@ -88,7 +95,6 @@ const OrderDetailsScreen = ({ navigation, route }) => {
       setRating(parseInt(orderDetails?.order_rating_status));
       setComment(orderDetails?.rating_comment || '');
     }
-    fetchOrderItems();
   }, [orderDetails]);
 
   useEffect(() => {
@@ -104,10 +110,10 @@ const OrderDetailsScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     const unsubscribe = getMessaging().onMessage(async () => {
-      onRefresh();
+      await getOrderData();
     });
     return unsubscribe;
-  }, []);
+  }, [getOrderData]);
 
   const handleBackPress = () => {
     navigation.reset({
@@ -119,7 +125,6 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   const onRefresh = async () => {
     setRefreshing(true);
     await getOrderData();
-    await fetchOrderItems();
     setRefreshing(false);
   };
 
@@ -148,14 +153,13 @@ const OrderDetailsScreen = ({ navigation, route }) => {
       await dispatch(
         submitReview({
           shopId: orderDetails?.shop_id,
-          orderId: route.params?.orderDetails?.id,
+          orderId: orderDetails?.id,
           rating,
           comment,
         }),
       );
       setShowSuccessModal(true);
       await getOrderData();
-      await fetchOrderItems();
     } catch (error) {
       Alert.alert('Error', 'Failed to submit review');
     }
@@ -256,6 +260,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Card 1: Order ID + Status + Date + Total */}
+        {!!loadError && <Text accessibilityRole="alert">{loadError}</Text>}
         <View style={styles.card}>
           <View style={styles.orderIdRow}>
             <View style={styles.idContainer}>

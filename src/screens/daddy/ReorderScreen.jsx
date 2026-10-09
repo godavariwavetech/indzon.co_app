@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, TextInput, FlatList, StyleSheet, TouchableOpacity, StatusBar, Image, ActivityIndicator, Modal, KeyboardAvoidingView, Platform, ScrollView, RefreshControl } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
@@ -32,22 +32,23 @@ const ReorderScreen = ({ navigation }) => {
   const { globalSearchResults } = useSelector(state => state.address);
   const [isLoading, setIsLoading] = useState(true);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   const getOrdersData = async () => {
     try {
       setInitialLoading(true);
+      setLoadError('');
       const response = await dispatch(getOrders({ orderId: 0 }));
-
+      if (!getOrders.fulfilled.match(response)) {
+        setLoadError('Unable to load your orders. Tap Retry to try again.');
+      }
     } catch (error) {
+      setLoadError('Unable to load your orders. Tap Retry to try again.');
       console.error('Error loading orders:', error);
     } finally {
       setInitialLoading(false);
     }
   }
-
-  useEffect(() => {
-    getOrdersData();
-  }, []);
 
   const fetchOrderItems = async (orderId) => {
     try {
@@ -123,13 +124,14 @@ const ReorderScreen = ({ navigation }) => {
 
 
   const filteredOrders = orders?.filter(order =>
+    !searchQuery.trim() ||
     globalSearchResults?.some(result => result.shop_name === order.shop_name) ||
-    order.shop_name.toLowerCase().includes(searchQuery.toLowerCase())
+    (order.shop_name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await dispatch(getOrders({ orderId: 0 })); // Fetch orders again
+    await getOrdersData();
     setRefreshing(false);
   };
 
@@ -276,7 +278,7 @@ const ReorderScreen = ({ navigation }) => {
     );
   }, [loading, navigation]);
 
-  const keyExtractor = useCallback((item) => item.id, []);
+  const keyExtractor = useCallback((item) => String(item.id), []);
 
   useFocusEffect(
     useCallback(() => {
@@ -320,6 +322,13 @@ const ReorderScreen = ({ navigation }) => {
       {initialLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={commonStyles.appMainColor} />
+        </View>
+      ) : loadError ? (
+        <View style={styles.emptyListContainer}>
+          <Text accessibilityRole="alert" style={styles.emptyListText}>{loadError}</Text>
+          <TouchableOpacity accessibilityRole="button" onPress={getOrdersData}>
+            <Text style={styles.emptyListText}>Retry</Text>
+          </TouchableOpacity>
         </View>
       ) : filteredOrders?.length > 0 ? (
         <FlatList

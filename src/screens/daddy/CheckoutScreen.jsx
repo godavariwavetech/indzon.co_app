@@ -40,6 +40,8 @@ import RestaurantScreen from './RestaurantScreen';
 import commonStyles from '../../commonstyles/CommonStyles';
 import StatusBarManager from '../../components/StatusBarManager';
 import RazorpayCheckout from 'react-native-razorpay';
+import { getCreatedOrder, getPlacementOutcome, getPlacementErrorMessage } from '../../utils/orderResponse';
+import { getBaseSellingPrice } from '../../utils/orderPricing';
 
 
 const CheckoutScreen = ({ navigation, route }) => {
@@ -69,7 +71,6 @@ const CheckoutScreen = ({ navigation, route }) => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [totalSellingPrice, setTotalSellingPrice] = useState(0);
-  const [totalSellingPriceOriginal, setTotalSellingPriceOriginal] = useState(0);
   const [totalExtraPrice, setTotalExtraPrice] = useState(0);
   const [itemsTotalPrice, setItemsTotalPrice] = useState(0);
   const [totalSavings, setTotalSavings] = useState(0);
@@ -107,13 +108,11 @@ const CheckoutScreen = ({ navigation, route }) => {
       (acc, item, index) => {
         const actualTotal = parseFloat(item.actual_price) * item.quantity;
         const sellingTotal = parseFloat(item.selling_price) * item.quantity;
-        const sellingOriginal = parseFloat(item.sellingprice || 0) * item.quantity;
         const extraPriceTotal = parseFloat(item.extra_price || 0) * item.quantity;
 
         acc.totalSellingPrice += sellingTotal;
         acc.totalActualPrice += actualTotal;
         acc.totalSavings += actualTotal - sellingTotal;
-        acc.totalSellingPriceOriginal += sellingOriginal;
         acc.totalExtraPrice += extraPriceTotal;
         return acc;
       },
@@ -121,14 +120,12 @@ const CheckoutScreen = ({ navigation, route }) => {
         totalSellingPrice: 0,
         totalActualPrice: 0,
         totalSavings: 0,
-        totalSellingPriceOriginal: 0,
         totalExtraPrice: 0
       },
     );
 
     setTotalSellingPrice(totals.totalSellingPrice);
     setTotalSavings(totals.totalSavings);
-    setTotalSellingPriceOriginal(totals.totalSellingPriceOriginal);
     setTotalExtraPrice(totals.totalExtraPrice);
 
     // Coupon Handling
@@ -240,7 +237,8 @@ const CheckoutScreen = ({ navigation, route }) => {
         sub_category_id: cartItems[0]?.sub_category_id,
         admin_percentage: Number(reaturantDetails?.admin_percentage || 0),
         item_count: cartItems?.reduce((sum, item) => sum + Number(item.quantity), 0),
-        total_amount: totalSellingPriceOriginal,
+        total_amount: cartItems.reduce((sum, item) =>
+          sum + getBaseSellingPrice(item) * Number(item.quantity), 0),
         total_sub_amount: totalSellingPrice,
         extraprice_amount: totalExtraPrice,
         total_saving_amount: totalSavings,
@@ -278,7 +276,7 @@ const CheckoutScreen = ({ navigation, route }) => {
           category_id: item.category_id,
           sub_category_id: item.sub_category_id,
           category_name: item.category_name,
-          sellingprice: item.sellingprice || 0,
+          sellingprice: getBaseSellingPrice(item),
           extra_price: item.extra_price || 0,
           sub_category_name: item.sub_category_name,
           actualitem_price: item.actual_price,
@@ -301,12 +299,25 @@ const CheckoutScreen = ({ navigation, route }) => {
 
         console.log(responseCod,">>>>>>>>>>>>>>>RESPONSEEE COD");
 
-        if (!responseCod?.payload) {
-          Alert.alert("Order Failed", "Unable to place COD order. Please try again.");
+        console.log( 'IS FULFILLED:', placeOrder.fulfilled.match(responseCod) ); 
+        console.log('COD RESPONSE PAYLOAD:', responseCod.payload); 
+        console.log('COD ERROR:', responseCod.error);
+
+        const outcome = placeOrder.fulfilled.match(responseCod)
+          ? getPlacementOutcome(responseCod.payload)
+          : 'unknown';
+        if (outcome === 'failed') {
+          Alert.alert('Order Failed', getPlacementErrorMessage(responseCod.payload));
+          return;
+        }
+        if (outcome === 'unknown') {
+          Alert.alert('Check Order Status', 'We could not confirm the order response. Please check Your Orders before placing it again.', [
+            { text: 'View Orders', onPress: () => navigation.navigate('BottomNavigation', { screen: 'Reorder' }) },
+          ]);
           return;
         }
 
-        navigation.replace('OrderSuccess', { response: responseCod.payload });
+        navigation.replace('OrderSuccess', { response: getCreatedOrder(responseCod.payload) });
         return;
       }
 

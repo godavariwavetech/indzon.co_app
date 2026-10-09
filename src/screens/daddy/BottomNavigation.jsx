@@ -95,11 +95,12 @@ export default function BottomNavigation() {
             }
             return iconName;
           },
-          tabBarActiveTintColor: commonStyles.appMainColor,
-          tabBarInactiveTintColor: 'gray',
-          tabBarLabelStyle: { fontSize: 12, fontWeight: '700' },
+          tabBarActiveTintColor: '#85360B',
+          tabBarInactiveTintColor: '#969696',
+          tabBarLabelStyle: { fontSize: 12, fontWeight: '400', marginTop: 4 },
+          tabBarItemStyle: { paddingTop: 8 },
           tabBarStyle: {
-            height: (Platform.OS === 'ios' ? 85 : 60) + insets.bottom,
+            height: 64 + insets.bottom,
             position: 'absolute',
             bottom: 0,
             left: 0,
@@ -107,7 +108,7 @@ export default function BottomNavigation() {
             elevation: 0,
             backgroundColor: '#fff',
             borderTopWidth: 1,
-            borderTopColor: commonStyles.appMainColor,
+            borderTopColor: '#DFC6B8',
             paddingBottom: insets.bottom,
           },
           tabBarHideOnKeyboard: true,
@@ -120,6 +121,16 @@ export default function BottomNavigation() {
           component={UserHome}
           options={{
             tabBarLabel: 'Home',
+            contentStyle: {
+              // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
+            },
+          }}
+        />
+        <Tab.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{
+            tabBarLabel: 'You',
             contentStyle: {
               // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
             },
@@ -150,16 +161,6 @@ export default function BottomNavigation() {
           component={ReorderScreen}
           options={{
             tabBarLabel: 'Orders',
-            contentStyle: {
-              // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
-            },
-          }}
-        />
-        <Tab.Screen
-          name="Profile"
-          component={ProfileScreen}
-          options={{
-            tabBarLabel: 'You',
             contentStyle: {
               // paddingBottom: Platform.OS === 'ios' ? 85 : 60,
             },
