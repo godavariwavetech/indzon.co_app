@@ -15,20 +15,26 @@ import { useDispatch, useSelector } from 'react-redux';
 import { clearCart } from '../../redux/reducers/daddy';
 import { removeCoupon } from '../../redux/reducers/coupons';
 import commonStyles from '../../commonstyles/CommonStyles';
+import { getOrderId } from '../../utils/orderResponse';
 
 const OrderSuccessScreen = ({ navigation, route }) => {
   const {selectedAddress} = useSelector(state => state.address);
   const dispatch = useDispatch();
 
   useEffect(()=>{ 
-    setTimeout(()=>{
+    const timeout = setTimeout(()=>{
       handleBackPress()
       dispatch(clearCart())
       dispatch(removeCoupon())
     },3000)
+    return () => clearTimeout(timeout);
   },[])
 
   const handleBackPress = () => {
+    if (!getOrderId(route?.params?.response)) {
+      navigation.reset({ index: 0, routes: [{ name: 'BottomNavigation', params: { screen: 'Reorder' } }] });
+      return;
+    }
     navigation.navigate('OrderDetails',{fromOrderSuccess:true,orderDetails:route?.params?.response});
   };
 

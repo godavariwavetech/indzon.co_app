@@ -18,7 +18,6 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from 'react-native-responsive-dimensions';
-import Clock from './tabassets/Clock';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   getBanners,
@@ -42,15 +41,30 @@ import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Feather from 'react-native-vector-icons/Feather';
 import Permissions, { PERMISSIONS, RESULTS, check, request } from 'react-native-permissions';
 import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
-import StarIcon from './svg/StarIcon';
 import commonStyles from '../../commonstyles/CommonStyles';
 import { colors } from '../../config/theme';
 import { indiviadualShop } from '../../redux/reducers/addressSlice';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Skeleton from './Skeleton';
+import FoodArtwork from './tabassets/Food';
+import GroceryArtwork from './tabassets/Goceries';
+import MeatArtwork from './tabassets/Meat';
+
+const defaultCategories = [
+  { key: 'food', category_name: 'Food', Artwork: FoodArtwork },
+  { key: 'grocery', category_name: 'Grocery', Artwork: GroceryArtwork },
+  { key: 'produce', category_name: 'Vegetable & Fruits', image: require('./svg/vegetables.png') },
+  { key: 'meat', category_name: 'Meat', Artwork: MeatArtwork },
+  { key: 'pickles', category_name: 'Pickles', icon: 'food-variant' },
+  { key: 'care', category_name: 'Personal Care', icon: 'bottle-tonic-plus' },
+  { key: 'snacks', category_name: 'Snacks', icon: 'cookie' },
+  { key: 'dairy', category_name: 'Dairy Items', icon: 'bottle-soda-classic' },
+];
 
 const screenWidth = Dimensions.get('window').width;
-const itemWidth = screenWidth / 6;
+const categoryGap = Math.round(screenWidth * 0.045);
+// Fit four columns between equal side insets without an empty trailing slot.
+const itemWidth = (screenWidth - 40 - categoryGap * 3) / 4;
 
 // Memoized Banner Carousel Component
 const BannerCarousel = memo(({ banners, onBannerPress }) => {
@@ -79,16 +93,19 @@ const BannerCarousel = memo(({ banners, onBannerPress }) => {
       <Image
         source={{ uri: item.banner_image }}
         style={styles.bannerImage}
-        resizeMode="stretch"
+        resizeMode="cover"
       />
     </TouchableOpacity>
   ), [onBannerPress]);
 
   return (
+    <View>
     <FlatList
       ref={flatListRef}
       data={banners}
       horizontal
+      pagingEnabled
+      onMomentumScrollEnd={event => setCurrentIndex(Math.round(event.nativeEvent.contentOffset.x / screenWidth))}
       showsHorizontalScrollIndicator={false}
       keyExtractor={(item) => item.id.toString()}
       renderItem={renderBannerItem}
@@ -102,6 +119,12 @@ const BannerCarousel = memo(({ banners, onBannerPress }) => {
       windowSize={3}
       removeClippedSubviews={true}
     />
+    <View style={styles.bannerPagination}>
+      {banners?.map((banner, index) => (
+        <View key={banner.id} style={[styles.bannerDot, index === currentIndex && styles.bannerDotActive]} />
+      ))}
+    </View>
+    </View>
   );
 });
 
@@ -175,17 +198,18 @@ const RestaurantCard = memo(({ item, onPress }) => {
           </View>
         )}
         <View style={styles.restaurantTextContainer}>
-          <Text style={styles.restaurantName}>{item.shop_name}</Text>
-          <View style={styles.ratingRow}>
-            <StarIcon />
-            <Text style={styles.ratingText}>{item.shop_rating}</Text>
-            <Text style={styles.dot}>•</Text>
-            <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
-              <Clock />
-              <Text style={{ fontSize: 13, fontWeight: '400', color: '#000' }}>{calculateDeliveryTime(item.distance)}</Text>
+          <View style={styles.shopTitleRow}>
+            <Text style={[styles.restaurantName, { flex: 1 }]} numberOfLines={1}>{item.shop_name}</Text>
+            <View style={styles.shopMoreIcon}>
+              <MaterialCommunityIcons name="dots-vertical" size={13} color="#929292" />
             </View>
           </View>
-          <Text style={styles.addressText} numberOfLines={3}>{item.shop_address || 'Tilak Road • 3.0 km'}</Text>
+          <Text style={styles.shopTypeLabel} numberOfLines={1}>{item.category_name || 'Restaurant'}</Text>
+          <Text style={styles.shopDeliveryText}>{'\u2022'} Delivery in {calculateDeliveryTime(item.distance)}</Text>
+          <View style={styles.shopRatingBadge}>
+            <Text style={styles.shopRatingValue}>{item.shop_rating ?? 'New'}</Text>
+            <MaterialIcons name="star" size={12} color="#FFFFFF" />
+          </View>
           {item.offer && (
             <View style={styles.offerTag}>
               <Text style={styles.offerText}>{item.offer}</Text>
@@ -204,7 +228,6 @@ export default function UserHome({ navigation }) {
   const [selectedAddress, setSelectedAddress] = useState(userAddress || "");
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [isSubCategoriesExpanded, setIsSubCategoriesExpanded] = useState(false);
   const dispatch = useDispatch();
   const authLocation = useSelector(state => state.Auth.location);
   const [mounted, setMounted] = useState(true);
@@ -414,9 +437,19 @@ export default function UserHome({ navigation }) {
   const renderSubCategoryItem = useCallback(({ item }) => (
     <TouchableOpacity onPress={() => { dispatch(setsubCategory(item)); navigation.navigate('CategorieItems'); }} style={styles.subCatWrapper}>
       <View style={styles.customCard}>
+        <View style={styles.subCategoryBrownBase}>
+          <LinearGradient colors={['#D99A70', '#BA784F', '#99502D', '#793B1E']} locations={[0, 0.22, 0.58, 1]} style={StyleSheet.absoluteFillObject} />
+          <LinearGradient
+            colors={['rgba(255,240,215,0)', 'rgba(255,240,215,0.28)', 'rgba(255,240,215,0)']}
+            locations={[0, 0.45, 1]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={StyleSheet.absoluteFillObject}
+          />
+        </View>
         <Image source={{ uri: item.sub_category_image }} style={styles.customImage} resizeMode="contain" />
       </View>
-      <Text style={styles.customLabel} numberOfLines={2}>{item.sub_category_name}</Text>
+      <Text style={styles.customLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{item.sub_category_name}</Text>
     </TouchableOpacity>
   ), [dispatch, navigation]);
 
@@ -424,27 +457,45 @@ export default function UserHome({ navigation }) {
   const renderCategoryItem = useCallback((item) => {
     const isActive = item.id == activeCategoryIndex;
     return (
-      <TouchableOpacity key={item.id} style={styles.archCategoryTab} onPress={() => handleSubCategories(item)}>
+      <TouchableOpacity key={item.id || item.key} accessibilityRole="button" accessibilityLabel={item.category_name} style={styles.archCategoryTab} onPress={() => item.id ? handleSubCategories(item) : navigation.navigate('Categories')}>
         <View style={styles.archWrapper}>
           <LinearGradient 
-            colors={['#85360B', '#FFCAB0', '#FFF6F2']}
+            colors={['#A86944', '#F8CEB7', '#FFF3EB']}
             locations={[0, 0.5, 1]}
             style={styles.archBgGradient}
           />
-          <Image source={{ uri: item.category_image }} resizeMode="contain" style={styles.archCategoryImage} />
+          <View style={styles.archArtworkFrame}>
+          {item.category_image ? (
+            <Image source={{ uri: item.category_image }} resizeMode="contain" style={styles.archCategoryImage} />
+          ) : item.Artwork ? (
+            <item.Artwork width="100%" height="100%" />
+          ) : item.image ? (
+            <Image source={item.image} resizeMode="contain" style={styles.archCategoryImage} />
+          ) : (
+            <MaterialCommunityIcons name={item.icon} size={Math.round(screenWidth * 0.135)} color="#A55227" />
+          )}
+          </View>
         </View>
-        <Text numberOfLines={1} style={isActive ? styles.activeCategoryText : styles.inactiveCategoryText}>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={isActive ? styles.activeCategoryText : styles.inactiveCategoryText}>
           {item.category_name}
         </Text>
       </TouchableOpacity>
     );
-  }, [activeCategoryIndex, handleSubCategories]);
+  }, [activeCategoryIndex, handleSubCategories, navigation]);
 
   const renderRestaurantItem = useCallback(({ item }) => (
-    <RestaurantCard item={item} onPress={(shop) => navigation.navigate('RestaurantScreen', { shopId: shop.shop_id, shopItem: shop.shop_items_tb_nm, item: shop })} />
+    <View style={styles.restaurantRow}>
+      <RestaurantCard item={item} onPress={(shop) => navigation.navigate('RestaurantScreen', { shopId: shop.shop_id, shopItem: shop.shop_items_tb_nm, item: shop })} />
+    </View>
   ), [navigation]);
 
-  const visibleSubCategories = useMemo(() => isSubCategoriesExpanded ? subCategories : subCategories?.slice(0, 12), [isSubCategoriesExpanded, subCategories]);
+  const subCategoryColumns = useMemo(() => {
+    const items = Array.isArray(subCategories) ? subCategories : [];
+    const columns = Math.ceil(items.length / 2);
+    return Array.from({ length: columns }, (_, index) =>
+      [items[index], items[index + columns]].filter(Boolean),
+    );
+  }, [subCategories]);
 
   const restaurantKeyExtractor = useCallback((item, index) => item?.id?.toString() || index.toString(), []);
 
@@ -452,34 +503,31 @@ export default function UserHome({ navigation }) {
     <View style={styles.transparentBackground}>
 
       {/* 4x2 Categories Grid */}
-      {categories && (
-        <View style={styles.categoriesGridWrapper}>
-          {categories.slice(0, 8).map(renderCategoryItem)}
-        </View>
-      )}
+      <View style={styles.categoriesGridWrapper}>
+        {(categories?.length ? categories.slice(0, 8) : defaultCategories).map(renderCategoryItem)}
+      </View>
 
       {/* Wrapping the rest in a solid background so it transitions cleanly */}
       <View style={styles.solidBottomSection}>
         <BannerCarousel banners={banners} onBannerPress={handleBannerPress} />
         
         <Text style={styles.categoryHeaderTitle}>
-          {categories?.find(cat => cat.id === activeCategoryIndex)?.category_name || "Category"} Categories
+          {categories?.find(cat => cat.id == activeCategoryIndex)?.category_name || "Food"} Categories
         </Text>
         <View style={styles.customContainer}>
           <FlatList
-            data={visibleSubCategories}
-            key={6}
-            numColumns={6}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={renderSubCategoryItem}
-            scrollEnabled={false}
+            data={subCategoryColumns}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.foodCategoriesContent}
+            snapToInterval={itemWidth + categoryGap}
+            decelerationRate="fast"
+            ItemSeparatorComponent={() => <View style={{ width: categoryGap }} />}
+            keyExtractor={(items) => items[0].id.toString()}
+            renderItem={({ item: items }) => (
+              <View style={styles.subCategoryColumn}>{items.map(item => <View key={item.id}>{renderSubCategoryItem({ item })}</View>)}</View>
+            )}
           />
-          {subCategories?.length > 12 && (
-            <TouchableOpacity onPress={() => setIsSubCategoriesExpanded(prev => !prev)} style={styles.expandButton}>
-              <Text style={styles.expandButtonText}>{isSubCategoriesExpanded ? "Show Less" : "See All"}</Text>
-              <MaterialIcons name={isSubCategoriesExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={20} color={commonStyles.appMainColor} />
-            </TouchableOpacity>
-          )}
         </View>
         <View style={[commonStyles.row, { paddingHorizontal: 16, marginTop: 5, marginBottom: 10 }]}>
           <Text style={styles.popularShopsTitle}>
@@ -488,17 +536,17 @@ export default function UserHome({ navigation }) {
         </View>
       </View>
     </View>
-  ), [categories, banners, visibleSubCategories, subCategories, isSubCategoriesExpanded, activeCategoryIndex, renderCategoryItem, renderSubCategoryItem, navigation, handleBannerPress]);
+  ), [categories, banners, subCategoryColumns, subCategories, activeCategoryIndex, renderCategoryItem, renderSubCategoryItem, navigation, handleBannerPress]);
 
   return (
     <View style={styles.mainContainer}>
       <StatusBar backgroundColor="transparent" translucent barStyle="light-content" />
       <View style={styles.container}>
 
-        {/* ABSOLUTE GRADIENT BACKGROUND - Trimmed to sit right below the search bar */}
+        {/* Header background fades to white before the second category row. */}
         <LinearGradient
-          colors={['#85360B', '#DAAE97', '#FFE2D4', '#FFFFFF']}
-          locations={[0, 0.60, 0.85, 1]}
+          colors={['#88401D', '#BC896D', '#F6D8C8', '#FFFFFF']}
+          locations={[0, 0.27, 0.58, 1]}
           style={styles.absoluteGradientBg}
         />
 
@@ -524,10 +572,11 @@ export default function UserHome({ navigation }) {
               {/* Location & Icons */}
               <View style={styles.newHeaderContent}>
                 <TouchableOpacity onPress={() => navigation.navigate("SelectServiceFromLocation", { selectedAddress })} style={styles.newLocationContainer}>
-                  <View style={styles.homeIconBox}><SimpleLineIcons name="home" color="#FFF" size={20} /></View>
+                  
                   <View style={styles.newLocationTextWrap}>
                     <View style={styles.newLocationRow}>
-                      <Text style={styles.newLocationTitle}>{locationName ? locationName : 'Home'}</Text>
+                      <MaterialCommunityIcons name="home" color="#FFF" size={17} />
+                      <Text style={styles.newLocationTitle}>{selectedAddress?.address_type || 'Home'}</Text>
                       <MaterialIcons name="keyboard-arrow-down" color="#FFF" size={18} />
                     </View>
                     <Text style={styles.newLocationDesc} numberOfLines={1}>{selectedAddress?.full_address || 'Tap to choose delivery location'}</Text>
@@ -536,11 +585,11 @@ export default function UserHome({ navigation }) {
 
                 <View style={styles.rightHeaderActions}>
                   <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.navigate('Notifications')}>
-                    <FontAwesome6 name="bell" size={16} color="#333" />
+                    <MaterialCommunityIcons name="bell" size={23} color="#FFC400" />
                     <View style={styles.notificationDotMarker} />
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.navigate('Cart')}>
-                    <SimpleLineIcons name="handbag" size={16} color="#333" />
+                    <MaterialCommunityIcons name="cart" size={23} color="#C52961" />
                     {cartCount > 0 && (
                       <View style={styles.cartBadge}>
                         <Text style={styles.cartBadgeText}>{cartCount}</Text>
@@ -559,7 +608,7 @@ export default function UserHome({ navigation }) {
                 <Feather name="search" size={20} color="#979797" style={styles.searchIconLeft} />
                 <Text style={styles.searchInputPillText}>Search here..</Text>
                 <View style={styles.searchDivider} />
-                <MaterialCommunityIcons name="menu-open" size={22} color="#8C8C8C" />
+                <MaterialCommunityIcons name="notebook-outline" size={23} color="#8C8C8C" />
               </TouchableOpacity>
             </View>
 
@@ -595,7 +644,7 @@ export default function UserHome({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: "#85360B" },
+  mainContainer: { flex: 1, backgroundColor: "#88401D" },
   container: { flex: 1, backgroundColor: colors.white, position: 'relative' },
   
   /* Absolute Gradient Background */
@@ -604,29 +653,29 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 190,
+    height: 250,
     zIndex: 0,
   },
 
   /* Fixed Header Styles */
   fixedTopSection: {
     zIndex: 1, // Ensures search and header sit permanently over the background
-    paddingBottom: 10,
+    paddingBottom: 16,
   },
   newHeaderContent: { 
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'space-between', 
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingTop: 14,
+    paddingBottom: 18,
   },
   newLocationContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
   homeIconBox: { justifyContent: 'center', alignItems: 'center', width: 24, height: 24 },
   newLocationTextWrap: { flexDirection: 'column', justifyContent: 'center', maxWidth: responsiveWidth(55) },
   newLocationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   newLocationTitle: { fontFamily: 'SF Pro Display', fontWeight: '700', fontSize: 16, color: '#FFFFFF' },
-  newLocationDesc: { fontFamily: 'SF Pro Display', fontWeight: '500', fontSize: 12, color: '#FFFFFF' },
+  newLocationDesc: { fontFamily: 'SF Pro Display', fontWeight: '400', fontSize: 12, lineHeight: 20, color: '#FFFFFF' },
   rightHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerCircleBtn: { width: 34, height: 34, backgroundColor: '#FFFFFF', borderRadius: 17, justifyContent: 'center', alignItems: 'center', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4 },
   notificationDotMarker: { position: 'absolute', top: 8, right: 8, width: 6, height: 6, backgroundColor: '#FF3B30', borderRadius: 3, borderWidth: 1, borderColor: '#FFF' },
@@ -653,63 +702,90 @@ const styles = StyleSheet.create({
   },
 
   /* Search Pill Styles (Now clickable) */
-  searchPillContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 24, marginHorizontal: 16, marginTop: 5, height: 48, paddingHorizontal: 16, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10 },
+  searchPillContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 14, marginHorizontal: 16, marginTop: 3, height: 50, paddingHorizontal: 16 },
   searchIconLeft: { marginRight: 8 },
   searchInputPillText: { flex: 1, fontSize: 16, fontFamily: 'SF Pro Display', color: '#979797' },
   searchDivider: { width: 1, height: 24, backgroundColor: '#E0E0E0', marginHorizontal: 12 },
 
   /* 4x2 Grid Category Styles - Gap reduced heavily */
   transparentBackground: { backgroundColor: 'transparent' }, 
-  categoriesGridWrapper: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, justifyContent: 'space-between', paddingBottom: 0 },
-  archCategoryTab: { width: (screenWidth - 32) / 4 - 4, alignItems: 'center', marginBottom: 8 },
+  categoriesGridWrapper: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, justifyContent: 'space-between', paddingTop: 2, paddingBottom: 0 },
+  archCategoryTab: { width: (screenWidth - 32) / 4 - 4, alignItems: 'center', marginBottom: 16 },
   
   archWrapper: {
-    width: '100%',
-    aspectRatio: 0.95, 
+    width: '82%',
+    aspectRatio: 1, 
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
+    borderTopLeftRadius: 60,
+    borderTopRightRadius: 60,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    overflow: 'hidden',
+  },
+  archArtworkFrame: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   archBgGradient: {
     position: 'absolute',
     left: 0,
     right: 0,
-    top: '8%', 
+    top: 0, 
     bottom: 0,
     borderTopLeftRadius: 60,
     borderTopRightRadius: 60,
-    borderBottomLeftRadius: 14,
-    borderBottomRightRadius: 14,
-    borderWidth: 2,
-    borderColor: '#FFDCCB',
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E3D5CD',
   },
   archCategoryImage: {
-    width: '95%',
-    height: '95%',
+    width: '100%',
+    height: '100%',
     resizeMode: 'contain',
-    marginBottom: '15%', 
+    marginBottom: 0, 
   },
   
-  activeCategoryText: { fontSize: 12, fontWeight: '800', color: commonStyles.appMainColor, textAlign: 'center' },
-  inactiveCategoryText: { fontSize: 12, fontWeight: '500', color: '#313131', textAlign: 'center' },
+  activeCategoryText: { fontSize: 11, fontWeight: '400', color: '#202020', textAlign: 'center' },
+  inactiveCategoryText: { fontSize: 11, fontWeight: '400', color: '#202020', textAlign: 'center' },
 
   /* Remaining Solid Background Section (Tightened gap for Banners) */
   solidBottomSection: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 0 },
-  subCatWrapper: { width: itemWidth - 12, margin: 5, alignItems: "center", alignSelf: "flex-start", borderRadius: 8 },
-  customCard: { width: itemWidth - 12, height: 50, margin: 6, paddingVertical: 12, backgroundColor: '#FFDCCB', alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
-  customImage: { width: 40, height: 40, marginBottom: 4 },
-  customLabel: { fontSize: 10, fontWeight: '500', textAlign: 'center', color: '#000' },
-  categoryHeaderTitle: { fontSize: 18, fontWeight: '600', marginLeft: 16, marginTop: 10, color: '#000' },
-  customContainer: { paddingHorizontal: 8, paddingTop: 5, backgroundColor: '#FFFFFF', marginBottom: 4 },
-  popularShopsTitle: { fontSize: 20, fontWeight: '700', color: '#2B2B2B' },
-  bannerContainer: { width: responsiveWidth(100), height: 160, paddingHorizontal: 16, marginVertical: 4 },
-  bannerImage: { width: '100%', height: '100%', borderRadius: 12 },
-  restaurantCard: { marginBottom: 16, borderRadius: 12, backgroundColor: '#fff', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 5, marginHorizontal: 16 },
-  restaurantContent: { flexDirection: 'row', alignItems: 'flex-start', position: 'relative' },
-  restaurantImageContainer: { width: 110, height: 110, overflow: 'hidden', marginRight: 15, borderTopLeftRadius: 12, borderBottomLeftRadius: 12 },
-  restaurantImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  subCategoryColumn: { width: itemWidth, gap: 12 },
+  subCatWrapper: { width: itemWidth, alignItems: 'center' },
+  customCard: { width: itemWidth, height: itemWidth, backgroundColor: '#FFE1D1', alignItems: 'center', justifyContent: 'center', borderRadius: 15, overflow: 'hidden' },
+  subCategoryBrownBase: { position: 'absolute', width: itemWidth * 1.16, height: itemWidth * 0.9, bottom: -itemWidth * 0.48, borderRadius: itemWidth, overflow: 'hidden' },
+  customImage: { width: '100%', height: '100%', alignSelf: 'center' },
+  customLabel: { width: itemWidth + 8, height: 20, lineHeight: 20, fontSize: 13, fontWeight: '400', textAlign: 'center', color: '#151515', marginTop: 7, includeFontPadding: false },
+  categoryHeaderTitle: { fontSize: 21, fontWeight: '700', marginLeft: 16, marginTop: 12, marginBottom: 14, color: '#0C0C0C' },
+  customContainer: { backgroundColor: '#FFFFFF', marginBottom: 4 },
+  foodCategoriesContent: { paddingHorizontal: 20 },
+  popularShopsTitle: { fontSize: 16, fontWeight: '700', color: '#2B2B2B' },
+  bannerContainer: { width: screenWidth, height: (screenWidth - 32) * 0.49, paddingHorizontal: 16 },
+  bannerImage: { width: '100%', height: '100%', borderRadius: 18 },
+  bannerPagination: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, height: 28 },
+  bannerDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#D7D7D7' },
+  bannerDotActive: { width: 25, backgroundColor: '#2D3032' },
+  restaurantRow: { backgroundColor: '#FFFFFF', paddingVertical: 8 },
+  restaurantListFooter: { height: 110, backgroundColor: '#FFFFFF' },
+  restaurantCard: { borderRadius: 12, backgroundColor: '#fff', boxShadow: '0px 0px 6px 1px rgba(0, 0, 0, 0.08)', marginHorizontal: 16 },
+  restaurantContent: { flexDirection: 'row', alignItems: 'stretch', minHeight: 110, position: 'relative', borderRadius: 12, overflow: 'hidden' },
+  restaurantImageContainer: { width: '44%', overflow: 'hidden', marginRight: 12 },
+  restaurantImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%', resizeMode: 'cover' },
   restaurantTextContainer: { flex: 1, justifyContent: 'center', paddingVertical: 10, paddingRight: 10 },
   restaurantName: { fontSize: 16, fontWeight: '700', color: '#000' },
+  shopSectionHeading: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginTop: 24, marginBottom: 16, gap: 8 },
+  shopHeadingRule: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: '#CFCFCF' },
+  shopTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  shopMoreIcon: { width: 19, height: 19, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: '#BDBDBD', alignItems: 'center', justifyContent: 'center' },
+  shopTypeLabel: { fontSize: 12, color: '#6D6D6D', marginTop: 5 },
+  shopDeliveryText: { fontSize: 12, fontWeight: '600', color: '#087B38', marginTop: 7 },
+  shopRatingBadge: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 3, backgroundColor: '#087B38', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 3, marginTop: 9 },
+  shopRatingValue: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
   ratingRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
   ratingText: { fontSize: 13, marginLeft: 4, color: '#000', fontWeight: '600' },
   dot: { marginHorizontal: 6, fontSize: 14, color: '#888' },
@@ -722,7 +798,7 @@ const styles = StyleSheet.create({
   specialOfferTextContainer: { flexDirection: 'row', alignItems: 'center', position: 'absolute', left: 0, height: 24 },
   expandButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, marginTop: 5, borderTopWidth: 0.5, borderTopColor: '#eee' },
   expandButtonText: { fontSize: 13, fontWeight: '600', color: '#333', marginRight: 4 },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40, backgroundColor: '#FFFFFF' },
   emptyText: { fontSize: 14, color: '#666', textAlign: 'center' },
   offlineContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   offlineText: { fontSize: 18, color: '#333', marginTop: 10, textAlign: 'center' },

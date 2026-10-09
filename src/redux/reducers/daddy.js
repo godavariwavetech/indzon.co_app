@@ -690,7 +690,10 @@ export const Dashboard = createSlice({
     builder.addCase(getOrders.fulfilled, (state, action) => {
       state.loading.itemsList = false;
       state.message = null;
-      state.orders = action.payload.data;
+      // A detail lookup must not replace the customer's complete history.
+      if (action.meta.arg.orderId === 0) {
+        state.orders = action.payload.data;
+      }
     });
     builder.addCase(getOrders.rejected, (state, action) => {
       state.loading.itemsList = false;
@@ -760,10 +763,17 @@ export const Dashboard = createSlice({
       state.message = null;
     });
     builder.addCase(placeOrder.fulfilled, (state, action) => {
+      console.log('[placeOrder.fulfilled] Request payload:', JSON.stringify(action.meta.arg.orderDetails, null, 2));
+      console.log('[placeOrder.fulfilled] Response body:', JSON.stringify(action.payload, null, 2));
+      console.log('[placeOrder.fulfilled] Request ID:', action.meta.requestId);
       state.loading = false;
       state.message = null;
     });
     builder.addCase(placeOrder.rejected, (state, action) => {
+      console.log('[placeOrder.rejected] Request payload:', JSON.stringify(action.meta.arg.orderDetails, null, 2));
+      console.log('[placeOrder.rejected] Rejection payload:', JSON.stringify(action.payload, null, 2));
+      console.log('[placeOrder.rejected] Error:', JSON.stringify(action.error, null, 2));
+      console.log('[placeOrder.rejected] Request ID:', action.meta.requestId);
       state.loading = false;
       state.message = 'Please try again!';
     });
