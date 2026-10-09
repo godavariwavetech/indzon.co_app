@@ -40,7 +40,7 @@ import RestaurantScreen from './RestaurantScreen';
 import commonStyles from '../../commonstyles/CommonStyles';
 import StatusBarManager from '../../components/StatusBarManager';
 import RazorpayCheckout from 'react-native-razorpay';
-import { getCreatedOrder, getPlacementOutcome, getPlacementErrorMessage } from '../../utils/orderResponse';
+import { getCreatedOrder, getPlacementOutcome, getPlacementErrorMessage, getPlacementErrorTitle } from '../../utils/orderResponse';
 import { getBaseSellingPrice } from '../../utils/orderPricing';
 
 
@@ -303,11 +303,11 @@ const CheckoutScreen = ({ navigation, route }) => {
         console.log('COD RESPONSE PAYLOAD:', responseCod.payload); 
         console.log('COD ERROR:', responseCod.error);
 
-        const outcome = placeOrder.fulfilled.match(responseCod)
+        const outcome = (placeOrder.fulfilled.match(responseCod) || Number(responseCod.payload?.status) === 400)
           ? getPlacementOutcome(responseCod.payload)
           : 'unknown';
         if (outcome === 'failed') {
-          Alert.alert('Order Failed', getPlacementErrorMessage(responseCod.payload));
+          Alert.alert(getPlacementErrorTitle(responseCod.payload), getPlacementErrorMessage(responseCod.payload));
           return;
         }
         if (outcome === 'unknown') {

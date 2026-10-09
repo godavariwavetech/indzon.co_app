@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../utils/api';
 import { endpoints } from '../../config/config';
+import { getOrderRecords, getPlacementOutcome } from '../../utils/orderResponse';
 import { resetCache } from '../../../metro.config';
 
 const initialState = {
@@ -251,6 +252,11 @@ export const getItemsList = createAsyncThunk(
     })
     if (response) {
       if (response.data) {
+        if (__DEV__) {
+          console.log('[Restaurant Items] Shop ID:', shopId);
+          console.log('[Restaurant Items] Count:', response.data.data?.length ?? 0);
+          console.log('[Restaurant Items] Data:', response.data.data);
+        }
         return fulfillWithValue(response.data);
       } else {
         return rejectWithValue('Something went wrong!');
@@ -271,13 +277,12 @@ export const getOrders = createAsyncThunk(
       "customer_id": customerId,
       "order_id": orderId
     })
-    if (response) {
-      if (response.data) {
-        return fulfillWithValue(response.data);
-      } else {
-        return rejectWithValue('Something went wrong!');
-      }
+    const body = response?.data;
+    const orders = getOrderRecords(body);
+    if (!orders || getPlacementOutcome(body) === 'failed') {
+      return rejectWithValue('Unable to load orders from the server.');
     }
+    return fulfillWithValue({ ...(Array.isArray(body) ? {} : body), data: orders });
   }
 )
 
@@ -422,13 +427,26 @@ export const placeOrder = createAsyncThunk(
     { orderDetails },
     { getState, rejectWithValue, fulfillWithValue }
   ) => {
-    const response = await api.post(endpoints.PLACE_ORDER, orderDetails)
-    if (response) {
-      if (response.data) {
-        return fulfillWithValue(response.data);
-      } else {
-        return rejectWithValue('Something went wrong!');
+    try {
+      const response = await api.post(endpoints.PLACE_ORDER, orderDetails)
+      if (response) {
+        if (response.data) {
+          return fulfillWithValue(response.data);
+        } else {
+          return rejectWithValue('Something went wrong!');
+        }
       }
+    } catch (error) {
+      // HTTP 400 has the same timing-error meaning as a status: 400 response body.
+      if (Number(error.response?.status) === 400) {
+        const body = error.response.data;
+        return rejectWithValue({
+          ...(body && typeof body === 'object' ? body : {}),
+          status: 400,
+          ...(typeof body === 'string' ? { message: body } : {}),
+        });
+      }
+      throw error;
     }
   }
 )

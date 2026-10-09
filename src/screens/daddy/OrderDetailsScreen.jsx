@@ -34,7 +34,7 @@ import CustomModal from '../../components/CustomModal';
 import StatusBarManager from '../../components/StatusBarManager';
 import { colors } from '../../config/theme';
 import commonStyles from '../../commonstyles/CommonStyles';
-import { getOrderId } from '../../utils/orderResponse';
+import { getCreatedOrder, getOrderId, findOrderInResponse } from '../../utils/orderResponse';
 
 const OrderDetailsScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
@@ -45,6 +45,8 @@ const OrderDetailsScreen = ({ navigation, route }) => {
   const [orderDetails, setOrderDetails] = useState(null);
   const [loadError, setLoadError] = useState('');
   const orderId = getOrderId(route.params?.orderDetails);
+  // getorderlist accepts the database ID, not the displayed order number.
+  const orderLookupId = getCreatedOrder(route.params?.orderDetails)?.id ?? 0;
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
 
@@ -63,13 +65,23 @@ const OrderDetailsScreen = ({ navigation, route }) => {
       return;
     }
     setLoadError('');
-    const response = await dispatch(
-      getOrders({ orderId }),
+    let response = await dispatch(
+      getOrders({ orderId: orderLookupId }),
     );
-    if (getOrders.fulfilled.match(response) && response.payload?.data?.[0]) {
-      setOrderDetails(response.payload.data[0]);
+    let matchingOrder = getOrders.fulfilled.match(response)
+      ? findOrderInResponse(response.payload, route.params?.orderDetails)
+      : undefined;
+    // Placement can return only the public number while lookups require the database ID.
+    if (!matchingOrder && orderLookupId !== 0) {
+      response = await dispatch(getOrders({ orderId: 0 }));
+      matchingOrder = getOrders.fulfilled.match(response)
+        ? findOrderInResponse(response.payload, route.params?.orderDetails)
+        : undefined;
+    }
+    if (matchingOrder) {
+      setOrderDetails(matchingOrder);
       const itemsResponse = await dispatch(
-        getOrderDetails({ orderId: response.payload.data[0].id }),
+        getOrderDetails({ orderId: matchingOrder.id ?? getOrderId(matchingOrder) }),
       );
       if (getOrderDetails.fulfilled.match(itemsResponse) && Array.isArray(itemsResponse.payload?.data)) {
         setSubOrderData(itemsResponse.payload.data);
@@ -79,7 +91,7 @@ const OrderDetailsScreen = ({ navigation, route }) => {
     } else {
       setLoadError('Unable to load your order. Pull down to try again.');
     }
-  }, [dispatch, orderId]);
+  }, [dispatch, orderId, orderLookupId, route.params?.orderDetails]);
 
   useEffect(() => {
     dispatch(getChargesList());

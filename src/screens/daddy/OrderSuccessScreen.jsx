@@ -12,7 +12,7 @@ import {
   responsiveWidth,
 } from 'react-native-responsive-dimensions';
 import { useDispatch, useSelector } from 'react-redux';
-import { clearCart } from '../../redux/reducers/daddy';
+import { clearCart, getOrders } from '../../redux/reducers/daddy';
 import { removeCoupon } from '../../redux/reducers/coupons';
 import commonStyles from '../../commonstyles/CommonStyles';
 import { getOrderId } from '../../utils/orderResponse';
@@ -20,6 +20,10 @@ import { getOrderId } from '../../utils/orderResponse';
 const OrderSuccessScreen = ({ navigation, route }) => {
   const {selectedAddress} = useSelector(state => state.address);
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(getOrders({ orderId: 0 }));
+  }, [dispatch]);
 
   useEffect(()=>{ 
     const timeout = setTimeout(()=>{
