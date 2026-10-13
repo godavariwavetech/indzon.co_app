@@ -3,17 +3,27 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 apply plugin: 'com.google.gms.google-services'
 
-def googleMapsApiKey = providers.environmentVariable("GOOGLE_MAPS_API_KEY").orNull
-def firebaseAndroidApiKey = providers.environmentVariable("FIREBASE_ANDROID_API_KEY").orNull
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { localProperties.load(it) }
+}
+
+def googleMapsApiKey = providers.environmentVariable("GOOGLE_MAPS_API_KEY").orNull ?: localProperties.getProperty("GOOGLE_MAPS_API_KEY")
+def firebaseAndroidApiKey = providers.environmentVariable("FIREBASE_ANDROID_API_KEY").orNull ?: localProperties.getProperty("FIREBASE_ANDROID_API_KEY")
 def googleServicesTemplate = file("google-services.template.json")
 def googleServicesConfig = file("google-services.json")
+def buildingRelease = gradle.startParameter.taskNames.any { it.toLowerCase().contains("release") }
 
-if (!googleMapsApiKey) {
+if (buildingRelease && !googleMapsApiKey) {
     throw new GradleException("Set GOOGLE_MAPS_API_KEY before building Android.")
 }
-if (!firebaseAndroidApiKey) {
+if (buildingRelease && !firebaseAndroidApiKey) {
     throw new GradleException("Set FIREBASE_ANDROID_API_KEY before building Android.")
 }
+
+googleMapsApiKey = googleMapsApiKey ?: ""
+firebaseAndroidApiKey = firebaseAndroidApiKey ?: ""
 
 googleServicesConfig.text = googleServicesTemplate.getText("UTF-8").replace(
     "__FIREBASE_ANDROID_API_KEY__",

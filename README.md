@@ -72,7 +72,7 @@ Before making the repository public, remove exposed keys from every branch and G
 
 Do not commit Google API keys. Add `GOOGLE_MAPS_API_KEY` as a repository Actions secret for the iOS TestFlight workflow. Local iOS builds and Metro need the same environment variable set before bundling.
 
-Android builds also need `FIREBASE_ANDROID_API_KEY`. Gradle creates the ignored `android/app/google-services.json` from `google-services.template.json` when this variable is set. Set both variables in the local build environment before running Android.
+Android builds read `GOOGLE_MAPS_API_KEY` and `FIREBASE_ANDROID_API_KEY` from the environment or from `android/local.properties` (both files are ignored). Debug builds can compile without them for UI work, but Maps and Firebase features need valid keys. Release builds require both values. Gradle creates the ignored `android/app/google-services.json` from `google-services.template.json`.
 
 The Maps key is included in the compiled app because the app calls Google Maps APIs directly. Restrict it in Google Cloud to the Amaraa bundle/package IDs and only the required Maps APIs. Rotate the key that was committed before using the new secret.
 

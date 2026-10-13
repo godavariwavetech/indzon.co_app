@@ -93,15 +93,17 @@ export default function BottomNavigation() {
             }
             return iconName;
           },
-          tabBarActiveTintColor: '#85360B',
-          tabBarInactiveTintColor: '#969696',
-          tabBarLabelStyle: { fontSize: 12, fontWeight: '400', marginTop: 4 },
-          tabBarItemStyle: { paddingTop: 8 },
+          tabBarActiveTintColor: '#8B3B0B',
+          tabBarInactiveTintColor: '#999999',
+          tabBarLabelStyle: { fontSize: 12, fontWeight: '500' },
           tabBarStyle: {
             elevation: 0,
             backgroundColor: '#fff',
+            height: 66,
+            paddingTop: 6,
+            paddingBottom: 6,
             borderTopWidth: 1,
-            borderTopColor: commonStyles.appMainColor,
+            borderTopColor: '#E8DDD7',
           },
           tabBarHideOnKeyboard: true,
           contentStyle: {

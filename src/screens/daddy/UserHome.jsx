@@ -99,31 +99,44 @@ const BannerCarousel = memo(({ banners, onBannerPress }) => {
   ), [onBannerPress]);
 
   return (
-    <View>
-    <FlatList
-      ref={flatListRef}
-      data={banners}
-      horizontal
-      pagingEnabled
-      onMomentumScrollEnd={event => setCurrentIndex(Math.round(event.nativeEvent.contentOffset.x / screenWidth))}
-      showsHorizontalScrollIndicator={false}
-      keyExtractor={(item) => item.id.toString()}
-      renderItem={renderBannerItem}
-      getItemLayout={(data, index) => ({
-        length: responsiveWidth(100),
-        offset: responsiveWidth(100) * index,
-        index,
-      })}
-      initialNumToRender={1}
-      maxToRenderPerBatch={1}
-      windowSize={3}
-      removeClippedSubviews={true}
-    />
-    <View style={styles.bannerPagination}>
-      {banners?.map((banner, index) => (
-        <View key={banner.id} style={[styles.bannerDot, index === currentIndex && styles.bannerDotActive]} />
-      ))}
-    </View>
+    <View style={styles.bannerCarousel}>
+      <FlatList
+        ref={flatListRef}
+        data={banners}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderBannerItem}
+        onMomentumScrollEnd={(event) => {
+          const index = Math.round(
+            event.nativeEvent.contentOffset.x / responsiveWidth(100),
+          );
+          setCurrentIndex(index);
+        }}
+        getItemLayout={(data, index) => ({
+          length: responsiveWidth(100),
+          offset: responsiveWidth(100) * index,
+          index,
+        })}
+        initialNumToRender={1}
+        maxToRenderPerBatch={1}
+        windowSize={3}
+        removeClippedSubviews
+      />
+      {banners?.length > 0 && (
+        <View style={styles.bannerPagination}>
+          {banners.slice(0, 4).map((banner, index) => (
+            <View
+              key={banner.id ?? index}
+              style={[
+                styles.bannerPaginationDot,
+                index === currentIndex && styles.bannerPaginationDotActive,
+              ]}
+            />
+          ))}
+        </View>
+      )}
     </View>
   );
 });
@@ -489,13 +502,7 @@ export default function UserHome({ navigation }) {
     </View>
   ), [navigation]);
 
-  const subCategoryColumns = useMemo(() => {
-    const items = Array.isArray(subCategories) ? subCategories : [];
-    const columns = Math.ceil(items.length / 2);
-    return Array.from({ length: columns }, (_, index) =>
-      [items[index], items[index + columns]].filter(Boolean),
-    );
-  }, [subCategories]);
+  const visibleSubCategories = useMemo(() => subCategories?.slice(0, 12), [subCategories]);
 
   const restaurantKeyExtractor = useCallback((item, index) => item?.id?.toString() || index.toString(), []);
 
@@ -516,17 +523,12 @@ export default function UserHome({ navigation }) {
         </Text>
         <View style={styles.customContainer}>
           <FlatList
-            data={subCategoryColumns}
+            data={visibleSubCategories}
             horizontal
             showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderSubCategoryItem}
             contentContainerStyle={styles.foodCategoriesContent}
-            snapToInterval={itemWidth + categoryGap}
-            decelerationRate="fast"
-            ItemSeparatorComponent={() => <View style={{ width: categoryGap }} />}
-            keyExtractor={(items) => items[0].id.toString()}
-            renderItem={({ item: items }) => (
-              <View style={styles.subCategoryColumn}>{items.map(item => <View key={item.id}>{renderSubCategoryItem({ item })}</View>)}</View>
-            )}
           />
         </View>
         <View style={[commonStyles.row, { paddingHorizontal: 16, marginTop: 5, marginBottom: 10 }]}>
@@ -536,7 +538,7 @@ export default function UserHome({ navigation }) {
         </View>
       </View>
     </View>
-  ), [categories, banners, subCategoryColumns, subCategories, activeCategoryIndex, renderCategoryItem, renderSubCategoryItem, navigation, handleBannerPress]);
+  ), [categories, banners, visibleSubCategories, subCategories, activeCategoryIndex, renderCategoryItem, renderSubCategoryItem, navigation, handleBannerPress]);
 
   return (
     <View style={styles.mainContainer}>
@@ -653,29 +655,29 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 250,
+    height: 292,
     zIndex: 0,
   },
 
   /* Fixed Header Styles */
   fixedTopSection: {
     zIndex: 1, // Ensures search and header sit permanently over the background
-    paddingBottom: 16,
+    paddingBottom: 12,
   },
-  newHeaderContent: { 
+  newHeaderContent: {
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'space-between', 
     paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 18,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   newLocationContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
   homeIconBox: { justifyContent: 'center', alignItems: 'center', width: 24, height: 24 },
   newLocationTextWrap: { flexDirection: 'column', justifyContent: 'center', maxWidth: responsiveWidth(55) },
   newLocationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   newLocationTitle: { fontFamily: 'SF Pro Display', fontWeight: '700', fontSize: 16, color: '#FFFFFF' },
-  newLocationDesc: { fontFamily: 'SF Pro Display', fontWeight: '400', fontSize: 12, lineHeight: 20, color: '#FFFFFF' },
+  newLocationDesc: { fontFamily: 'SF Pro Display', fontWeight: '500', fontSize: 12, color: '#FFFFFF', marginTop: 2 },
   rightHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerCircleBtn: { width: 34, height: 34, backgroundColor: '#FFFFFF', borderRadius: 17, justifyContent: 'center', alignItems: 'center', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4 },
   notificationDotMarker: { position: 'absolute', top: 8, right: 8, width: 6, height: 6, backgroundColor: '#FF3B30', borderRadius: 3, borderWidth: 1, borderColor: '#FFF' },
@@ -702,27 +704,22 @@ const styles = StyleSheet.create({
   },
 
   /* Search Pill Styles (Now clickable) */
-  searchPillContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 14, marginHorizontal: 16, marginTop: 3, height: 50, paddingHorizontal: 16 },
+  searchPillContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 18, marginHorizontal: 16, marginTop: 6, height: 48, paddingHorizontal: 16, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10 },
   searchIconLeft: { marginRight: 8 },
   searchInputPillText: { flex: 1, fontSize: 16, fontFamily: 'SF Pro Display', color: '#979797' },
   searchDivider: { width: 1, height: 24, backgroundColor: '#E0E0E0', marginHorizontal: 12 },
 
-  /* 4x2 Grid Category Styles - Gap reduced heavily */
-  transparentBackground: { backgroundColor: 'transparent' }, 
-  categoriesGridWrapper: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, justifyContent: 'space-between', paddingTop: 2, paddingBottom: 0 },
-  archCategoryTab: { width: (screenWidth - 32) / 4 - 4, alignItems: 'center', marginBottom: 16 },
+  /* Main category grid */
+  transparentBackground: { backgroundColor: 'transparent' },
+  categoriesGridWrapper: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, paddingTop: 18, justifyContent: 'space-between', backgroundColor: '#FFFFFF' },
+  archCategoryTab: { width: (screenWidth - 68) / 4, alignItems: 'center', marginBottom: 18 },
   
   archWrapper: {
-    width: '82%',
-    aspectRatio: 1, 
+    width: '100%',
+    aspectRatio: 0.92,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
-    borderTopLeftRadius: 60,
-    borderTopRightRadius: 60,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-    overflow: 'hidden',
+    marginBottom: 5,
   },
   archArtworkFrame: {
     width: '100%',
@@ -736,16 +733,16 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0, 
     bottom: 0,
-    borderTopLeftRadius: 60,
-    borderTopRightRadius: 60,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
+    borderTopLeftRadius: 46,
+    borderTopRightRadius: 46,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
     borderWidth: 1,
-    borderColor: '#E3D5CD',
+    borderColor: '#F0D5C7',
   },
   archCategoryImage: {
-    width: '100%',
-    height: '100%',
+    width: '92%',
+    height: '92%',
     resizeMode: 'contain',
     marginBottom: 0, 
   },
@@ -753,23 +750,23 @@ const styles = StyleSheet.create({
   activeCategoryText: { fontSize: 11, fontWeight: '400', color: '#202020', textAlign: 'center' },
   inactiveCategoryText: { fontSize: 11, fontWeight: '400', color: '#202020', textAlign: 'center' },
 
-  /* Remaining Solid Background Section (Tightened gap for Banners) */
-  solidBottomSection: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 0 },
-  subCategoryColumn: { width: itemWidth, gap: 12 },
-  subCatWrapper: { width: itemWidth, alignItems: 'center' },
-  customCard: { width: itemWidth, height: itemWidth, backgroundColor: '#FFE1D1', alignItems: 'center', justifyContent: 'center', borderRadius: 15, overflow: 'hidden' },
+  /* Banner and food category section */
+  solidBottomSection: { backgroundColor: '#FFFFFF', paddingTop: 0 },
+  bannerCarousel: { backgroundColor: '#FFFFFF' },
+  bannerPagination: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 22, gap: 5 },
+  bannerPaginationDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#D8D8D8' },
+  bannerPaginationDotActive: { width: 24, backgroundColor: '#2F3338' },
+  subCatWrapper: { width: 72, marginRight: 12, alignItems: 'center', alignSelf: 'flex-start' },
+  customCard: { width: 72, height: 72, marginBottom: 8, backgroundColor: '#FBE1D4', alignItems: 'center', justifyContent: 'center', borderRadius: 16, overflow: 'hidden' },
+  customImage: { width: 64, height: 64 },
+  customLabel: { fontSize: 13, fontWeight: '500', textAlign: 'center', color: '#000' },
+  categoryHeaderTitle: { fontSize: 23, fontWeight: '700', marginLeft: 16, marginTop: 14, marginBottom: 8, color: '#000' },
+  customContainer: { paddingLeft: 16, paddingTop: 2, backgroundColor: '#FFFFFF', marginBottom: 8 },
+  foodCategoriesContent: { paddingRight: 16 },
+  popularShopsTitle: { fontSize: 20, fontWeight: '700', color: '#2B2B2B' },
+  bannerContainer: { width: responsiveWidth(100), height: 176, paddingHorizontal: 16, marginVertical: 4 },
+  bannerImage: { width: '100%', height: '100%', borderRadius: 12 },
   subCategoryBrownBase: { position: 'absolute', width: itemWidth * 1.16, height: itemWidth * 0.9, bottom: -itemWidth * 0.48, borderRadius: itemWidth, overflow: 'hidden' },
-  customImage: { width: '100%', height: '100%', alignSelf: 'center' },
-  customLabel: { width: itemWidth + 8, height: 20, lineHeight: 20, fontSize: 13, fontWeight: '400', textAlign: 'center', color: '#151515', marginTop: 7, includeFontPadding: false },
-  categoryHeaderTitle: { fontSize: 21, fontWeight: '700', marginLeft: 16, marginTop: 12, marginBottom: 14, color: '#0C0C0C' },
-  customContainer: { backgroundColor: '#FFFFFF', marginBottom: 4 },
-  foodCategoriesContent: { paddingHorizontal: 20 },
-  popularShopsTitle: { fontSize: 16, fontWeight: '700', color: '#2B2B2B' },
-  bannerContainer: { width: screenWidth, height: (screenWidth - 32) * 0.49, paddingHorizontal: 16 },
-  bannerImage: { width: '100%', height: '100%', borderRadius: 18 },
-  bannerPagination: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, height: 28 },
-  bannerDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#D7D7D7' },
-  bannerDotActive: { width: 25, backgroundColor: '#2D3032' },
   restaurantRow: { backgroundColor: '#FFFFFF', paddingVertical: 8 },
   restaurantListFooter: { height: 110, backgroundColor: '#FFFFFF' },
   restaurantCard: { borderRadius: 12, backgroundColor: '#fff', boxShadow: '0px 0px 6px 1px rgba(0, 0, 0, 0.08)', marginHorizontal: 16 },
