@@ -5,8 +5,8 @@ import BottomNavigation from '../screens/daddy/BottomNavigation';
 import RestaurantScreen from '../screens/daddy/RestaurantScreen';
 import CategorieItems from '../screens/daddy/CategorieItems';
 import CartScreen from '../screens/daddy/CartScreen';
-import AddressListScreen from '../screens/daddy/AddressListScreen';
-import AddAddressScreen from '../screens/daddy/AddAddressScreen';
+import AddressListScreen from '../../src_new/screens/location/AddressListScreen';
+import AddAddressScreen from '../../src_new/screens/location/AddAddressScreen';
 import MoreDetailsScreen from '../screens/daddy/MoreDetailsScreen'; 
 import CheckoutScreen from '../screens/daddy/CheckoutScreen';
 import SupportScreen from '../screens/daddy/SupportScreen';
@@ -17,7 +17,6 @@ import CouponsScreen from '../screens/daddy/CouponsScreen';
 import ServiceLocationsScreen from '../screens/daddy/ServiceLocationsScreen';
 import PrivacyPolicyScreen from '../screens/daddy/PrivacyPolicyScreen';
 import TermsConditionsScreen from '../screens/daddy/TermsConditionsScreen';
-import SelectServiceFromLocation from '../screens/daddy/SelectServiceFromLocation';
 import ServicesAvailableScreen from '../screens/daddy/ServicesAvailableScreen';
 import ServiceUnavailableScreen from '../screens/daddy/ServiceUnavailableScreen';
 import Register from '../screens/daddy/Register';
@@ -53,7 +52,7 @@ export default function RentalNavigation() {
     <Stack.Screen name='ServiceLocations' component={ServiceLocationsScreen} />
     <Stack.Screen name='PrivacyPolicy' component={PrivacyPolicyScreen} />
     <Stack.Screen name='TermsConditions' component={TermsConditionsScreen} />
-    <Stack.Screen name='SelectServiceFromLocation' component={SelectServiceFromLocation} />
+    <Stack.Screen name='SelectServiceFromLocation' component={AddressListScreen} />
     <Stack.Screen name='ServicesAvailable' component={ServicesAvailableScreen} />
     <Stack.Screen name='ServiceUnavailable' component={ServiceUnavailableScreen} />
     <Stack.Screen  name='Register1' component={Register} />

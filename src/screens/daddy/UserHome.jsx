@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, memo, useMemo } from 'react';
-import { GOOGLE_MAPS_API_KEY } from '../../config/googleMaps';
+import locationService from '../../../src_new/services/locationService';
 import {
   View,
   Text,
@@ -235,7 +235,8 @@ const RestaurantCard = memo(({ item, onPress }) => {
 });
 
 export default function UserHome({ navigation }) {
-  const { categories, subCategories, banners, activeCategoryIndex, loading, userAddress, serviceAvailable, homeRestaurnats, cartItems } = useSelector(state => state.Dashboard);
+  const { categories, subCategories, banners, activeCategoryIndex, loading, serviceAvailable, homeRestaurnats, cartItems } = useSelector(state => state.Dashboard);
+  const userAddress = useSelector(state => state.Auth.deliveryAddress || state.Dashboard.userAddress);
   const { locationName } = useSelector(state => state.Auth);
   const { isNetworkConnected } = useSelector(state => state.address);
   const [selectedAddress, setSelectedAddress] = useState(userAddress || "");
@@ -264,10 +265,8 @@ export default function UserHome({ navigation }) {
   const getAddressFromCoordinates = async (latitude, longitude) => {
     try {
       setErrorOccured(false);
-      const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}`);
-      const data = await response.json();
-      if (data.results && data.results.length > 0) return data.results[0].formatted_address;
-      return 'Address not found';
+      const place = await locationService.reverseGeocode({latitude, longitude});
+      return place.fullAddress;
     } catch (error) {
       setErrorOccured(true);
       return 'Error getting address';
@@ -345,6 +344,13 @@ export default function UserHome({ navigation }) {
 
   useEffect(() => {
     const initializeLocation = async () => {
+      if (userAddress && (!authLocation || (
+        Number(userAddress.customer_latitude) === authLocation.latitude &&
+        Number(userAddress.customer_longitude) === authLocation.longitude
+      ))) {
+        setSelectedAddress(userAddress);
+        return;
+      }
       if (authLocation) {
         const address = await getAddressFromCoordinates(authLocation.latitude, authLocation.longitude);
         const currentAddress = {
@@ -364,10 +370,16 @@ export default function UserHome({ navigation }) {
     initializeLocation();
   }, [userAddress, authLocation, requestLocationPermission]);
 
-  useFocusEffect(useCallback(() => { dispatch(getAddressList()); }, [dispatch]));
+  useFocusEffect(useCallback(() => {
+    if (userAddress?.storage !== 'local') { dispatch(getAddressList()); }
+  }, [dispatch, userAddress?.storage]));
 
   const checkServiceAvailability = async (force = false) => {
     if (!authLocation || !mounted || (isCheckingRef.current && !force)) return;
+    if (userAddress?.storage === 'local') {
+      getCategoriesData();
+      return;
+    }
     
     isCheckingRef.current = true;
     try {
