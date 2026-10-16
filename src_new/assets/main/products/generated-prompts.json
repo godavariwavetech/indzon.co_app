@@ -1,0 +1,43 @@
+{
+  "generator": "OpenAI image_gen imagegen tool",
+  "background": "transparent",
+  "targetSizePx": "640x640",
+  "assets": [
+    {
+      "file": "snack.png",
+      "prompt": "Photorealistic premium ecommerce product cutout of one upright resealable stand-up pouch of spicy crunchy Indian snack mix, vibrant deep orange and warm yellow packaging, small transparent window with a few realistic crunchy snack pieces visible, tasteful abstract geometric accents, no brand, no legible lettering, front view, soft professional studio lighting, crisp product photography, isolated centered object, transparent background, 1:1 square composition with generous clear margin, no cast shadow beyond the object."
+    },
+    {
+      "file": "chocolate.png",
+      "prompt": "Photorealistic premium ecommerce product cutout of a single four-finger milk chocolate bar in a rich red and cream paper wrapper, one small broken chocolate segment placed in front, appetizing cocoa details, no brand and no legible lettering, front view, professional studio lighting, crisp realistic product photography, isolated centered objects, transparent background, 1:1 square composition with generous clear margin."
+    },
+    {
+      "file": "spices.png",
+      "prompt": "Photorealistic premium ecommerce product cutout of a sealed stand-up pouch of South Indian sambar masala spice powder, warm ivory and terracotta packaging, small clear window revealing finely ground spice, a few curry leaves and dried red chilies arranged beside it, no brand and no legible lettering, front view, crisp studio product photography, isolated centered objects, transparent background, 1:1 square composition with generous clear margin."
+    },
+    {
+      "file": "rice.png",
+      "prompt": "Photorealistic premium ecommerce cutout of one upright cream-and-green unbranded bag of premium long-grain basmati rice, subtle gold detailing, small clear window with white grains visible, a few rice grains beside it, no logo or legible text, front view, crisp studio lighting, isolated centered object, transparent background, square 1:1 canvas, generous clear margin."
+    },
+    {
+      "file": "eggs.png",
+      "prompt": "Photorealistic premium ecommerce cutout of a small open kraft-paper carton holding six clean brown and white farm eggs, one egg beside the carton, soft natural studio lighting, clean appetizing styling, isolated centered objects, transparent background, square 1:1 canvas, generous clear margin."
+    },
+    {
+      "file": "oil.png",
+      "prompt": "Photorealistic premium ecommerce cutout of one elegant clear glass bottle of golden cooking oil with a simple white and olive-green unbranded label, cap on, a tiny olive branch and a few oil seeds beside the bottle, no logo or legible text, front view, crisp studio lighting, isolated centered object, transparent background, square 1:1 canvas, generous clear margin."
+    },
+    {
+      "file": "dress.png",
+      "prompt": "Photorealistic premium ecommerce product cutout of a women's Indian ethnic kurta set in teal with delicate cream block-print pattern and matching trousers, neatly arranged on an invisible mannequin with dupatta, no person, no text, tasteful Indian boutique styling, front view, crisp soft studio lighting, isolated centered product, transparent background, square 1:1 canvas, generous clear margin."
+    },
+    {
+      "file": "shoes.png",
+      "prompt": "Photorealistic premium ecommerce product cutout of one pair of rugged olive-brown leather outdoor hiking shoes with sturdy dark tread soles and subtle orange lace loops, no logo or text, three-quarter front view, crisp studio product photography, isolated centered pair, transparent background, square 1:1 canvas, generous clear margin."
+    },
+    {
+      "file": "luggage.png",
+      "prompt": "Photorealistic premium ecommerce product cutout of one medium-size modern hard-shell travel suitcase in graphite silver with four spinner wheels and a small orange accent near the handle, no logo or text, three-quarter front view, crisp studio product photography, isolated centered object, transparent background, square 1:1 canvas, generous clear margin."
+    }
+  ]
+}

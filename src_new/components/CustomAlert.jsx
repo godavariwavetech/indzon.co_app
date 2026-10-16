@@ -1,5 +1,6 @@
+import {Text} from './Typography';
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import {View, TouchableOpacity, StyleSheet, Modal} from 'react-native';
 import { responsiveWidth, responsiveHeight } from 'react-native-responsive-dimensions';
 
 const CustomAlert = ({ 

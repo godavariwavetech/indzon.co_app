@@ -1,4 +1,4 @@
-package com.amaraa.user
+package com.indzon.co
 
 import android.app.Application
 import com.facebook.react.PackageList

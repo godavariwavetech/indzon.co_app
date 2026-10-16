@@ -1,32 +1,28 @@
+import {Text, TextInput} from '../../components/Typography';
 import React, {useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Keyboard,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
-  StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import {useDispatch} from 'react-redux';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import ShoppingLoginLayout from '../../components/auth/ShoppingLoginLayout';
 import Svg, {Path} from 'react-native-svg';
 import {DEFAULT_RESEND_SECONDS, OTP_LENGTH} from '../../config/authFlow';
 import {useCountdown} from '../../hooks/useCountdown';
-import {completeAuthentication, setMobile} from '../../redux/reducers/auth';
+import {
+  completeAuthentication,
+  rememberStaticLogin,
+} from '../../redux/reducers/auth';
+import {staticPersistor} from '../../redux/store';
 import {STATIC_APP_FLOW} from '../../config/appMode';
 import authService from '../../services/authService';
 import {sanitizeOtp} from '../../utils/phone';
 
 export default function OtpVerificationScreen({navigation, route}) {
   const phoneNumber = route?.params?.phoneNumber || '';
-  const insets = useSafeAreaInsets();
-  const {width} = useWindowDimensions();
   const dispatch = useDispatch();
   const inputRef = useRef(null);
   const busy = useRef(false);
@@ -55,8 +51,9 @@ export default function OtpVerificationScreen({navigation, route}) {
       // Static navigation only: do not create a server authentication session.
       if (STATIC_APP_FLOW) {
         Keyboard.dismiss();
-        dispatch(setMobile(phoneNumber));
-        navigation.navigate('LocationSetup');
+        dispatch(rememberStaticLogin(phoneNumber));
+        // The navigator switches to location setup when this flag changes.
+        await staticPersistor.flush();
         return;
       }
       const session = await authService.verifyOtp(phoneNumber, otp);
@@ -115,174 +112,154 @@ export default function OtpVerificationScreen({navigation, route}) {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.screen}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="transparent"
-        translucent
-      />
-      <View style={{paddingTop: insets.top}}>
-        <View style={styles.header}>
-          <Pressable
-            onPress={backToLogin}
-            disabled={Boolean(pending) || verified}
-            accessibilityRole="button"
-            accessibilityLabel="Back to login"
-            style={styles.back}
-            testID="otp-back">
-            <Svg width={24} height={24} viewBox="0 0 24 24">
-              <Path
-                d="M20 12H4m8-8-8 8 8 8"
-                fill="none"
-                stroke="#202427"
-                strokeWidth={1.7}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
-          </Pressable>
-          <Text style={styles.title} accessibilityRole="header">
-            OTP Verification
-          </Text>
-        </View>
+    <ShoppingLoginLayout navigation={navigation}>
+      <View style={styles.header}>
+        <Pressable
+          onPress={backToLogin}
+          disabled={Boolean(pending) || verified}
+          accessibilityRole="button"
+          accessibilityLabel="Back to login"
+          style={styles.back}
+          testID="otp-back">
+          <Svg width={24} height={24} viewBox="0 0 24 24">
+            <Path
+              d="M20 12H4m8-8-8 8 8 8"
+              fill="none"
+              stroke="#202427"
+              strokeWidth={1.7}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
+        </Pressable>
+        <Text style={styles.title} accessibilityRole="header">
+          OTP Verification
+        </Text>
       </View>
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        contentInsetAdjustmentBehavior="never"
-        contentContainerStyle={[
-          styles.content,
-          {paddingBottom: Math.max(insets.bottom, 24)},
-        ]}>
-        <View style={[styles.form, {paddingTop: Math.min(width, 480) * 0.29}]}>
-          <Text style={styles.subtitle}>
-            {STATIC_APP_FLOW
-              ? `Enter any ${OTP_LENGTH}-digit code to continue with`
-              : verified
-              ? 'Your phone number has been verified.'
-              : 'We Have Sent a verification code to'}
-          </Text>
-          <Text style={styles.phoneNumber} testID="otp-phone-number">
-            +91 {phoneNumber}
-          </Text>
-          {!verified ? (
-            <>
-              <Pressable
-                onPress={() => inputRef.current?.focus()}
-                accessible={false}
-                style={styles.boxes}>
-                {Array.from({length: OTP_LENGTH}, (_, index) => (
-                  <View
-                    key={index}
-                    accessible={false}
-                    style={[
-                      styles.box,
-                      focused &&
-                        index === Math.min(otp.length, OTP_LENGTH - 1) &&
-                        styles.activeBox,
-                      error && styles.invalidBox,
-                    ]}>
-                    <Text style={styles.digit}>{otp[index] || ''}</Text>
-                  </View>
-                ))}
-                <TextInput
-                  ref={inputRef}
-                  value={otp}
-                  onChangeText={value => {
-                    setOtp(sanitizeOtp(value, OTP_LENGTH));
-                    setError('');
-                  }}
-                  onFocus={() => setFocused(true)}
-                  onBlur={() => setFocused(false)}
-                  keyboardType="number-pad"
-                  textContentType="oneTimeCode"
-                  autoComplete="sms-otp"
-                  maxLength={OTP_LENGTH}
-                  autoFocus
-                  caretHidden
-                  editable={!pending}
-                  returnKeyType="done"
-                  onSubmitEditing={submit}
-                  accessibilityLabel="Verification code"
-                  style={styles.hiddenInput}
-                  testID="otp-input"
-                />
-              </Pressable>
-              {error ? (
-                <Text
-                  style={styles.error}
-                  accessibilityRole="alert"
-                  accessibilityLiveRegion="polite">
-                  {error}
-                </Text>
-              ) : null}
-              <Pressable
-                onPress={resend}
-                disabled={secondsLeft > 0 || Boolean(pending)}
-                accessibilityRole="button"
-                accessibilityState={{
-                  disabled: secondsLeft > 0 || Boolean(pending),
-                }}
-                hitSlop={8}
-                style={styles.resend}
-                testID="otp-resend">
-                <Text
+      <View style={styles.form}>
+        <Text style={styles.subtitle}>
+          {STATIC_APP_FLOW
+            ? `Enter any ${OTP_LENGTH}-digit code to continue with`
+            : verified
+            ? 'Your phone number has been verified.'
+            : 'We Have Sent a verification code to'}
+        </Text>
+        <Text style={styles.phoneNumber} testID="otp-phone-number">
+          +91 {phoneNumber}
+        </Text>
+        {!verified ? (
+          <>
+            <Pressable
+              onPress={() => inputRef.current?.focus()}
+              accessible={false}
+              style={styles.boxes}>
+              {Array.from({length: OTP_LENGTH}, (_, index) => (
+                <View
+                  key={index}
+                  accessible={false}
                   style={[
-                    styles.resendText,
-                    (secondsLeft > 0 || pending) && styles.muted,
+                    styles.box,
+                    focused &&
+                      index === Math.min(otp.length, OTP_LENGTH - 1) &&
+                      styles.activeBox,
+                    error && styles.invalidBox,
                   ]}>
-                  {pending === 'resend'
-                    ? 'Sending OTP…'
-                    : secondsLeft > 0
-                    ? `Resend OTP in ${secondsLeft}`
-                    : 'Resend OTP'}
-                </Text>
-              </Pressable>
-            </>
-          ) : null}
-          <Pressable
-            onPress={submit}
-            disabled={verified || Boolean(pending)}
-            accessibilityRole="button"
-            accessibilityLabel={verified ? 'Verified' : 'Continue'}
-            accessibilityState={{
-              disabled: verified || Boolean(pending),
-              busy: pending === 'verify',
-            }}
-            style={({pressed}) => [
-              styles.button,
-              (pressed || pending || verified) && styles.dimmed,
-            ]}
-            testID="otp-continue">
-            {pending === 'verify' ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.buttonText}>
-                {verified ? 'Verified' : 'Continue'}
+                  <Text style={styles.digit}>{otp[index] || ''}</Text>
+                </View>
+              ))}
+              <TextInput
+                ref={inputRef}
+                value={otp}
+                onChangeText={value => {
+                  setOtp(sanitizeOtp(value, OTP_LENGTH));
+                  setError('');
+                }}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                keyboardType="number-pad"
+                textContentType="oneTimeCode"
+                autoComplete="sms-otp"
+                maxLength={OTP_LENGTH}
+                autoFocus
+                caretHidden
+                editable={!pending}
+                returnKeyType="done"
+                onSubmitEditing={submit}
+                accessibilityLabel="Verification code"
+                style={styles.hiddenInput}
+                testID="otp-input"
+              />
+            </Pressable>
+            {error ? (
+              <Text
+                style={styles.error}
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite">
+                {error}
               </Text>
-            )}
-          </Pressable>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            ) : null}
+            <Pressable
+              onPress={resend}
+              disabled={secondsLeft > 0 || Boolean(pending)}
+              accessibilityRole="button"
+              accessibilityState={{
+                disabled: secondsLeft > 0 || Boolean(pending),
+              }}
+              hitSlop={8}
+              style={styles.resend}
+              testID="otp-resend">
+              <Text
+                style={[
+                  styles.resendText,
+                  (secondsLeft > 0 || pending) && styles.muted,
+                ]}>
+                {pending === 'resend'
+                  ? 'Sending OTP…'
+                  : secondsLeft > 0
+                  ? `Resend OTP in ${secondsLeft}`
+                  : 'Resend OTP'}
+              </Text>
+            </Pressable>
+          </>
+        ) : null}
+        <Pressable
+          onPress={submit}
+          disabled={verified || Boolean(pending)}
+          accessibilityRole="button"
+          accessibilityLabel={verified ? 'Verified' : 'Continue'}
+          accessibilityState={{
+            disabled: verified || Boolean(pending),
+            busy: pending === 'verify',
+          }}
+          style={({pressed}) => [
+            styles.button,
+            (pressed || pending || verified) && styles.dimmed,
+          ]}
+          testID="otp-continue">
+          {pending === 'verify' ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.buttonText}>
+              {verified ? 'Verified' : 'Continue'}
+            </Text>
+          )}
+        </Pressable>
+      </View>
+    </ShoppingLoginLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {flex: 1, backgroundColor: '#FFFFFF'},
   header: {height: 48, alignItems: 'center', justifyContent: 'center'},
   back: {
     position: 'absolute',
-    left: 12,
+    left: -8,
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  content: {flexGrow: 1, paddingHorizontal: 24, alignItems: 'center'},
-  form: {width: '100%', maxWidth: 480, alignItems: 'center'},
+  form: {width: '100%', alignItems: 'center', paddingTop: 14},
   title: {
     color: '#080808',
     fontSize: 16,

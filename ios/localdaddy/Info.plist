@@ -90,6 +90,16 @@
 		<string>MaterialCommunityIcons.ttf</string>
 		<string>MaterialIcons.ttf</string>
 		<string>SimpleLineIcons.ttf</string>
+		<string>Manrope-Bold.ttf</string>
+		<string>Manrope-ExtraBold.ttf</string>
+		<string>Manrope-Medium.ttf</string>
+		<string>Manrope-Regular.ttf</string>
+		<string>Manrope-SemiBold.ttf</string>
+		<string>Lato-Bold.ttf</string>
+		<string>Lato-Medium.ttf</string>
+		<string>Lato-Regular.ttf</string>
+		<string>Lato-SemiBold.ttf</string>
+		<string>DMSerifDisplay-Regular.ttf</string>
 	</array>
   <key>NSPhotoLibraryUsageDescription</key>
   <string>This app requires access to your photo library for profile and order images.</string>

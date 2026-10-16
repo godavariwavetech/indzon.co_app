@@ -1,0 +1,27 @@
+{
+  "uiFamily": "Lato",
+  "displayFamily": "DM Serif Display",
+  "license": "SIL Open Font License 1.1",
+  "files": [
+    {
+      "file": "Lato-Regular.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/lato/Lato-Regular.ttf"
+    },
+    {
+      "file": "Lato-Medium.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/lato/Lato-Medium.ttf"
+    },
+    {
+      "file": "Lato-SemiBold.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/lato/Lato-SemiBold.ttf"
+    },
+    {
+      "file": "Lato-Bold.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/lato/Lato-Bold.ttf"
+    },
+    {
+      "file": "DMSerifDisplay-Regular.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/dmserifdisplay/DMSerifDisplay-Regular.ttf"
+    }
+  ]
+}

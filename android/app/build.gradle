@@ -10,22 +10,9 @@ if (localPropertiesFile.exists()) {
 }
 
 def googleMapsApiKey = providers.environmentVariable("GOOGLE_MAPS_API_KEY").orNull ?: localProperties.getProperty("GOOGLE_MAPS_API_KEY")
-def firebaseAndroidApiKey = providers.environmentVariable("FIREBASE_ANDROID_API_KEY").orNull ?: localProperties.getProperty("FIREBASE_ANDROID_API_KEY")
-def googleServicesTemplate = file("google-services.template.json")
-def googleServicesConfig = file("google-services.json")
-def buildingRelease = gradle.startParameter.taskNames.any { it.toLowerCase().contains("release") }
-
-if (buildingRelease && !firebaseAndroidApiKey) {
-    throw new GradleException("Set FIREBASE_ANDROID_API_KEY before building Android.")
-}
-
+// Use the supplied Firebase configuration as-is. Builds must never rewrite it.
+// Download google-services.json for com.indzon.co into android/app.
 googleMapsApiKey = googleMapsApiKey ?: ""
-firebaseAndroidApiKey = firebaseAndroidApiKey ?: ""
-
-googleServicesConfig.text = googleServicesTemplate.getText("UTF-8").replace(
-    "__FIREBASE_ANDROID_API_KEY__",
-    firebaseAndroidApiKey
-)
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -102,9 +89,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.amaraa.user"
+    namespace "com.indzon.co"
     defaultConfig {
-        applicationId "com.amaraa.user"
+        applicationId "com.indzon.co"
         manifestPlaceholders = [googleMapsApiKey: googleMapsApiKey ?: ""]
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion

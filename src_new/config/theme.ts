@@ -1,8 +1,8 @@
 // import {store} from '../redux/store';
 
 export const fonts = {
-  primary: 'times-new-roman',
-  secondry: 'Arial',
+  primary: 'Lato-Regular',
+  secondry: 'Lato-Medium',
 };
 
 export const colors = {

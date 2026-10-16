@@ -1,0 +1,114 @@
+[
+  {
+    "file": "rice.jpg",
+    "source": "https://unsplash.com/photos/xmuIgjuQG0M",
+    "download": "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=640&q=85&fm=jpg",
+    "photographer": "Pille R. Priske",
+    "license": "https://unsplash.com/license",
+    "purpose": "Temporary preview image; replace with final catalog photography."
+  },
+  {
+    "file": "eggs.jpg",
+    "source": "https://unsplash.com/photos/jIfVrNrhbI8",
+    "download": "https://images.unsplash.com/photo-1660224286794-fc173fa9295c?w=640&q=85&fm=jpg",
+    "photographer": "Erin Larson",
+    "license": "https://unsplash.com/license",
+    "purpose": "Temporary preview image; replace with final catalog photography."
+  },
+  {
+    "file": "snacks.jpg",
+    "source": "https://unsplash.com/photos/ONQ86GlHs3c",
+    "download": "https://images.unsplash.com/photo-1528751014936-863e6e7a319c?w=640&q=85&fm=jpg",
+    "photographer": "Emiliano Vittoriosi",
+    "license": "https://unsplash.com/license",
+    "purpose": "Temporary preview image; replace with final catalog photography."
+  },
+  {
+    "file": "chocolate.jpg",
+    "source": "https://unsplash.com/photos/RCVIlSXhYI0",
+    "download": "https://images.unsplash.com/photo-1542843137-8791a6904d14?w=640&q=85&fm=jpg",
+    "photographer": "amirali mirhashemian",
+    "license": "https://unsplash.com/license",
+    "purpose": "Temporary preview image; replace with final catalog photography."
+  },
+  {
+    "file": "oil.jpg",
+    "source": "https://unsplash.com/photos/Osb-GStJigs",
+    "download": "https://images.unsplash.com/photo-1781552163129-3643d42d84ab?w=640&q=85&fm=jpg",
+    "photographer": "Anna Khromova",
+    "license": "https://unsplash.com/license",
+    "purpose": "Temporary preview image; replace with final catalog photography."
+  },
+  {
+    "file": "cereal.jpg",
+    "source": "https://unsplash.com/photos/mfKjqdSIZDM",
+    "download": "https://images.unsplash.com/photo-1564986021826-50dd9b728a76?w=640&q=85&fm=jpg",
+    "photographer": "Julian Hochgesang",
+    "license": "https://unsplash.com/license",
+    "purpose": "Temporary preview image; replace with final catalog photography."
+  },
+  {
+    "file": "juice.jpg",
+    "source": "https://unsplash.com/photos/kkrXVKK-jhg",
+    "download": "https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=640&q=85&fm=jpg",
+    "photographer": "ABHISHEK HAJARE",
+    "license": "https://unsplash.com/license",
+    "purpose": "Temporary preview image; replace with final catalog photography."
+  },
+  {
+    "file": "luggage.jpg",
+    "source": "https://unsplash.com/photos/zQsEp5sRSKY",
+    "download": "https://images.unsplash.com/photo-1670888616478-771051efa21d?w=640&q=85&fm=jpg",
+    "photographer": "American Green Travel",
+    "license": "https://unsplash.com/license",
+    "purpose": "Temporary preview image; replace with final catalog photography."
+  },
+  {
+    "file": "spices.jpg",
+    "source": "https://unsplash.com/photos/SvM3z6WcYO8",
+    "download": "https://images.unsplash.com/photo-1771541897176-44a3e01dc484?w=640&q=85&fm=jpg",
+    "photographer": "Deepak Adhikari",
+    "license": "https://unsplash.com/license",
+    "purpose": "Temporary preview image; replace with final catalog photography."
+  },
+  {
+    "file": "watch.jpg",
+    "source": "https://unsplash.com/photos/eWO40PZhkcg",
+    "download": "https://images.unsplash.com/photo-1645961855223-f5b203e47f2f?w=640&q=85&fm=jpg",
+    "photographer": "Mehmet Ali Turan",
+    "license": "https://unsplash.com/license",
+    "purpose": "Temporary preview image; replace with final catalog photography."
+  },
+  {
+    "file": "dress.jpg",
+    "source": "https://unsplash.com/photos/ABmoQ1SEXE0",
+    "download": "https://images.unsplash.com/photo-1744824142614-f6528e732367?w=640&q=85&fm=jpg",
+    "photographer": "Jyothisha R",
+    "license": "https://unsplash.com/license",
+    "purpose": "Temporary preview image; replace with final catalog photography."
+  },
+  {
+    "file": "headphones.jpg",
+    "source": "https://unsplash.com/photos/oBI4NBP2Lhg",
+    "download": "https://images.unsplash.com/photo-1505751104546-4b63c93054b1?w=640&q=85&fm=jpg",
+    "photographer": "C D-X",
+    "license": "https://unsplash.com/license",
+    "purpose": "Temporary preview image; replace with final catalog photography."
+  },
+  {
+    "file": "personal-care.jpg",
+    "source": "https://unsplash.com/photos/s8UB0Ky5Uxk",
+    "download": "https://images.unsplash.com/photo-1738340319117-6216cb2cf236?w=640&q=85&fm=jpg",
+    "photographer": "Ela De Pure",
+    "license": "https://unsplash.com/license",
+    "purpose": "Temporary preview image; replace with final catalog photography."
+  },
+  {
+    "file": "shoes.jpg",
+    "source": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=640&q=85&fm=jpg",
+    "download": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=640&q=85&fm=jpg",
+    "photographer": null,
+    "license": "https://unsplash.com/license",
+    "purpose": "Temporary preview image; replace with final catalog photography."
+  }
+]

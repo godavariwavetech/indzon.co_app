@@ -1,8 +1,9 @@
+import {Text} from './Typography';
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import {View, TouchableOpacity} from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
-const Header = ({ title, onBackPress }) => (
+const Header = ({title, onBackPress}) => (
   <View style={styles.header}>
     <TouchableOpacity style={styles.backButton} onPress={onBackPress}>
       <Icon name="chevron-left" size={24} color="#333" />
@@ -23,7 +24,7 @@ const styles = {
     marginRight: 10,
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
     flexGrow: 1,

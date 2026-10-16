@@ -1,7 +1,7 @@
 import React from 'react';
-import {createStackNavigator} from '@react-navigation/stack';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
-const Stack = createStackNavigator();
+const Stack = createNativeStackNavigator();
 
 export default function RentalNavigation({
   routes = [],
@@ -14,7 +14,12 @@ export default function RentalNavigation({
   return (
     <Stack.Navigator
       initialRouteName={initialRouteName || routes[0].name}
-      screenOptions={{headerShown: false, ...screenOptions}}>
+      screenOptions={{
+        headerShown: false,
+        gestureEnabled: true,
+        animation: 'slide_from_right',
+        ...screenOptions,
+      }}>
       {routes.map(route => (
         <Stack.Screen key={route.name} {...route} />
       ))}

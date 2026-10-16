@@ -1,3 +1,4 @@
+import {Text} from '../Typography';
 import React, {
   useEffect,
   useLayoutEffect,
@@ -12,7 +13,6 @@ import {
   PanResponder,
   Pressable,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';

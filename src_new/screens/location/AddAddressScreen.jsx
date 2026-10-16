@@ -1,3 +1,4 @@
+import {Text, TextInput} from '../../components/Typography';
 import React, {useEffect, useRef, useState} from 'react';
 import {
   ActivityIndicator,
@@ -6,8 +7,6 @@ import {
   Pressable,
   StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from 'react-native';
 import FreeMap from '../../components/location/FreeMap';
@@ -23,6 +22,8 @@ import AddressDetailsSheet from '../../components/location/AddressDetailsSheet';
 import {setDeliveryAddress} from '../../redux/reducers/auth';
 import {updateUserAddress} from '../../redux/reducers/daddy';
 import {setSelectedAddress} from '../../redux/reducers/addressSlice';
+import {STATIC_APP_FLOW} from '../../config/appMode';
+import {persistorStore, staticPersistor} from '../../redux/store';
 
 const defaultRegion = {
   latitude: 17.0005,
@@ -83,6 +84,8 @@ export default function AddAddressScreen({navigation, route}) {
     alive.current = true;
     return () => {
       alive.current = false;
+      geocodeVersion.current++;
+      geocodeAbort.current?.abort();
     };
   }, []);
 
@@ -92,19 +95,20 @@ export default function AddAddressScreen({navigation, route}) {
     }
     const version = ++geocodeVersion.current;
     geocodeAbort.current?.abort();
-    geocodeAbort.current = new AbortController();
+    const controller = new AbortController();
+    geocodeAbort.current = controller;
     setLocating(true);
     setError('');
     try {
       const selected = await locationService.reverseGeocode(
         coordinates,
-        geocodeAbort.current.signal,
+        controller.signal,
       );
       if (alive.current && version === geocodeVersion.current) {
         setPlace(selected);
       }
     } catch (err) {
-      if (alive.current && version === geocodeVersion.current) {
+      if (alive.current && version === geocodeVersion.current && !controller.signal.aborted) {
         setPlace(null);
         setError(
           err.message || 'Could not load this address. Please try again.',
@@ -124,54 +128,52 @@ export default function AddAddressScreen({navigation, route}) {
     // Resolve the initial pin once; later map moves call resolveCoordinates directly.
   }, []);
 
-  useEffect(() => {
-    let active = true;
-    const controller = new AbortController();
+  const searchAbort = useRef(null);
+  useEffect(() => () => searchAbort.current?.abort(), []);
+
+  const changeQuery = value => {
+    searchAbort.current?.abort();
+    selectionVersion.current++;
+    setQuery(value);
     setPredictions([]);
+    setSearching(false);
+    setError('');
+  };
+
+  const searchAddress = async () => {
     if (query.trim().length < 3) {
-      setSearching(false);
+      setError('Enter at least 3 characters to search for an area.');
       return;
     }
+    searchAbort.current?.abort();
+    const controller = new AbortController();
+    searchAbort.current = controller;
     setSearching(true);
-    const timer = setTimeout(async () => {
-      try {
-        const results = await locationService.searchPlaces(
-          query,
-          currentRegion.current,
-          controller.signal,
-        );
-        if (active) {
-          setPredictions(results);
-          setError(
-            results.length
-              ? ''
-              : 'No locations found. Try a nearby street or area.',
-          );
-        }
-      } catch (err) {
-        if (active) {
-          setError(err.message);
-        }
-      } finally {
-        if (active) {
-          setSearching(false);
-        }
+    setError('');
+    Keyboard.dismiss();
+    try {
+      const results = await locationService.searchPlaces(query, currentRegion.current, controller.signal);
+      if (alive.current && !controller.signal.aborted) {
+        setPredictions(results);
+        setError(results.length ? '' : 'No locations found. Include your city or postcode and try again.');
       }
-    }, 700);
-    return () => {
-      active = false;
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [query]);
+    } catch (err) {
+      if (alive.current && !controller.signal.aborted) setError(err.message);
+    } finally {
+      if (alive.current && !controller.signal.aborted) setSearching(false);
+    }
+  };
 
   const selectPlace = async prediction => {
     const version = ++selectionVersion.current;
     geocodeVersion.current++;
+    geocodeAbort.current?.abort();
     setLocating(true);
     setPlace(null);
     setError('');
     setPredictions([]);
+    searchAbort.current?.abort();
+    setSearching(false);
     setQuery('');
     Keyboard.dismiss();
     try {
@@ -202,6 +204,16 @@ export default function AddAddressScreen({navigation, route}) {
     selectionVersion.current++;
     currentRegion.current = {...defaultRegion, ...coordinates};
     setRegion(currentRegion.current);
+    // Zooming without moving the pin does not require another address request.
+    if (
+      place &&
+      Math.abs(place.latitude - coordinates.latitude) < 0.000005 &&
+      Math.abs(place.longitude - coordinates.longitude) < 0.000005
+    ) {
+      setLocating(false);
+      setError('');
+      return;
+    }
     resolveCoordinates(coordinates);
   };
 
@@ -238,6 +250,7 @@ export default function AddAddressScreen({navigation, route}) {
     dispatch(setDeliveryAddress(address));
     dispatch(updateUserAddress(address));
     dispatch(setSelectedAddress(address));
+    await (STATIC_APP_FLOW ? staticPersistor : persistorStore).flush();
     setDetailsVisible(false);
     if (route?.params?.onboarding) {
       navigation.reset({index: 0, routes: [{name: 'Home'}]});
@@ -293,27 +306,37 @@ export default function AddAddressScreen({navigation, route}) {
             <MaterialIcons name="search" size={22} color="#3832FF" />
             <TextInput
               value={query}
-              onChangeText={value => {
-                selectionVersion.current++;
-                setQuery(value);
-                setError('');
-              }}
-              placeholder="Search for Area/Location"
+              onChangeText={changeQuery}
+              returnKeyType="search"
+              onSubmitEditing={searchAddress}
+              placeholder="Search area, city or postcode"
               placeholderTextColor="#929292"
               style={styles.searchInput}
               accessibilityLabel="Search for area or location"
               testID="address-search"
             />
-            {searching ? (
-              <ActivityIndicator color="#3832FF" />
-            ) : query ? (
+            {query && !searching ? (
               <Pressable
-                onPress={() => setQuery('')}
+                onPress={() => changeQuery('')}
+                hitSlop={8}
                 accessibilityRole="button"
                 accessibilityLabel="Clear search">
                 <MaterialIcons name="close" size={20} color="#929292" />
               </Pressable>
             ) : null}
+            <Pressable
+              onPress={searchAddress}
+              disabled={query.trim().length < 3 || searching}
+              accessibilityRole="button"
+              accessibilityLabel="Search addresses"
+              accessibilityState={{disabled: query.trim().length < 3 || searching, busy: searching}}
+              style={[styles.searchAction, query.trim().length < 3 && styles.searchActionInactive]}>
+              {searching ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <MaterialIcons name="arrow-forward" size={20} color={query.trim().length < 3 ? '#9C96BD' : '#FFFFFF'} />
+              )}
+            </Pressable>
           </View>
           {predictions.length ? (
             <FlatList
@@ -326,7 +349,14 @@ export default function AddAddressScreen({navigation, route}) {
                   onPress={() => selectPlace(item)}
                   style={styles.result}
                   accessibilityRole="button">
-                  <Text style={styles.resultText}>{item.description}</Text>
+                  <View style={styles.resultIcon}>
+                    <MaterialIcons name="location-on" size={20} color="#3832FF" />
+                  </View>
+                  <View style={{flex: 1, minWidth: 0}}>
+                    <Text style={styles.resultTitle} numberOfLines={1}>{item.place.area}</Text>
+                    <Text style={styles.resultText} numberOfLines={2}>{item.description}</Text>
+                  </View>
+                  <MaterialIcons name="chevron-right" size={20} color="#9C96AD" />
                 </Pressable>
               )}
             />
@@ -360,6 +390,17 @@ export default function AddAddressScreen({navigation, route}) {
               accessibilityLiveRegion="polite">
               {error}
             </Text>
+          ) : null}
+          {error && !locating && !place && !query.trim() ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Retry address lookup"
+              onPress={() => resolveCoordinates(currentRegion.current)}
+              style={{paddingVertical: 10, alignSelf: 'flex-start'}}>
+              <Text style={{color: '#3832FF', fontSize: 14, fontWeight: '700'}}>
+                Retry address lookup
+              </Text>
+            </Pressable>
           ) : null}
           <LocationButton
             label="Add More Details"
@@ -411,6 +452,8 @@ const styles = StyleSheet.create({
     minHeight: 46,
     elevation: 3,
   },
+  searchAction: {width: 40, height: 40, backgroundColor: '#3832FF', borderRadius: 10, alignItems: 'center', justifyContent: 'center'},
+  searchActionInactive: {backgroundColor: '#F0EEFA'},
   searchInput: {
     flex: 1,
     minHeight: 44,
@@ -425,7 +468,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
     elevation: 4,
   },
-  result: {padding: 14, borderBottomWidth: 1, borderBottomColor: '#EEEEEE'},
+  result: {flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: '#F0EEF5'},
+  resultIcon: {width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F0EEFF'},
+  resultTitle: {fontSize: 15, fontWeight: '700', color: '#202427', marginBottom: 3},
   resultText: {fontSize: 14, color: '#202427'},
   preview: {
     position: 'absolute',

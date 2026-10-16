@@ -305,7 +305,7 @@ const ProfileScreen = () => {
         message={
           showUpdateModal
             ? 'A new version is available. Please update now!'
-            : "You're using the latest version of Amaraa"
+            : "You're using the latest version of INDZON"
         }
         confirmText="OK"
         onConfirm={() => setUpdateModalVisible(false)}
@@ -326,7 +326,7 @@ const ProfileScreen = () => {
       <CustomModal
         visible={showUpdateModal}
         title="Update Available"
-        message="A new version of Amaraa is available. Please update to continue using all features."
+        message="A new version of INDZON is available. Please update to continue using all features."
         confirmText="Update Now"
         onConfirm={handleUpdate}
         onCancel={() => setShowUpdateModal(false)}

@@ -23,7 +23,7 @@ const RefundPolicyScreen = () => {
         <Text style={styles.content}>
           • Orders can only be canceled before the restaurant starts preparing your food{"\n"}
           • Check order status in the app for cancellation availability{"\n"}
-          • Amaraa reserves the right to cancel orders in special cases (full refund issued)
+          • INDZON reserves the right to cancel orders in special cases (full refund issued)
         </Text>
 
         <View style={styles.separator} />

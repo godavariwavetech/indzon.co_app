@@ -1,3 +1,4 @@
+import {Text} from '../../components/Typography';
 import React, {useEffect, useRef, useState} from 'react';
 import {
   FlatList,
@@ -5,7 +6,6 @@ import {
   Pressable,
   StatusBar,
   StyleSheet,
-  Text,
   View,
   useWindowDimensions,
 } from 'react-native';

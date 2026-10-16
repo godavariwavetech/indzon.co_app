@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, TouchableOpacity} from "react-native";
+import {Text} from './Typography';
+import {View, StyleSheet, TouchableOpacity} from 'react-native';
 import React,{useState} from 'react'
 import commonStyles from "../commonstyles/CommonStyles";
 import Icon from "react-native-vector-icons/FontAwesome6"; 

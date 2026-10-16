@@ -1,12 +1,6 @@
+import {Text, TextInput} from '../../components/Typography';
 import React, {useRef, useState} from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import {ActivityIndicator, Pressable, StyleSheet, View} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Svg, {Path} from 'react-native-svg';
 import ShoppingLoginLayout from '../../components/auth/ShoppingLoginLayout';
@@ -17,7 +11,7 @@ import {isValidPhoneNumber, sanitizePhoneNumber} from '../../utils/phone';
 
 export default function LoginScreen({navigation, route}) {
   const [phoneNumber, setPhoneNumber] = useState(
-    route?.params?.phoneNumber || '',
+    sanitizePhoneNumber(route?.params?.phoneNumber || ''),
   );
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -75,7 +69,8 @@ export default function LoginScreen({navigation, route}) {
             keyboardType="phone-pad"
             textContentType="telephoneNumber"
             autoComplete="tel"
-            maxLength={10}
+            // Allow the complete autofill value through before normalizing it.
+            maxLength={30}
             editable={!loading}
             returnKeyType="done"
             onSubmitEditing={submit}

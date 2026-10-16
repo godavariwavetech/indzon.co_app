@@ -146,7 +146,7 @@ const SelectServiceFromLocation = ({ navigation, route }) => {
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
           {
             title: 'Location permission',
-            message: 'Amaraa uses your location to find available delivery and service areas.',
+            message: 'INDZON uses your location to find available delivery and service areas.',
             buttonPositive: 'Allow',
             buttonNegative: 'Not now',
           },

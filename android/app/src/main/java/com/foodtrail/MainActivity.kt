@@ -1,4 +1,4 @@
-package com.amaraa.user
+package com.indzon.co
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

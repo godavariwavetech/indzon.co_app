@@ -1,0 +1,6 @@
+{
+  "mode": "Built-in image_gen tool",
+  "asset": "electronics.png",
+  "transparentBackground": true,
+  "prompt": "Use case: stylized-concept. Asset type: small electronics category illustration for a shopping mobile app. Primary request: a compact glossy 3D arrangement of black over-ear headphones, a blue-screen smartphone, and a white wireless earbud charging case with earbuds. Square composition, objects centered as a single cohesive cluster filling about 85% of canvas, all objects completely visible. Three-quarter perspective, softly rounded realistic forms, soft studio lighting, crisp silhouette readable at 64 pixels. Scene/backdrop: genuinely transparent background with alpha; no colored background, no floor or background panel, no text, logos, borders or watermark. This illustration will be placed on an existing pale lavender gradient tile in the app."
+}

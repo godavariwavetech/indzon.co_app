@@ -1,5 +1,6 @@
+import {Text} from '../../components/Typography';
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import AuthScreenLayout from '../../components/auth/AuthScreenLayout';
 import AuthButton from '../../components/auth/AuthButton';

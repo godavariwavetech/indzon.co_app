@@ -1,5 +1,6 @@
+import {Text} from '../Typography';
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 import Svg, {Circle, Path} from 'react-native-svg';
 
 const markerWidth = 30;

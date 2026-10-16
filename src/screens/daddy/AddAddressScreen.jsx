@@ -173,7 +173,7 @@ const AddAddressScreen = ({ navigation, route }) => {
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
           {
             title: 'Location permission',
-            message: 'Amaraa needs your location to save a delivery address.',
+            message: 'INDZON needs your location to save a delivery address.',
             buttonPositive: 'Allow',
             buttonNegative: 'Not now',
           },

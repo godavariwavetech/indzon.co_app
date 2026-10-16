@@ -10,6 +10,7 @@ const initialState = {
   optCode: '',
   mobileNumber: '',
   isLogged: false,
+  previewLoginComplete: false,
   customerId: null,
   location: null,
   locationName: null,
@@ -43,8 +44,8 @@ export const verifyMobile = createAsyncThunk(
 export const addCustomer = createAsyncThunk(
   'addCustomer',
   async (
-    { mobileNumber, otp },
-    { getState, rejectWithValue, fulfillWithValue }
+    {mobileNumber, otp},
+    {getState, rejectWithValue, fulfillWithValue},
   ) => {
     try {
       const data = {
@@ -58,11 +59,12 @@ export const addCustomer = createAsyncThunk(
         return rejectWithValue('Invalid server response');
       }
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Network or server error');
+      return rejectWithValue(
+        error.response?.data?.message || 'Network or server error',
+      );
     }
-  }
+  },
 );
-
 
 export const loginAction = createAsyncThunk(
   'loginAction',
@@ -90,19 +92,19 @@ export const verifyCustomerMobile = createAsyncThunk(
     {getState, rejectWithValue, fulfillWithValue},
   ) => {
     const data = {
-      "customer_mobile_number":customer_mobile_number,
-    }; 
+      customer_mobile_number: customer_mobile_number,
+    };
     try {
-      console.log("response of REQUEST_OTP 4")
+      console.log('response of REQUEST_OTP 4');
       const response = await api.post(endpoints.REQUEST_OTP, data);
-    
+
       if (response?.data) {
         return fulfillWithValue(response.data);
       } else {
         return rejectWithValue('Something went wrong!');
       }
     } catch (error) {
-      console.log("error of REQUEST_OTP 5", error)
+      console.log('error of REQUEST_OTP 5', error);
       return rejectWithValue(error.message || 'Something went wrong!');
     }
   },
@@ -136,7 +138,7 @@ export const deleteAccount = createAsyncThunk(
   async (_, {getState, rejectWithValue, fulfillWithValue}) => {
     const {customerId} = getState().Auth;
     const response = await api.post(endpoints.DELETE_ACCOUNT, {
-        "user_id":customerId
+      user_id: customerId,
     });
     const deletionResponse = response?.data;
     const deletionStatus = deletionResponse?.status;
@@ -144,11 +146,16 @@ export const deleteAccount = createAsyncThunk(
       deletionResponse &&
       deletionResponse.success !== false &&
       deletionStatus !== false &&
-      (deletionStatus == null || deletionStatus === 200 || deletionStatus === '200' || deletionStatus === true);
+      (deletionStatus == null ||
+        deletionStatus === 200 ||
+        deletionStatus === '200' ||
+        deletionStatus === true);
     if (requestSucceeded) {
       return fulfillWithValue(deletionResponse);
     }
-    return rejectWithValue(deletionResponse?.message || 'Something went wrong!');
+    return rejectWithValue(
+      deletionResponse?.message || 'Something went wrong!',
+    );
   },
 );
 
@@ -156,7 +163,10 @@ export const updateCustomerProfile = createAsyncThunk(
   'updateCustomerProfile',
   async (payload, {rejectWithValue, fulfillWithValue}) => {
     try {
-      const response = await api.post(endpoints.UPDATE_CUSTOMER_PROFILE, payload);
+      const response = await api.post(
+        endpoints.UPDATE_CUSTOMER_PROFILE,
+        payload,
+      );
       if (response?.data) {
         return fulfillWithValue(response.data);
       } else {
@@ -171,9 +181,12 @@ export const updateCustomerProfile = createAsyncThunk(
 // NEW THUNK: Fetch Customer Profile
 export const getCustomerProfile = createAsyncThunk(
   'getCustomerProfile',
-  async ({ customer_id }, { rejectWithValue, fulfillWithValue }) => {
+  async ({customer_id}, {rejectWithValue, fulfillWithValue}) => {
     try {
-      const response = await api.post(endpoints.GET_PROFILE || '/public_app/getprofile', { customer_id });
+      const response = await api.post(
+        endpoints.GET_PROFILE || '/public_app/getprofile',
+        {customer_id},
+      );
       if (response?.data) {
         return fulfillWithValue(response.data);
       } else {
@@ -194,6 +207,13 @@ export const AuthSlice = createSlice({
     },
     completeAuthentication: (state, action) => {
       Object.assign(state, initialState, action.payload, {isLogged: true});
+    },
+    rememberStaticLogin: (state, action) => {
+      // Remember the local preview flow without creating backend credentials.
+      Object.assign(state, initialState, {
+        previewLoginComplete: true,
+        mobileNumber: action.payload,
+      });
     },
     setDeliveryAddress: (state, action) => {
       const address = action.payload;
@@ -335,7 +355,7 @@ export const AuthSlice = createSlice({
     });
 
     // Get Profile
-    builder.addCase(getCustomerProfile.pending, (state) => {
+    builder.addCase(getCustomerProfile.pending, state => {
       state.loading = true;
     });
     builder.addCase(getCustomerProfile.fulfilled, (state, action) => {
@@ -344,7 +364,7 @@ export const AuthSlice = createSlice({
         state.profileData = action.payload.data[0];
       }
     });
-    builder.addCase(getCustomerProfile.rejected, (state) => {
+    builder.addCase(getCustomerProfile.rejected, state => {
       state.loading = false;
     });
   },
@@ -353,6 +373,7 @@ export const AuthSlice = createSlice({
 export const {
   actionLogout,
   completeAuthentication,
+  rememberStaticLogin,
   setDeliveryAddress,
   actionLogin,
   setMobile,

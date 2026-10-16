@@ -19,10 +19,10 @@ const AboutUsScreen = () => {
       </View>
       <ScrollView style={{padding: 20}}>
         <Text style={styles.content}>
-          Welcome to Amaraa, your ultimate food delivery companion! We are committed to bringing the best meals from your favorite local restaurants straight to your doorstep.
+          Welcome to INDZON, your ultimate food delivery companion! We are committed to bringing the best meals from your favorite local restaurants straight to your doorstep.
         </Text>
 
-        <Text style={styles.sectionTitle}>Why Choose Amaraa?</Text>
+        <Text style={styles.sectionTitle}>Why Choose INDZON?</Text>
         
         <View style={styles.featureItem}>
           <MaterialCommunityIcons name="check-circle" size={20} color={commonStyles.appMainColor} />
@@ -55,7 +55,7 @@ const AboutUsScreen = () => {
         </View>
 
         <Text style={[styles.content, {marginTop: 20}]}>
-          At Amaraa, we believe food is more than just a meal – it's an experience. Join us in revolutionizing food delivery, where great food is always within reach!
+          At INDZON, we believe food is more than just a meal – it's an experience. Join us in revolutionizing food delivery, where great food is always within reach!
         </Text>
       </ScrollView>
     </View>

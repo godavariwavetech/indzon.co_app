@@ -2,8 +2,10 @@
 export const freeMaps = {
   tileUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
   geocoderUrl: 'https://photon.komoot.io',
+  reverseGeocoderUrl: 'https://nominatim.openstreetmap.org/reverse',
+  searchGeocoderUrl: 'https://nominatim.openstreetmap.org/search',
   attributionUrl: 'https://www.openstreetmap.org/copyright',
-  userAgent: 'Amaraa/0.0.1 (+https://amaraa.co.in)',
+  userAgent: 'INDZON/1.0 (+https://indzon.co)',
   minimumZoom: 3,
   maximumZoom: 19,
 };

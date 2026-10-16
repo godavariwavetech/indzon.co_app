@@ -61,10 +61,39 @@ async function getCurrentLocation() {
 }
 
 const lookupCache = new Map();
-let lookupQueue = Promise.resolve();
-let lastRequestAt = 0;
+// A slow autocomplete request must not block the selected map address.
+const lookupLanes = {
+  api: {queue: Promise.resolve(), lastRequestAt: 0},
+  reverse: {queue: Promise.resolve(), lastRequestAt: 0},
+};
+let requestStartQueue = Promise.resolve();
+let lastProviderRequestAt = 0;
+
+function lookupCancelled() {
+  const error = new Error('Location lookup cancelled.');
+  error.name = 'AbortError';
+  return error;
+}
+
+function waitForLookup(delay, signal) {
+  if (signal?.aborted) return Promise.reject(lookupCancelled());
+  return new Promise((resolve, reject) => {
+    const cancel = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', cancel);
+      reject(lookupCancelled());
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', cancel);
+      resolve();
+    }, delay);
+    signal?.addEventListener('abort', cancel);
+  });
+}
 
 async function photonRequest(path, parameters, signal) {
+  if (signal?.aborted) throw lookupCancelled();
+  const lane = lookupLanes[path];
   const query = Object.entries({...parameters, lang: 'en'})
     .map(
       ([key, value]) =>
@@ -72,28 +101,37 @@ async function photonRequest(path, parameters, signal) {
     )
     .join('&');
   const url = `${freeMaps.geocoderUrl}/${path}/?${query}`;
+  const searchUrl = `${freeMaps.searchGeocoderUrl}?format=jsonv2&addressdetails=1&accept-language=en&countrycodes=in&limit=5&q=${encodeURIComponent(parameters.q || '')}`;
+  const reverseUrl = `${freeMaps.reverseGeocoderUrl}?format=jsonv2&addressdetails=1&accept-language=en&lat=${parameters.lat}&lon=${parameters.lon}`;
   const cached = lookupCache.get(url);
   if (cached?.expiresAt > Date.now()) {
     return cached.body;
   }
-  const operation = async () => {
+  const operation = async (attempt = 0) => {
     if (signal?.aborted) {
-      throw new Error('Location lookup cancelled.');
+      throw lookupCancelled();
     }
-    const delay = Math.max(0, lastRequestAt + 1000 - Date.now());
-    if (delay) {
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-    if (signal?.aborted) {
-      throw new Error('Location lookup cancelled.');
-    }
-    lastRequestAt = Date.now();
+    // Share the provider's rate limit without waiting for other responses.
+    const start = requestStartQueue.then(async () => {
+      if (signal?.aborted) throw lookupCancelled();
+      const delay = Math.max(0, lastProviderRequestAt + 1000 - Date.now());
+      if (delay) await waitForLookup(delay, signal);
+      if (signal?.aborted) throw lookupCancelled();
+      lastProviderRequestAt = Date.now();
+    });
+    requestStartQueue = start.catch(() => {});
+    await start;
     const controller = new AbortController();
     const abort = () => controller.abort();
     signal?.addEventListener('abort', abort);
-    const timeout = setTimeout(abort, 12000);
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      abort();
+    }, 10000);
     try {
-      const response = await fetch(url, {
+      const useAddressProvider = attempt === 0;
+      const response = await fetch(useAddressProvider ? (path === 'reverse' ? reverseUrl : searchUrl) : url, {
         signal: controller.signal,
         headers: {'User-Agent': freeMaps.userAgent, Accept: 'application/json'},
       });
@@ -104,22 +142,60 @@ async function photonRequest(path, parameters, signal) {
             : 'Could not load this location. Check your connection and try again.',
         );
       }
-      const body = await response.json();
+      const result = await response.json();
+      const rows = path === 'reverse' ? [result] : result;
+      const body = useAddressProvider
+        ? {features: (Array.isArray(rows) ? rows : []).filter(row => row.display_name).map(row => {
+            const address = row.address || {};
+            return {
+              geometry: {coordinates: [Number(row.lon), Number(row.lat)]},
+              properties: {
+                osm_type: row.osm_type,
+                osm_id: row.osm_id || row.place_id,
+                name: row.name,
+                housenumber: address.house_number,
+                street: address.road,
+                district: address.suburb || address.neighbourhood || address.hamlet,
+                city: address.city || address.town || address.village || address.municipality,
+                county: address.county,
+                state: address.state,
+                postcode: address.postcode,
+                country: address.country,
+                display_name: row.display_name,
+              },
+            };
+          })}
+        : result;
       if (!Array.isArray(body.features)) {
         throw new Error('Could not load this location. Please try again.');
       }
+      if (signal?.aborted) throw lookupCancelled();
       lookupCache.set(url, {body, expiresAt: Date.now() + 24 * 60 * 60 * 1000});
       if (lookupCache.size > 80) {
         lookupCache.delete(lookupCache.keys().next().value);
       }
       return body;
+    } catch (error) {
+      if (signal?.aborted) throw lookupCancelled();
+      const temporaryFailure = timedOut || error.name === 'AbortError' || error instanceof TypeError;
+      if (path === 'reverse' && attempt === 0) {
+        clearTimeout(timeout);
+        signal?.removeEventListener('abort', abort);
+        return operation(1);
+      }
+      if (temporaryFailure) {
+        throw new Error(
+          'Address lookup could not connect. Check your internet connection and retry, or search for your area.',
+        );
+      }
+      throw error;
     } finally {
       clearTimeout(timeout);
       signal?.removeEventListener('abort', abort);
     }
   };
-  const result = lookupQueue.then(operation, operation);
-  lookupQueue = result.catch(() => {});
+  const result = lane.queue.then(() => operation(), () => operation());
+  lane.queue = result.catch(() => {});
   return result;
 }
 
@@ -155,7 +231,7 @@ export function parsePlace(feature) {
     latitude,
     longitude,
     area: district || properties.name || street || city || 'Selected location',
-    fullAddress: unique.join(', '),
+    fullAddress: properties.display_name || unique.join(', '),
     city,
     state: properties.state || '',
     pincode: properties.postcode || '',
@@ -194,7 +270,7 @@ async function searchPlaces(query, coordinates, signal) {
   if (query.trim().length < 3) {
     return [];
   }
-  const parameters = {q: query.trim(), limit: 5, countrycode: 'IN'};
+  const parameters = {q: query.trim().replace(/\s+/g, ' ').toLowerCase(), limit: 5, countrycode: 'IN'};
   if (validCoordinates(coordinates)) {
     parameters.lat = coordinates.latitude.toFixed(3);
     parameters.lon = coordinates.longitude.toFixed(3);
@@ -338,6 +414,7 @@ async function deleteSavedAddress(customerId, addressId) {
 }
 
 export default {
+  clearSavedAddresses: customerId => updateAddresses(customerId, () => []),
   getCurrentLocation,
   reverseGeocode,
   searchPlaces,

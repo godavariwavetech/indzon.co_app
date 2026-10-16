@@ -1,31 +1,27 @@
+import {Text} from '../../components/Typography';
 import React, {useCallback, useState} from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import {FlatList, Pressable, StatusBar, StyleSheet, View} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import locationService from '../../services/locationService';
-import LocationButton from '../../components/location/LocationButton';
 import {setDeliveryAddress} from '../../redux/reducers/auth';
 import {updateUserAddress} from '../../redux/reducers/daddy';
 import {setSelectedAddress} from '../../redux/reducers/addressSlice';
+import {STATIC_APP_FLOW} from '../../config/appMode';
+import {persistorStore, staticPersistor} from '../../redux/store';
+import {AddressListSkeleton} from '../../components/main/Skeleton';
+import ConfirmDialog from '../../components/main/ConfirmDialog';
 
-export default function AddressListScreen({navigation, route}) {
+export default function AddressListScreen({navigation}) {
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
   const {customerId, deliveryAddress} = useSelector(state => state.Auth);
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState(null);
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -55,45 +51,35 @@ export default function AddressListScreen({navigation, route}) {
       };
     }, [customerId]),
   );
-  const select = address => {
+  const select = async address => {
     dispatch(setDeliveryAddress(address));
     dispatch(updateUserAddress(address));
     dispatch(setSelectedAddress(address));
+    await (STATIC_APP_FLOW ? staticPersistor : persistorStore).flush();
     navigation.goBack();
   };
-  const remove = address =>
-    Alert.alert(
-      'Delete address?',
-      'This removes the saved address from this device.',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await locationService.deleteSavedAddress(customerId, address.id);
-              const remaining = await locationService.getSavedAddresses(
-                customerId,
-              );
-              setRecords(remaining);
-              if (deliveryAddress?.id === address.id) {
-                const next = remaining[0] || null;
-                dispatch(setDeliveryAddress(next));
-                dispatch(updateUserAddress(next));
-                dispatch(setSelectedAddress(next));
-                if (!next) {
-                  const root = navigation.getParent?.() || navigation;
-                  root.reset({index: 0, routes: [{name: 'LocationSetup'}]});
-                }
-              }
-            } catch (err) {
-              setError(err.message);
-            }
-          },
-        },
-      ],
-    );
+  const remove = address => setPendingDelete(address);
+  const confirmRemove = async () => {
+    const address = pendingDelete;
+    setPendingDelete(null);
+    if (!address) {
+      return;
+    }
+    try {
+      await locationService.deleteSavedAddress(customerId, address.id);
+      const remaining = await locationService.getSavedAddresses(customerId);
+      setRecords(remaining);
+      if (deliveryAddress?.id === address.id) {
+        const next = remaining[0] || null;
+        dispatch(setDeliveryAddress(next));
+        dispatch(updateUserAddress(next));
+        dispatch(setSelectedAddress(next));
+        await (STATIC_APP_FLOW ? staticPersistor : persistorStore).flush();
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+  };
   return (
     <View
       style={[
@@ -117,22 +103,24 @@ export default function AddressListScreen({navigation, route}) {
           <MaterialIcons name="arrow-back" size={26} color="#202427" />
         </Pressable>
         <Text style={styles.title} accessibilityRole="header">
-          Saved addresses
+          Address
         </Text>
+        <Pressable
+          style={styles.addNew}
+          onPress={() => navigation.navigate('AddAddress')}
+          accessibilityRole="button"
+          accessibilityLabel="Add new address">
+          <MaterialIcons name="add" size={23} color="#3832FF" />
+          <Text style={styles.addLabel}>Add New</Text>
+        </Pressable>
       </View>
       {error ? (
         <Text style={styles.error} accessibilityRole="alert">
           {error}
         </Text>
       ) : null}
-      {route?.params?.isFromCart ? (
-        <Text style={styles.notice}>
-          These addresses are saved on your device. Delivery availability has
-          not been checked yet.
-        </Text>
-      ) : null}
       {loading ? (
-        <ActivityIndicator style={styles.loading} color="#3832FF" />
+        <AddressListSkeleton />
       ) : (
         <FlatList
           data={records}
@@ -140,63 +128,106 @@ export default function AddressListScreen({navigation, route}) {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <Text style={styles.empty}>
-              No saved addresses yet. Add your delivery address below.
+              No saved addresses yet. Tap Add New to add your delivery address.
             </Text>
           }
           renderItem={({item}) => (
-            <View style={styles.card}>
+            <View
+              style={[
+                styles.card,
+                deliveryAddress?.id === item.id && styles.defaultCard,
+              ]}>
               <Pressable
                 style={styles.address}
                 onPress={() => select(item)}
+                onLongPress={() =>
+                  navigation.navigate('AddAddress', {address: item})
+                }
+                accessibilityHint="Hold to edit this address"
                 accessibilityRole="button"
                 accessibilityLabel={`Use ${item.address_type} address`}>
-                <View style={styles.cardTitle}>
-                  <Text style={styles.type}>{item.address_type}</Text>
-                  {deliveryAddress?.id === item.id ? (
-                    <MaterialIcons
-                      name="check-circle"
-                      size={20}
-                      color="#3832FF"
-                    />
-                  ) : null}
+                <View
+                  style={[
+                    styles.addressIcon,
+                    {
+                      backgroundColor:
+                        item.address_type === 'Home'
+                          ? '#E4E1FF'
+                          : /work|office/i.test(item.address_type)
+                          ? '#FFF1E5'
+                          : '#E2FBEB',
+                    },
+                  ]}>
+                  <MaterialIcons
+                    name={
+                      item.address_type === 'Home'
+                        ? 'home'
+                        : /work|office/i.test(item.address_type)
+                        ? 'business'
+                        : 'location-on'
+                    }
+                    size={30}
+                    color={
+                      item.address_type === 'Home'
+                        ? '#3832FF'
+                        : /work|office/i.test(item.address_type)
+                        ? '#FF7915'
+                        : '#00A541'
+                    }
+                  />
                 </View>
-                <Text style={styles.description}>{item.full_address}</Text>
-                <Text style={styles.contact}>
-                  {item.customer_name} · +91 {item.customer_mobile_number}
-                </Text>
+                <View style={{flex: 1}}>
+                  <View style={styles.cardTitle}>
+                    <Text style={styles.type}>{item.address_type}</Text>
+                    {deliveryAddress?.id === item.id ? (
+                      <Text style={styles.defaultBadge}>Default</Text>
+                    ) : null}
+                  </View>
+                  <Text style={styles.contact}>
+                    {item.customer_name}, +91 {item.customer_mobile_number}
+                  </Text>
+                  <Text style={styles.description}>{item.full_address}</Text>
+                </View>
               </Pressable>
               <View style={styles.actions}>
                 <Pressable
-                  onPress={() =>
-                    navigation.navigate('AddAddress', {address: item})
-                  }
-                  accessibilityRole="button"
-                  accessibilityLabel={`Edit ${item.address_type} address`}
-                  hitSlop={8}>
-                  <MaterialIcons name="edit" size={22} color="#48535D" />
-                </Pressable>
-                <Pressable
+                  style={styles.deleteAction}
                   onPress={() => remove(item)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Delete ${item.address_type} address`}
-                  hitSlop={8}>
+                  accessibilityLabel={`Delete ${item.address_type} address`}>
                   <MaterialIcons
                     name="delete-outline"
-                    size={24}
-                    color="#48535D"
+                    size={20}
+                    color="#FF0000"
                   />
+                  <Text style={styles.deleteLabel}>Delete</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.useAction}
+                  onPress={() => select(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Use ${item.address_type} address`}>
+                  <MaterialIcons
+                    name="arrow-forward"
+                    size={20}
+                    color="#3832FF"
+                  />
+                  <Text style={styles.useLabel}>Use This Address</Text>
                 </Pressable>
               </View>
             </View>
           )}
         />
       )}
-      <View style={styles.add}>
-        <LocationButton
-          label="Add New Address"
-          onPress={() => navigation.navigate('AddAddress')}
-        />
-      </View>
+      <ConfirmDialog
+        visible={Boolean(pendingDelete)}
+        title="Delete this address?"
+        message="This removes the saved address from this device."
+        confirmLabel="Delete"
+        danger
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={confirmRemove}
+      />
     </View>
   );
 }
@@ -210,22 +241,74 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
-  title: {fontSize: 20, fontWeight: '700', color: '#202427'},
-  list: {padding: 16, gap: 12},
+  title: {fontSize: 20, fontWeight: '700', color: '#202427', flex: 1},
+  addNew: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#3832FF',
+    backgroundColor: '#F4F2FF',
+    borderRadius: 7,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+  },
+  addLabel: {fontSize: 13, fontWeight: '700', color: '#3832FF'},
+  list: {padding: 16, gap: 20, paddingBottom: 28},
   card: {
     borderWidth: 1,
-    borderColor: '#DFE6F5',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    gap: 12,
+    borderColor: '#F0F0F3',
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    elevation: 3,
+    shadowColor: '#000000',
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    shadowOffset: {width: 0, height: 2},
   },
-  address: {flex: 1},
+  defaultCard: {backgroundColor: '#F7F6FF'},
+  address: {flexDirection: 'row', gap: 12, padding: 12},
+  addressIcon: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 11,
+  },
   cardTitle: {flexDirection: 'row', alignItems: 'center', gap: 8},
   type: {fontSize: 17, fontWeight: '700', color: '#202427'},
+  defaultBadge: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    backgroundColor: '#3832FF',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
   description: {fontSize: 14, lineHeight: 21, color: '#48535D', marginTop: 6},
-  contact: {fontSize: 12, color: '#6B7280', marginTop: 8},
-  actions: {gap: 20, paddingLeft: 4},
+  contact: {fontSize: 15, fontWeight: '600', color: '#202427', marginTop: 9},
+  actions: {flexDirection: 'row', borderTopWidth: 1, borderColor: '#E7E7ED'},
+  deleteAction: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 12,
+  },
+  useAction: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 12,
+    borderLeftWidth: 1,
+    borderColor: '#E7E7ED',
+  },
+  deleteLabel: {fontSize: 13, fontWeight: '700', color: '#FF0000'},
+  useLabel: {fontSize: 13, fontWeight: '700', color: '#3832FF'},
   loading: {flex: 1},
   empty: {
     fontSize: 15,

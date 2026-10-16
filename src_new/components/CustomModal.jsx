@@ -1,12 +1,6 @@
+import {Text} from './Typography';
 import React from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Dimensions,
-} from 'react-native';
+import {Modal, View, StyleSheet, TouchableOpacity, Dimensions} from 'react-native';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import commonStyles from '../commonstyles/CommonStyles';
 

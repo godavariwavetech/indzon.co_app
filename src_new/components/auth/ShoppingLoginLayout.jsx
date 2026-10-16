@@ -1,3 +1,4 @@
+import {Text} from '../Typography';
 import React from 'react';
 import {
   Image,
@@ -6,7 +7,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
   View,
   useWindowDimensions,
 } from 'react-native';

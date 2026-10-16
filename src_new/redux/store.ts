@@ -17,6 +17,7 @@ import Dashboard from './reducers/daddy';
 import couponsReducer from './reducers/coupons';
 import addressReducer from './reducers/addressSlice';
 import search from './reducers/search';
+import commerce from './reducers/commerce';
 // Import the coupons reducer
 // import { AuthSlice } from './reducers/auth';
 // import Auth from './reducers/auth';
@@ -58,15 +59,35 @@ export const store = configureStore({
 
 export const persistorStore = persistStore(store);
 
-// Keep static UI state separate from the persisted customer session and cart.
-// Static OTP navigation never marks this store as authenticated.
+// Remember the preview login separately from the real customer session.
+// Backend tokens, customer IDs and authentication flags are never persisted here.
+const staticAuthPersistConfig = {
+  key: 'amaraa-static-login',
+  storage: AsyncStorage,
+  whitelist: [
+    'previewLoginComplete',
+    'mobileNumber',
+    'deliveryAddress',
+    'location',
+    'locationName',
+    'locationId',
+  ],
+};
 export const staticStore = configureStore({
   reducer: {
-    Auth: AuthSlice,
+    commerce,
+    Auth: persistReducer(staticAuthPersistConfig, AuthSlice),
     Dashboard,
     address: addressReducer,
   },
+  middleware: getDefaultMiddleware =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+      },
+    }),
 });
+export const staticPersistor = persistStore(staticStore);
 
 export type AppDispatch = typeof store.dispatch;
 export type AppStore = typeof store;

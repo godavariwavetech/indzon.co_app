@@ -9,7 +9,23 @@ import AddAddressScreen from '../screens/location/AddAddressScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import OtpVerificationScreen from '../screens/auth/OtpVerificationScreen';
 import AddressListScreen from '../screens/location/AddressListScreen';
-import StaticHomeScreen from '../screens/home/StaticHomeScreen';
+import MainTabs from './MainTabs';
+import {
+  AboutUsScreen,
+  HelpSupportScreen,
+  MyAccountScreen,
+  ShopDetailsScreen,
+} from '../screens/main/RelatedScreens';
+import {
+  CartScreen,
+  OrderConfirmationScreen,
+  OrderDetailsScreen,
+  ProductDetailsScreen,
+  ProductListScreen,
+  WishlistScreen,
+} from '../screens/main/CommerceScreens';
+import SearchScreen from '../screens/main/SearchScreen';
+import CouponsScreen from '../screens/main/CouponsScreen';
 import {STATIC_APP_FLOW} from '../config/appMode';
 // Onboarding is temporarily disabled.
 // import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
@@ -28,11 +44,25 @@ const defaultAuthenticatedRoutes = [
 ];
 
 const staticRoutes = [
-  ...defaultGuestRoutes,
+  {name: 'TermsConditions', component: TermsConditionsScreen},
+  {name: 'PrivacyPolicy', component: PrivacyPolicyScreen},
   {name: 'LocationSetup', component: LocationSetupScreen},
   {name: 'AddAddress', component: AddAddressScreen},
   {name: 'AddressList', component: AddressListScreen},
-  {name: 'Home', component: StaticHomeScreen},
+  {name: 'Home', component: MainTabs},
+  {name: 'ProductList', component: ProductListScreen},
+  {name: 'Search', component: SearchScreen},
+  {name: 'CategoryDetails', component: ProductListScreen},
+  {name: 'ProductDetails', component: ProductDetailsScreen},
+  {name: 'ShopDetails', component: ShopDetailsScreen},
+  {name: 'Cart', component: CartScreen},
+  {name: 'Coupons', component: CouponsScreen},
+  {name: 'Wishlist', component: WishlistScreen},
+  {name: 'OrderDetails', component: OrderDetailsScreen},
+  {name: 'OrderConfirmation', component: OrderConfirmationScreen},
+  {name: 'MyAccount', component: MyAccountScreen},
+  {name: 'HelpSupport', component: HelpSupportScreen},
+  {name: 'AboutUs', component: AboutUsScreen},
 ];
 
 // Retain the live flow for when backend integration is enabled again.
@@ -69,7 +99,25 @@ export function LiveAppNavigation({
 
 export default function AppNavigation(props) {
   if (STATIC_APP_FLOW) {
-    return <RentalNavigation routes={staticRoutes} initialRouteName="Login" />;
+    return <StaticAppNavigation />;
   }
   return <LiveAppNavigation {...props} />;
+}
+
+function StaticAppNavigation() {
+  const remembered = useSelector(
+    state => state.Auth.previewLoginComplete === true,
+  );
+  const hasDeliveryAddress = useSelector(state =>
+    Boolean(state.Auth.deliveryAddress),
+  );
+  return (
+    <RentalNavigation
+      key={remembered ? 'static-signed-in' : 'static-guest'}
+      routes={remembered ? staticRoutes : defaultGuestRoutes}
+      initialRouteName={
+        remembered ? (hasDeliveryAddress ? 'Home' : 'LocationSetup') : 'Login'
+      }
+    />
+  );
 }
