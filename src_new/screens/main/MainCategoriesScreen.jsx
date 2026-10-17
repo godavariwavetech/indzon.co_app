@@ -342,30 +342,7 @@ export default function MainCategoriesScreen({
                   {width: bannerWidth, height: bannerHeight},
                 ]}
               />
-            ) : (
-              <View style={[styles.categoryBanner, {width: bannerWidth}]}>
-                <View pointerEvents="none" style={styles.bannerArtPanel}>
-                  <View style={styles.bannerArtCircle} />
-                  <Image
-                    source={selected.art.source}
-                    resizeMode="contain"
-                    style={styles.bannerProduct}
-                  />
-                </View>
-                <View style={styles.bannerCopy}>
-                  <Text style={styles.bannerEyebrow}>THE EVERYDAY EDIT</Text>
-                  <Text style={styles.bannerTitle}>{selected.name}</Text>
-                  <Text style={styles.bannerCaption}>
-                    Find your next favourite.
-                  </Text>
-                  <View style={styles.bannerBadge}>
-                    <Text style={styles.bannerBadgeText}>
-                      Explore the collection
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            )
+            ) : null
           ) : null}
           <View
             style={styles.grid}

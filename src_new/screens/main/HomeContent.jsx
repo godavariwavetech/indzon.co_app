@@ -27,7 +27,6 @@ import {
   EmptyState,
   Page,
   SearchField,
-  usePageReady,
   ui,
 } from '../../components/main/MainUi';
 import ReferenceArtwork from '../../components/main/ReferenceArtwork';
@@ -37,7 +36,6 @@ import CartPill from '../../components/main/CartPill';
 import OfferCarousel from '../../components/main/OfferCarousel';
 
 export default function HomeContent({navigation}) {
-  const pageReady = usePageReady();
   const {width} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const address = useSelector(state => state.Auth.deliveryAddress);
@@ -186,17 +184,6 @@ export default function HomeContent({navigation}) {
     productId: item.id,
     liveItem: item,
   }));
-  const promoStyles = [
-    {colors: ['#EFF8E9', '#D9ECCD'], ink: '#245A32'},
-    {colors: ['#F1EDFF', '#DED6FA'], ink: '#37326E'},
-  ];
-  const promos = (liveCategories || []).slice(0, 2).map((category, index) => ({
-    ...promoStyles[index],
-    id: category.id,
-    art: {source: category.art.source, resizeMode: 'contain'},
-    eyebrow: 'EXPLORE',
-    title: category.name,
-  }));
   return (
     <Page style={{paddingTop: 0}}>
       {outOfArea ? (
@@ -319,59 +306,6 @@ export default function HomeContent({navigation}) {
             </Pressable>
           ))}
         </View>
-        {promos.length > 0 && (
-        <View style={styles.promos}>
-          {promos.map(item => {
-            const promoWidth = (contentWidth - 10) / 2;
-            const promoHeight = 92;
-            return (
-              <Pressable
-                key={item.id}
-                style={[
-                  styles.promoCard,
-                  {width: promoWidth, height: promoHeight},
-                  pageReady && styles.surfaceShadow,
-                ]}
-                onPress={() => openCategory(item.id)}
-                accessibilityRole="button"
-                accessibilityLabel={`Explore ${item.title.replace('\n', ' ')}`}>
-                <LinearGradient
-                  colors={item.colors}
-                  style={StyleSheet.absoluteFillObject}
-                />
-                <ReferenceArtwork
-                  art={item.art}
-                  width={promoHeight - 20}
-                  height={promoHeight - 20}
-                  resizeMode="contain"
-                  style={[
-                    styles.promoPhoto,
-                    {width: promoHeight - 20, height: promoHeight - 20},
-                  ]}
-                />
-                <View pointerEvents="none" style={styles.promoCopy}>
-                  <Text style={[styles.promoEyebrow, {color: item.ink}]}>
-                    {item.eyebrow}
-                  </Text>
-                  <Text style={[styles.promoTitle, {color: item.ink}]}>
-                    {item.title}
-                  </Text>
-                  <View style={styles.promoAction}>
-                    <Text style={[styles.promoActionText, {color: item.ink}]}>
-                      Shop now
-                    </Text>
-                    <MaterialIcons
-                      name="arrow-forward"
-                      size={13}
-                      color={item.ink}
-                    />
-                  </View>
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
-        )}
         <LinearGradient colors={['#F2EAFE', '#C39DFA']} style={styles.deals}>
           <Text style={[ui.sectionTitle, styles.dealsTitle]}>
             Top Deals for you!
