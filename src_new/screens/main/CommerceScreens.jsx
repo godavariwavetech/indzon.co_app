@@ -49,6 +49,7 @@ import {
   evaluateLiveCoupon,
   getLiveCategories,
   getLiveCoupons,
+  cancelLiveOrder,
   getLiveItems,
   getLiveSubcategories,
   liveCatalogEnabled,
@@ -1118,6 +1119,7 @@ export function OrderDetailsScreen({navigation, route}) {
   const [rating, setRating] = useState(savedFeedback?.rating || 0);
   const [feedback, setFeedback] = useState(savedFeedback?.text || '');
   const [saved, setSaved] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const dispatch = useDispatch();
   if (!order) {
     return (
@@ -1170,6 +1172,46 @@ export function OrderDetailsScreen({navigation, route}) {
             of {order.groups.length} delivered
           </Text>
         </Section>
+        {order.live && order.status === 'Cancelled' && order.cancelReason ? (
+          <Section>
+            <Text style={s.bold}>Order cancelled</Text>
+            <Text style={s.muted}>{order.cancelReason}</Text>
+          </Section>
+        ) : null}
+        {order.live && order.status === 'Placed' ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Cancel this order"
+            disabled={cancelling}
+            onPress={() =>
+              Alert.alert('Cancel order?', 'You can only cancel before the shop accepts it.', [
+                {text: 'Keep order', style: 'cancel'},
+                {
+                  text: 'Cancel order',
+                  style: 'destructive',
+                  onPress: async () => {
+                    setCancelling(true);
+                    try {
+                      const done = await cancelLiveOrder(order.realOrderId);
+                      if (done) {
+                        navigation.goBack();
+                      } else {
+                        Alert.alert('Cannot cancel', 'The shop has already accepted this order.');
+                      }
+                    } catch (err) {
+                      Alert.alert('Could not cancel', 'Please try again.');
+                    }
+                    setCancelling(false);
+                  },
+                },
+              ])
+            }
+            style={{marginHorizontal: 16, marginBottom: 12, minHeight: 46, borderRadius: 12, borderWidth: 1, borderColor: '#E5B3B8', backgroundColor: '#FFF0F0', alignItems: 'center', justifyContent: 'center', opacity: cancelling ? 0.6 : 1}}>
+            <Text style={{fontSize: 15, fontWeight: '700', color: '#BC3C47'}}>
+              {cancelling ? 'Cancelling...' : 'Cancel order'}
+            </Text>
+          </Pressable>
+        ) : null}
         {groups.map(group => (
           <OrderShipment
             key={group.id || group.name}

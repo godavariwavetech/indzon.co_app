@@ -393,6 +393,7 @@ export async function getLiveOrders({customerId}) {
       live: true,
       placed: row.order_date_time || row.order_date,
       status,
+      cancelReason: row.order_cancel_msg || null,
       address: {full_address: row.delivery_address},
       count: Number(row.item_count) || 0,
       price,
@@ -424,6 +425,13 @@ export async function getLiveOrders({customerId}) {
       ],
     };
   });
+}
+
+// Only an order that is still "Placed" can be cancelled; the backend answers
+// status 300 once the shop has accepted it.
+export async function cancelLiveOrder(realOrderId) {
+  const response = await api.post(endpoints.CANCEL_ORDER, {order_id: realOrderId});
+  return response.data?.status === 200;
 }
 
 export async function getLiveOrderItems(realOrderId) {
