@@ -303,6 +303,26 @@ export async function getLiveCoupons({locationId, categoryId = 0, shopId = 0}) {
   }));
 }
 
+// Every offer for the service area, whatever category it belongs to, so the
+// coupons screen can list them all (the endpoint filters by one category at a time).
+export async function getAllLiveCoupons({locationId}) {
+  const categories = await getLiveCategories();
+  const lists = await Promise.all([
+    getLiveCoupons({locationId, categoryId: 0}),
+    ...categories.map(category =>
+      getLiveCoupons({locationId, categoryId: category.id}),
+    ),
+  ]);
+  const seen = new Set();
+  return lists.flat().filter(offer => {
+    if (seen.has(offer.id)) {
+      return false;
+    }
+    seen.add(offer.id);
+    return true;
+  });
+}
+
 // Mirrors config/coupons.js's evaluateCoupon() shape ({discount, error, code})
 // but against real coupon_code_t fields instead of the made-up static schema.
 export function evaluateLiveCoupon(code, offers, items) {
