@@ -26,8 +26,6 @@ import {
 } from '../screens/main/CommerceScreens';
 import SearchScreen from '../screens/main/SearchScreen';
 import CouponsScreen from '../screens/main/CouponsScreen';
-import {CategoryDetailsScreen} from '../screens/main/MainCategoriesScreen';
-import {liveCatalogEnabled} from '../services/catalogService';
 import {STATIC_APP_FLOW} from '../config/appMode';
 // Onboarding is temporarily disabled.
 // import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
@@ -54,12 +52,7 @@ const staticRoutes = [
   {name: 'Home', component: MainTabs},
   {name: 'ProductList', component: ProductListScreen},
   {name: 'Search', component: SearchScreen},
-  // Live mode needs the shop picker (category -> shops -> that shop's
-  // items); ProductListScreen alone has no shop context to work from.
-  {
-    name: 'CategoryDetails',
-    component: liveCatalogEnabled ? CategoryDetailsScreen : ProductListScreen,
-  },
+  {name: 'CategoryDetails', component: ProductListScreen},
   {name: 'ProductDetails', component: ProductDetailsScreen},
   {name: 'ShopDetails', component: ShopDetailsScreen},
   {name: 'Cart', component: CartScreen},
