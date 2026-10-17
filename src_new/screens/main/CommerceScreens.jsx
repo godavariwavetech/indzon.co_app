@@ -42,7 +42,7 @@ import ReferenceArtwork from '../../components/main/ReferenceArtwork';
 import {LoadingImage as Image} from '../../components/main/Skeleton';
 import ProductCard from '../../components/main/ProductCard';
 import CartPill from '../../components/main/CartPill';
-import MainCategoriesScreen, {matchesFilter} from './MainCategoriesScreen';
+import {matchesFilter} from './MainCategoriesScreen';
 import api from '../../utils/api';
 import {endpoints} from '../../config/config';
 import {
@@ -50,6 +50,7 @@ import {
   getLiveCategories,
   getLiveCoupons,
   getLiveItems,
+  getLiveSubcategories,
   liveCatalogEnabled,
   useAllOrders,
   useLiveItemsByIds,
@@ -182,40 +183,65 @@ function Choices({visible, title, options, value, onSelect, onClose}) {
 }
 
 export function CategoriesBrowseScreen(props) {
-  // Category -> shops -> that shop's items; ProductListScreen alone has no
-  // shop context to work from.
-  return <MainCategoriesScreen {...props} />;
+  return <ProductListScreen {...props} embedded />;
 }
 
 export function ProductListScreen({navigation, route, embedded = false}) {
   const {width} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const {
-    categoryId,
+    categoryId: routeCategoryId,
     subcategoryId,
     filter: initialFilter = 'all',
     shopId,
     shopItemsTableName,
     shopName,
   } = route.params || {};
+  const locationId = useSelector(state => state.Auth.locationId);
+  const [categoryList, setCategoryList] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
   const [liveItems, setLiveItems] = useState([]);
-  const [liveItemsLoading, setLiveItemsLoading] = useState(
-    Boolean(shopItemsTableName),
-  );
+  const [liveItemsLoading, setLiveItemsLoading] = useState(liveCatalogEnabled);
   useEffect(() => {
-    if (!liveCatalogEnabled || !shopItemsTableName) {
+    if (!liveCatalogEnabled) {
+      return;
+    }
+    getLiveCategories()
+      .then(setCategoryList)
+      .catch(() => {});
+  }, []);
+  const categoryId = routeCategoryId || categoryList[0]?.id;
+  const category = categoryList.find(item => item.id === categoryId);
+  const tableName = shopItemsTableName || category?.shopItemsTableName;
+  // Subcategories come from the backend per category and service area; the
+  // items are those of the shops that stock them (or of one shop when the
+  // screen was opened from a shop).
+  useEffect(() => {
+    if (!liveCatalogEnabled || !categoryId || !tableName || !locationId) {
       return;
     }
     let active = true;
     setLiveItemsLoading(true);
-    getLiveItems({shopItemsTableName, shopId})
-      .then(rows => {
+    getLiveSubcategories({categoryId, locationId})
+      .then(async subs => {
+        const shopIds = shopId
+          ? [String(shopId)]
+          : [...new Set(subs.flatMap(sub => sub.shopIds))];
+        const lists = await Promise.all(
+          shopIds.map(id =>
+            getLiveItems({shopItemsTableName: tableName, shopId: id}).catch(
+              () => [],
+            ),
+          ),
+        );
         if (active) {
-          setLiveItems(rows);
+          setSubcategories(subs);
+          setLiveItems(lists.flat());
         }
       })
       .catch(() => {
         if (active) {
+          setSubcategories([]);
           setLiveItems([]);
         }
       })
@@ -227,22 +253,7 @@ export function ProductListScreen({navigation, route, embedded = false}) {
     return () => {
       active = false;
     };
-  }, [shopItemsTableName, shopId]);
-  // The backend has no subcategory list per shop, so the sidebar is built
-  // from the subcategories of the shop's own items.
-  const subcategories = useMemo(() => {
-    const byId = new Map();
-    liveItems.forEach(item => {
-      if (item.subcategoryId && !byId.has(item.subcategoryId)) {
-        byId.set(item.subcategoryId, {
-          id: item.subcategoryId,
-          name: item.subcategoryName || 'Items',
-          art: item.art,
-        });
-      }
-    });
-    return [...byId.values()];
-  }, [liveItems]);
+  }, [categoryId, tableName, shopId, locationId]);
   const subcategory = subcategories.find(item => item.id === subcategoryId);
   const productScroll = useRef(null);
   const sidebarWidth = 86;
@@ -286,7 +297,9 @@ export function ProductListScreen({navigation, route, embedded = false}) {
     <Page style={{paddingTop: 0}}>
       <View style={{paddingTop: insets.top}}>
         <Heading
-          title={embedded ? 'Categories' : shopName || 'Products'}
+          title={
+            embedded ? 'Categories' : shopName || category?.name || 'Products'
+          }
           titleStyle={{fontSize: 18, lineHeight: 24}}
           navigation={navigation}
           back={!embedded}
@@ -358,9 +371,29 @@ export function ProductListScreen({navigation, route, embedded = false}) {
           </Pressable>
         ))}
       </ScrollView>
+      {embedded ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{flexGrow: 0, marginBottom: 8}}
+          contentContainerStyle={{paddingHorizontal: 12, gap: 8}}>
+          {categoryList.map(item => (
+            <Pressable
+              key={item.id}
+              accessibilityRole="button"
+              accessibilityLabel={`Browse ${item.name}`}
+              accessibilityState={{selected: item.id === categoryId}}
+              onPress={() => navigation.setParams({categoryId: item.id, subcategoryId: null, filter: 'all', shopId: null, shopItemsTableName: null, shopName: null})}
+              style={{width: 76, alignItems: 'center', paddingVertical: 8, paddingHorizontal: 4, borderRadius: 13, backgroundColor: item.id === categoryId ? '#E7E2FF' : 'transparent', borderWidth: 1, borderColor: item.id === categoryId ? '#C8BDFF' : 'transparent'}}>
+              <ReferenceArtwork art={item.art} width={42} height={42} resizeMode="contain" />
+              <Text numberOfLines={2} style={{fontSize: 12, lineHeight: 15, height: 26, marginTop: 5, textAlign: 'center', fontWeight: item.id === categoryId ? '700' : '500', color: item.id === categoryId ? colors.primary : colors.ink}}>{item.shortName || item.name}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
       <View style={{flex: 1, flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#EEEAF7'}}>
         <ScrollView style={{width: sidebarWidth, flexGrow: 0, backgroundColor: '#FFFFFF', borderRightWidth: 1, borderRightColor: '#EEEAF7'}} contentContainerStyle={{paddingVertical: 8, paddingBottom: 90}} showsVerticalScrollIndicator={false}>
-          {[{id: undefined, name: 'All'}, ...subcategories].map(sub => (
+          {[{id: undefined, name: 'All', art: category?.art}, ...subcategories].map(sub => (
             <Pressable
               key={sub.id || 'all'}
               accessibilityRole="button"
@@ -405,7 +438,7 @@ export function ProductListScreen({navigation, route, embedded = false}) {
             message={
               liveItems.length
                 ? 'No products match your search and filters.'
-                : 'This shop has no items yet.'
+                : 'No items available in this category yet.'
             }
           />
         ) : null}
