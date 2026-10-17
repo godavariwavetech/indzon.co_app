@@ -197,7 +197,7 @@ export default function MainCategoriesScreen({
   const availableWidth = gridWidth || width - sidebarWidth - 25;
   const cardWidth = Math.floor((availableWidth - 10) / 2);
   const bannerWidth = Math.max(0, (viewportWidth || width - sidebarWidth) - 25);
-  const bannerHeight = bannerWidth / (546 / 162);
+  const bannerHeight = bannerWidth / 3;
   const loading =
     !gridWidth || dataLoading || deferredCategoryId !== categoryId;
   const categoryBanner = liveBanners.find(

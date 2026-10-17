@@ -17,6 +17,10 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 export default function OfferCarousel({navigation, offers}) {
   const {width} = useWindowDimensions();
   const cardWidth = Math.min(width * 0.8, 440);
+  // Image-only banners are 3:1 pictures; size the card to the picture so
+  // nothing is cropped. Designed offer cards keep their fixed height.
+  const imageOnly = offers.length > 0 && offers.every(offer => offer.imageOnly);
+  const cardHeight = imageOnly ? Math.round(cardWidth / 3) : 216;
   const step = cardWidth + 12;
   const list = useRef(null);
   const position = useRef(1);
@@ -208,11 +212,12 @@ export default function OfferCarousel({navigation, offers}) {
         onMomentumScrollEnd={event => settle(event.nativeEvent.contentOffset.x)}
         renderItem={({item, index}) => (
           <View
-            style={{width: cardWidth, height: 224, justifyContent: 'center'}}>
+            style={{width: cardWidth, height: cardHeight + 8, justifyContent: 'center'}}>
             <Animated.View
               style={[
                 styles.card,
                 {
+                  height: cardHeight,
                   transform: [
                     {
                       scaleY: scrollX.interpolate({
@@ -221,7 +226,7 @@ export default function OfferCarousel({navigation, offers}) {
                           index * step,
                           (index + 1) * step,
                         ],
-                        outputRange: [176 / 216, 1, 176 / 216],
+                        outputRange: [0.81, 1, 0.81],
                         extrapolate: 'clamp',
                       }),
                     },
