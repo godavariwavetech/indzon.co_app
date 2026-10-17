@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 import {
   Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,13 +18,14 @@ import {
 import {Text as NativeText} from '../../components/ReadableText';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
+import {useSelector} from 'react-redux';
 import {
   getLiveBanners,
   getLiveCategories,
-  getLiveShops,
+  getLiveItems,
+  getLiveSubcategories,
   liveCatalogEnabled,
 } from '../../services/catalogService';
-import {useSelector} from 'react-redux';
 import {
   colors,
   EmptyState,
@@ -31,6 +33,7 @@ import {
   Page,
   SearchField,
   usePageReady,
+  ui,
 } from '../../components/main/MainUi';
 import ReferenceArtwork from '../../components/main/ReferenceArtwork';
 import {CategoryGridSkeleton} from '../../components/main/Skeleton';
@@ -42,49 +45,49 @@ export const matchesFilter = (product, filter) =>
     ? Number(product.rating) >= 4.5
     : true;
 
-function ShopTile({shop, width, onPress, shadowsReady}) {
+function SubcategoryTile({sub, width, count, onPress, shadowsReady}) {
   const imageWidth = Math.min(70, Math.round(width * 0.38));
   const imageHeight = 78;
+  const footer = (
+    <View style={styles.cardBottom}>
+      <NativeText style={styles.count} numberOfLines={1}>
+        {count}
+      </NativeText>
+      <View style={styles.arrow}>
+        <MaterialIcons name="chevron-right" size={16} color={colors.primary} />
+      </View>
+    </View>
+  );
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Open ${shop.name}`}
+      accessibilityLabel={`Browse ${sub.name}, ${count} ${
+        count === 1 ? 'item' : 'items'
+      }`}
       style={[
         styles.card,
-        {width, backgroundColor: '#F1F0FA'},
+        {width, backgroundColor: sub.color},
         shadowsReady && styles.cardShadow,
       ]}>
       <View style={styles.wideCard}>
         <View style={styles.wideCopy}>
-          <NativeText style={styles.subcategoryName} numberOfLines={2}>
-            {shop.name}
+          <NativeText style={styles.subcategoryName} numberOfLines={3}>
+            {sub.name}
           </NativeText>
-          <View style={styles.cardBottom}>
-            <NativeText style={styles.count} numberOfLines={1}>
-              {shop.rating ? `★ ${shop.rating}` : shop.address}
-            </NativeText>
-            <View style={styles.arrow}>
-              <MaterialIcons
-                name="chevron-right"
-                size={16}
-                color={colors.primary}
-              />
-            </View>
-          </View>
+          {footer}
         </View>
         <ReferenceArtwork
-          art={shop.art}
+          art={sub.art}
           width={imageWidth}
           height={imageHeight}
-          resizeMode="cover"
+          resizeMode="contain"
           style={styles.tilePicture}
         />
       </View>
     </Pressable>
   );
 }
-
 export default function MainCategoriesScreen({
   navigation,
   route,
@@ -94,27 +97,21 @@ export default function MainCategoriesScreen({
   const pageReady = usePageReady();
   const [categoryId, setCategoryId] = useState(route.params?.categoryId || null);
   const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [filterVisible, setFilterVisible] = useState(false);
   const [gridWidth, setGridWidth] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(0);
   const deferredCategoryId = useDeferredValue(categoryId);
   const sidebar = useRef(null);
   const content = useRef(null);
   const categoryPositions = useRef({});
-  const deliveryLocation = useSelector(state => state.Auth.location);
   const locationId = useSelector(state => state.Auth.locationId);
   const [liveCategories, setLiveCategories] = useState(null);
-  const [liveShops, setLiveShops] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [categoryItems, setCategoryItems] = useState([]);
   const [liveBanners, setLiveBanners] = useState([]);
-  const [shopsLoading, setShopsLoading] = useState(liveCatalogEnabled);
+  const [dataLoading, setDataLoading] = useState(liveCatalogEnabled);
   const categoryList = useMemo(() => liveCategories || [], [liveCategories]);
-  useEffect(() => {
-    if (!liveCatalogEnabled || !locationId) {
-      return;
-    }
-    getLiveBanners({locationId})
-      .then(setLiveBanners)
-      .catch(() => {});
-  }, [locationId]);
   useEffect(() => {
     if (!liveCatalogEnabled) {
       return;
@@ -128,43 +125,19 @@ export default function MainCategoriesScreen({
       })
       .catch(() => {});
   }, []);
-  // Real shops belong to a category (category -> shops -> that shop's own
-  // items) — there is no subcategory concept on the backend, so this step
-  // replaces catalog.js's curated subcategory tiles with a real shop list.
   useEffect(() => {
-    if (!liveCatalogEnabled || !deferredCategoryId || !locationId) {
+    if (!liveCatalogEnabled || !locationId) {
       return;
     }
-    let active = true;
-    setShopsLoading(true);
-    getLiveShops({
-      categoryId: deferredCategoryId,
-      locationId,
-      coordinates: deliveryLocation,
-    })
-      .then(rows => {
-        if (active) {
-          setLiveShops(rows);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setLiveShops([]);
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setShopsLoading(false);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [deferredCategoryId, deliveryLocation, locationId]);
+    getLiveBanners({locationId})
+      .then(setLiveBanners)
+      .catch(() => {});
+  }, [locationId]);
   useEffect(() => {
     if (categoryList.some(item => item.id === route.params?.categoryId)) {
       setCategoryId(route.params.categoryId);
       setQuery('');
+      setFilter('all');
     }
   }, [route.params?.categoryId, route.params?.selectionRequest, categoryList]);
   useEffect(() => {
@@ -178,19 +151,94 @@ export default function MainCategoriesScreen({
     categoryList.find(item => item.id === deferredCategoryId) ||
     categoryList[0] ||
     null;
+  // Subcategories come from the backend; the items of the shops that stock
+  // them are loaded too so each tile can show a count and search can match
+  // product names.
+  useEffect(() => {
+    if (!liveCatalogEnabled || !selected || !locationId) {
+      return;
+    }
+    let active = true;
+    setDataLoading(true);
+    getLiveSubcategories({categoryId: selected.id, locationId})
+      .then(async subs => {
+        const shopIds = [...new Set(subs.flatMap(sub => sub.shopIds))];
+        const lists = await Promise.all(
+          shopIds.map(shopId =>
+            getLiveItems({
+              shopItemsTableName: selected.shopItemsTableName,
+              shopId,
+            }).catch(() => []),
+          ),
+        );
+        if (active) {
+          setSubcategories(subs);
+          setCategoryItems(lists.flat());
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setSubcategories([]);
+          setCategoryItems([]);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setDataLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [selected, locationId]);
   const sidebarWidth = Math.max(80, Math.min(102, width * 0.23));
   // Measure inside the divider and padding: calculating from window width
   // made two cards exceed the row by one pixel and wrap into a single column.
   const availableWidth = gridWidth || width - sidebarWidth - 25;
   const cardWidth = Math.floor((availableWidth - 10) / 2);
   const bannerWidth = Math.max(0, (viewportWidth || width - sidebarWidth) - 25);
-  const loading = shopsLoading || deferredCategoryId !== categoryId;
-  const normalizedQuery = query.trim().toLowerCase();
-  const visibleShops = liveShops.filter(shop =>
-    shop.name.toLowerCase().includes(normalizedQuery),
-  );
+  const bannerHeight = bannerWidth / (546 / 162);
+  const loading =
+    !gridWidth || dataLoading || deferredCategoryId !== categoryId;
   const categoryBanner = liveBanners.find(
     banner => banner.categoryId === selected?.id,
+  );
+  const categoryProducts = useMemo(
+    () =>
+      categoryItems.filter(product => matchesFilter(product, filter)),
+    [categoryItems, filter],
+  );
+  const subcategoryCounts = useMemo(
+    () =>
+      categoryProducts.reduce((counts, product) => {
+        counts[product.subcategoryId] =
+          (counts[product.subcategoryId] || 0) + 1;
+        return counts;
+      }, {}),
+    [categoryProducts],
+  );
+  const normalizedQuery = query.trim().toLowerCase();
+  const visible = useMemo(
+    () =>
+      subcategories.filter(sub => {
+        const matchesQuery =
+          sub.name.toLowerCase().includes(normalizedQuery) ||
+          categoryProducts.some(
+            product =>
+              product.subcategoryId === sub.id &&
+              product.name.toLowerCase().includes(normalizedQuery),
+          );
+        return (
+          matchesQuery && (filter === 'all' || subcategoryCounts[sub.id] > 0)
+        );
+      }),
+    [
+      categoryProducts,
+      filter,
+      normalizedQuery,
+      subcategories,
+      subcategoryCounts,
+    ],
   );
   return (
     <Page>
@@ -201,6 +249,21 @@ export default function MainCategoriesScreen({
       />
       <View style={styles.searchRow}>
         <SearchField value={query} onChangeText={setQuery} style={{flex: 1}} />
+        <Pressable
+          style={[
+            styles.filterButton,
+            filter !== 'all' && styles.selectedFilter,
+          ]}
+          onPress={() => setFilterVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Filter categories">
+          <MaterialIcons
+            name="tune"
+            size={22}
+            color={filter !== 'all' ? colors.primary : '#48535D'}
+          />
+          <Text style={styles.filterText}>Filter</Text>
+        </Pressable>
       </View>
       <View style={styles.body}>
         {
@@ -223,10 +286,9 @@ export default function MainCategoriesScreen({
                   }
                 }}
                 onPress={() => {
-                  // A shop has to be picked first — the content pane below
-                  // shows this category's shops.
                   setCategoryId(item.id);
                   setQuery('');
+                  setFilter('all');
                 }}
                 accessibilityRole="button"
                 accessibilityState={{selected: item.id === categoryId}}
@@ -277,7 +339,7 @@ export default function MainCategoriesScreen({
                 accessibilityLabel={categoryBanner.title || selected.name}
                 style={[
                   styles.groceryBanner,
-                  {width: bannerWidth, height: bannerWidth / (546 / 162)},
+                  {width: bannerWidth, height: bannerHeight},
                 ]}
               />
             ) : (
@@ -291,13 +353,16 @@ export default function MainCategoriesScreen({
                   />
                 </View>
                 <View style={styles.bannerCopy}>
+                  <Text style={styles.bannerEyebrow}>THE EVERYDAY EDIT</Text>
                   <Text style={styles.bannerTitle}>{selected.name}</Text>
-                  {!loading ? (
-                    <Text style={styles.bannerCaption}>
-                      {liveShops.length}{' '}
-                      {liveShops.length === 1 ? 'shop' : 'shops'} available
+                  <Text style={styles.bannerCaption}>
+                    Find your next favourite.
+                  </Text>
+                  <View style={styles.bannerBadge}>
+                    <Text style={styles.bannerBadgeText}>
+                      Explore the collection
                     </Text>
-                  ) : null}
+                  </View>
                 </View>
               </View>
             )
@@ -314,35 +379,83 @@ export default function MainCategoriesScreen({
                 compact={cardWidth < 160}
               />
             ) : (
-              visibleShops.map(shop => (
-                <ShopTile
-                  key={shop.id}
-                  shop={shop}
+              visible.map(sub => (
+                <SubcategoryTile
+                  key={sub.id}
+                  sub={sub}
                   width={cardWidth}
+                  count={subcategoryCounts[sub.id] || 0}
                   shadowsReady={pageReady && !loading}
-                  onPress={() =>
+                  onPress={() => {
+                    const stocked = categoryItems.find(
+                      product => product.subcategoryId === sub.id,
+                    );
                     navigation.navigate('ProductList', {
                       categoryId,
-                      shopId: shop.id,
-                      shopItemsTableName: shop.shopItemsTableName,
-                      shopName: shop.name,
-                    })
-                  }
+                      subcategoryId: sub.id,
+                      filter,
+                      shopId: stocked?.shopId || sub.shopIds[0],
+                      shopItemsTableName: selected.shopItemsTableName,
+                    });
+                  }}
                 />
               ))
             )}
           </View>
-          {!loading && !visibleShops.length ? (
+          {!loading && !visible.length ? (
             <EmptyState
               message={
-                query
-                  ? 'No matching shops. Try another search.'
-                  : 'No shops available in this category yet.'
+                query || filter !== 'all'
+                  ? 'No matching categories. Try another search or filter.'
+                  : 'No subcategories available here yet.'
               }
             />
           ) : null}
         </ScrollView>
       </View>
+      <Modal
+        visible={filterVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setFilterVisible(false)}>
+        <View style={styles.modal}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setFilterVisible(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Close filters"
+          />
+          <View style={styles.filterSheet}>
+            <Text style={ui.sectionTitle}>Filter products</Text>
+            {[
+              ['all', 'All products'],
+              ['under500', 'Under ₹500'],
+              ['toprated', 'Rating 4.5 and above'],
+            ].map(([id, label]) => (
+              <Pressable
+                key={id}
+                style={styles.option}
+                onPress={() => {
+                  setFilter(id);
+                  setFilterVisible(false);
+                }}
+                accessibilityRole="radio"
+                accessibilityState={{selected: filter === id}}>
+                <Text style={styles.optionText}>{label}</Text>
+                <MaterialIcons
+                  name={
+                    filter === id
+                      ? 'radio-button-checked'
+                      : 'radio-button-unchecked'
+                  }
+                  size={22}
+                  color={colors.primary}
+                />
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </Modal>
     </Page>
   );
 }

@@ -62,6 +62,42 @@ export async function getLiveBanners({locationId}) {
     }));
 }
 
+// An address saved before a service area matched (or in the old static flow)
+// carries no location_id, which empties every catalog screen. Re-resolve it
+// from the stored coordinates.
+export async function resolveServiceLocation({latitude, longitude}) {
+  const response = await api.post(endpoints.CHECK_ADDRESS_EXISTENCE, {
+    location_latitude: latitude,
+    location_longitude: longitude,
+  });
+  const match = response.data?.data?.available_locations?.[0];
+  return match ? {id: match.id, name: match.location_name} : null;
+}
+
+const SUBCATEGORY_COLORS = ['#F5DFCF', '#FCE8EF', '#FFE9D6', '#E9F3D6'];
+
+// Subcategories of a category in a service area. Each row also carries the ids
+// of the shops that stock it (shop_id is a GROUP_CONCAT), which the product
+// list needs to know whose items to load.
+export async function getLiveSubcategories({categoryId, locationId}) {
+  const response = await api.post(endpoints.GET_SUB_CATEGORIES, {
+    category_id: Number(categoryId),
+    location_id: Number(locationId),
+    veg_mode: 0,
+  });
+  const rows = Array.isArray(response.data?.data) ? response.data.data : [];
+  return rows.map((row, index) => ({
+    id: String(row.sub_category_id),
+    name: row.sub_category_name,
+    tagLine: row.subcategory_tag_line,
+    shopIds: String(row.shop_id || '')
+      .split(',')
+      .filter(Boolean),
+    color: SUBCATEGORY_COLORS[index % SUBCATEGORY_COLORS.length],
+    art: photoArt(row.sub_category_image),
+  }));
+}
+
 export async function getLiveShops({categoryId, locationId, coordinates}) {
   const response = await api.post(endpoints.GET_SHOPS, {
     shop_id: 0,

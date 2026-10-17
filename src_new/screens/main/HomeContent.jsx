@@ -7,7 +7,8 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import {useSelector} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
+import {setLocationId, setLocationName} from '../../redux/reducers/auth';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -18,6 +19,7 @@ import {
   getLiveItems,
   getLiveShops,
   liveCatalogEnabled,
+  resolveServiceLocation,
   searchAll,
 } from '../../services/catalogService';
 import {
@@ -41,6 +43,30 @@ export default function HomeContent({navigation}) {
   const address = useSelector(state => state.Auth.deliveryAddress);
   const deliveryLocation = useSelector(state => state.Auth.location);
   const locationId = useSelector(state => state.Auth.locationId);
+  const dispatch = useDispatch();
+  const [outOfArea, setOutOfArea] = useState(false);
+  useEffect(() => {
+    if (!liveCatalogEnabled || locationId || !deliveryLocation?.latitude) {
+      return;
+    }
+    let active = true;
+    resolveServiceLocation(deliveryLocation)
+      .then(found => {
+        if (!active) {
+          return;
+        }
+        if (found) {
+          dispatch(setLocationId(found.id));
+          dispatch(setLocationName(found.name));
+        } else {
+          setOutOfArea(true);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [locationId, deliveryLocation, dispatch]);
   const [query, setQuery] = useState('');
   const [liveCategories, setLiveCategories] = useState(null);
   const [liveBanners, setLiveBanners] = useState([]);
@@ -173,6 +199,13 @@ export default function HomeContent({navigation}) {
   }));
   return (
     <Page style={{paddingTop: 0}}>
+      {outOfArea ? (
+        <View style={{paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 8, backgroundColor: '#FFF4E5'}}>
+          <Text style={{color: '#8A5A00'}}>
+            We don't deliver to this address yet. Pick another address to see products.
+          </Text>
+        </View>
+      ) : null}
       <ScrollView
         style={{flex: 1, marginTop: insets.top}}
         stickyHeaderIndices={[1]}
