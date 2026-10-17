@@ -81,3 +81,6 @@ yarn-error.log
 !.env.example
 Amaraa Public App APIs.postman_collection.json
 CLAUDE.md
+
+# Web build output
+/dist-web

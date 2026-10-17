@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>Amaraa</title>
+    <style>
+      html, body, #root { height: 100%; margin: 0; }
+      body { background: #fff; overflow: hidden; -webkit-text-size-adjust: 100%; }
+      #root { display: flex; justify-content: center; background: #f2f2f7; }
+      /* Phone-width column on desktop; full width on actual phones. */
+      #app { width: 100%; max-width: 480px; height: 100%; background: #fff; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+    </style>
+  </head>
+  <body>
+    <div id="root"><div id="app"></div></div>
+    <script type="module" src="./index.jsx"></script>
+  </body>
+</html>

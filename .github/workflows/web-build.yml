@@ -1,0 +1,59 @@
+name: Web build (static)
+
+# Builds the static (no backend) version of the app for the browser with
+# react-native-web and publishes it to GitHub Pages, so iOS-only testers can
+# open it from a link in Safari.
+#
+# One-time setup: Repo Settings -> Pages -> Build and deployment -> Source:
+# "GitHub Actions". The build artifact is also attached to every run.
+
+on:
+  push:
+    branches: [indzon-static-web]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: web-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Build web app
+        run: npm run build:web
+        env:
+          NODE_ENV: production
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: amaraa-web
+          path: dist-web
+          retention-days: 14
+      - name: Prepare GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist-web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
