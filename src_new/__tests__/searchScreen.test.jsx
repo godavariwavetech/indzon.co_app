@@ -3,24 +3,53 @@ import React from 'react';
 import {act, create} from 'react-test-renderer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SearchScreen from '../screens/main/SearchScreen';
+import {getLiveCategories, searchAll} from '../services/catalogService';
 
 jest.mock('../components/main/MainUi', () => ({
   Page: ({children}) => children,
   colors: {muted: '#777777'},
 }));
 jest.mock('react-native-vector-icons/MaterialIcons', () => 'Icon');
+jest.mock('react-redux', () => ({
+  useSelector: selector => selector({Auth: {locationId: 1}}),
+}));
+jest.mock('../services/catalogService', () => ({
+  liveCatalogEnabled: true,
+  getLiveCategories: jest.fn(),
+  searchAll: jest.fn(),
+}));
+
 let renderer;
 let navigation;
 beforeEach(() => {
   global.IS_REACT_ACT_ENVIRONMENT = true;
   jest.clearAllMocks();
-  AsyncStorage.getItem.mockResolvedValue(null);
+  AsyncStorage.getItem.mockResolvedValue(JSON.stringify(['Milk', 'Rice']));
+  getLiveCategories.mockResolvedValue([
+    {
+      id: '10',
+      name: 'Grocery',
+      shortName: 'Grocery',
+      art: {source: {uri: 'http://x/grocery.png'}},
+    },
+  ]);
+  searchAll.mockResolvedValue([
+    {
+      key: '1-z_grocery_item_lst_t-7',
+      kind: 'item',
+      name: 'Aashirvaad Chakki Atta 5kg',
+      tagline: 'Item',
+      art: {source: {uri: 'http://x/atta.png'}},
+      product: {id: 'z_grocery_item_lst_t:7', name: 'Aashirvaad Chakki Atta 5kg'},
+    },
+  ]);
   navigation = {navigate: jest.fn(), goBack: jest.fn()};
 });
 afterEach(() => {
   if (renderer) {
     act(() => renderer.unmount());
   }
+  jest.useRealTimers();
 });
 async function mount() {
   await act(async () => {
@@ -28,57 +57,26 @@ async function mount() {
   });
 }
 
-test('category opens an overlay and subcategory opens its product list', async () => {
+test('a live category opens its shop list', async () => {
   await mount();
   act(() =>
-    renderer.root
-      .findByProps({accessibilityLabel: 'Groceries'})
-      .props.onPress(),
+    renderer.root.findByProps({accessibilityLabel: 'Grocery'}).props.onPress(),
   );
-  expect(
-    renderer.root.findByProps({testID: 'search-subcategory-panel'}),
-  ).toBeTruthy();
-  expect(navigation.navigate).not.toHaveBeenCalled();
-  await act(async () =>
-    renderer.root
-      .findByProps({accessibilityLabel: 'Browse Rice, Atta & Grains'})
-      .props.onPress(),
-  );
-  expect(navigation.navigate).toHaveBeenCalledWith('ProductList', {
-    categoryId: 'grocery',
-    subcategoryId: 'rice',
-    title: 'Rice, Atta & Grains',
+  expect(navigation.navigate).toHaveBeenCalledWith('CategoryDetails', {
+    categoryId: '10',
+    selectionRequest: expect.any(Number),
   });
-  expect(
-    renderer.root.findAllByProps({testID: 'search-subcategory-panel'}),
-  ).toHaveLength(0);
 });
-test('outside tap dismisses the panel without navigating', async () => {
-  await mount();
-  act(() =>
-    renderer.root
-      .findByProps({accessibilityLabel: 'Groceries'})
-      .props.onPress(),
-  );
-  act(() =>
-    renderer.root
-      .findByProps({accessibilityLabel: 'Close subcategories'})
-      .props.onPress(),
-  );
-  expect(
-    renderer.root.findAllByProps({testID: 'search-subcategory-panel'}),
-  ).toHaveLength(0);
-  expect(navigation.navigate).not.toHaveBeenCalled();
-});
+
 test('removing and clearing recent searches persists the changes', async () => {
   await mount();
   await act(async () =>
     renderer.root
-      .findByProps({accessibilityLabel: 'Remove Laptop'})
+      .findByProps({accessibilityLabel: 'Remove Milk'})
       .props.onPress(),
   );
   expect(
-    renderer.root.findAllByProps({accessibilityLabel: 'Remove Laptop'}),
+    renderer.root.findAllByProps({accessibilityLabel: 'Remove Milk'}),
   ).toHaveLength(0);
   await act(async () =>
     renderer.root
@@ -90,22 +88,20 @@ test('removing and clearing recent searches persists the changes', async () => {
     '[]',
   );
 });
-test('typing dismisses subcategories and returns product results', async () => {
+
+test('typing searches the backend with the delivery location and shows results', async () => {
+  jest.useFakeTimers();
   await mount();
   act(() =>
     renderer.root
-      .findByProps({accessibilityLabel: 'Groceries'})
-      .props.onPress(),
-  );
-  act(() =>
-    renderer.root
       .findByProps({testID: 'search-screen-input'})
-      .props.onChangeText('Coriander'),
+      .props.onChangeText('Atta'),
   );
-  expect(
-    renderer.root.findAllByProps({testID: 'search-subcategory-panel'}),
-  ).toHaveLength(0);
+  await act(async () => {
+    jest.advanceTimersByTime(400);
+  });
+  expect(searchAll).toHaveBeenCalledWith('Atta', 1);
   expect(JSON.stringify(renderer.toJSON())).toContain(
-    'Aashirvaad Coriander Powder',
+    'Aashirvaad Chakki Atta 5kg',
   );
 });

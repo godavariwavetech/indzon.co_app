@@ -5,7 +5,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Svg, {Path} from 'react-native-svg';
 import ShoppingLoginLayout from '../../components/auth/ShoppingLoginLayout';
 import authService from '../../services/authService';
-import {STATIC_APP_FLOW} from '../../config/appMode';
+import {ENABLE_LIVE_DATA} from '../../config/appMode';
 import {DEFAULT_RESEND_SECONDS} from '../../config/authFlow';
 import {isValidPhoneNumber, sanitizePhoneNumber} from '../../utils/phone';
 
@@ -32,7 +32,7 @@ export default function LoginScreen({navigation, route}) {
     setError('');
     try {
       // OTP requests are disabled while the UI uses static data.
-      const response = STATIC_APP_FLOW
+      const response = !ENABLE_LIVE_DATA
         ? {resendAfterSeconds: DEFAULT_RESEND_SECONDS}
         : await authService.requestOtp(phoneNumber);
       navigation.navigate('OtpVerification', {phoneNumber, ...response});

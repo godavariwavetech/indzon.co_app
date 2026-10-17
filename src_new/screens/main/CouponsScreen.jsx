@@ -1,6 +1,6 @@
 import {useFocusEffect} from '@react-navigation/native';
 import SuccessCelebration from '../../components/main/SuccessCelebration';
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   Clipboard,
   Keyboard,
@@ -20,9 +20,14 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Svg, {Line, Path} from 'react-native-svg';
 import {Page} from '../../components/main/MainUi';
-import {money, products} from '../../config/catalog';
-import {coupons, evaluateCoupon} from '../../config/coupons';
+import {money} from '../../config/catalog';
 import {setCouponCode} from '../../redux/reducers/commerce';
+import {
+  evaluateLiveCoupon,
+  getLiveCoupons,
+  liveCatalogEnabled,
+  useLiveItemsByIds,
+} from '../../services/catalogService';
 
 export default function CouponsScreen({navigation}) {
   const dispatch = useDispatch();
@@ -30,7 +35,7 @@ export default function CouponsScreen({navigation}) {
   const insets = useSafeAreaInsets();
   const scale = Math.min(width / 393, 1);
   const cart = useSelector(state => state.commerce.cart);
-  const orders = useSelector(state => state.commerce.orders);
+  const locationId = useSelector(state => state.Auth.locationId);
   const selected = useSelector(state => state.commerce.couponCode);
   const [success, setSuccess] = useState(null);
   const applying = useRef(false);
@@ -48,12 +53,30 @@ export default function CouponsScreen({navigation}) {
   const [code, setCode] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState(false);
-  const items = products
-    .filter(item => cart[item.id])
+  const cartIds = Object.keys(cart);
+  const {itemsById} = useLiveItemsByIds(cartIds);
+  const items = cartIds
+    .map(id => itemsById[id])
+    .filter(Boolean)
     .map(item => ({...item, quantity: cart[item.id]}));
+  const [liveOffers, setLiveOffers] = useState([]);
+  useEffect(() => {
+    if (!liveCatalogEnabled || !locationId) {
+      return;
+    }
+    getLiveCoupons({
+      locationId,
+      categoryId: items[0]?.categoryId || 0,
+      shopId: items[0]?.shopId || 0,
+    })
+      .then(setLiveOffers)
+      .catch(() => setLiveOffers([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locationId, items[0]?.categoryId, items[0]?.shopId]);
+  const offers = liveOffers;
   const apply = value => {
     if (applying.current) return;
-    const result = evaluateCoupon(value, items, orders);
+    const result = evaluateLiveCoupon(value, liveOffers, items);
     if (result.error) {
       setMessage(result.error);
       setError(true);
@@ -137,7 +160,7 @@ export default function CouponsScreen({navigation}) {
             </Pressable>
           ) : null}
           <View style={styles.list}>
-            {coupons.map(offer => (
+            {offers.map(offer => (
               <View
                 key={offer.code}
                 style={styles.ticket}>

@@ -59,8 +59,8 @@ export const store = configureStore({
 
 export const persistorStore = persistStore(store);
 
-// Remember the preview login separately from the real customer session.
-// Backend tokens, customer IDs and authentication flags are never persisted here.
+// Persists both the static preview login and, once ENABLE_LIVE_DATA is on, the
+// real backend session (token/customerId/isLogged) so it survives app restarts.
 const staticAuthPersistConfig = {
   key: 'amaraa-static-login',
   storage: AsyncStorage,
@@ -71,6 +71,10 @@ const staticAuthPersistConfig = {
     'location',
     'locationName',
     'locationId',
+    'token',
+    'customerId',
+    'isLogged',
+    'profileData',
   ],
 };
 export const staticStore = configureStore({

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import {baseURL} from '../config/config';
-import {store} from '../redux/store';
-import {STATIC_APP_FLOW} from '../config/appMode';
+import {store, staticStore} from '../redux/store';
+import {STATIC_APP_FLOW, ENABLE_LIVE_DATA} from '../config/appMode';
 
 const api = axios.create({
   baseURL,
@@ -10,8 +10,10 @@ const api = axios.create({
 
 api.interceptors.request.use(
   config => {
-    // Prevent any dormant backend action from sending requests in static mode.
-    if (STATIC_APP_FLOW) {
+    // ENABLE_LIVE_DATA (not STATIC_APP_FLOW) is the real network kill-switch —
+    // STATIC_APP_FLOW only picks the navigator/store, and src_new keeps using
+    // staticStore even once ENABLE_LIVE_DATA is true.
+    if (!ENABLE_LIVE_DATA) {
       throw new Error('API calls are disabled while the app uses static data.');
     }
     const fullUrl = `${config.baseURL || ''}${config.url}`;
@@ -20,7 +22,10 @@ api.interceptors.request.use(
     //   data: config.data,
     // });
     try {
-      const state = store.getState();
+      // The app actually runs on staticStore while STATIC_APP_FLOW is true —
+      // reading the token from `store` here would always see an empty session.
+      const activeStore = STATIC_APP_FLOW ? staticStore : store;
+      const state = activeStore.getState();
       const token = state.Auth?.token;
 
       if (token) {

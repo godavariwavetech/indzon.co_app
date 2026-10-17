@@ -11,6 +11,15 @@ jest.mock('@react-navigation/native', () => ({
 jest.mock('react-native-linear-gradient', () => 'LinearGradient');
 jest.mock('react-native-vector-icons/MaterialIcons', () => 'Icon');
 
+const offers = ['a', 'b', 'c'].map(id => ({
+  id,
+  categoryId: '10',
+  title: id,
+  source: {uri: `http://x/${id}.png`},
+  background: '#EAF1FC',
+  imageOnly: true,
+}));
+
 // The first native render initializes and transforms RN's virtualized list.
 jest.setTimeout(20000);
 
@@ -38,7 +47,7 @@ afterEach(() => {
 });
 async function mount() {
   await act(async () => {
-    renderer = create(<OfferCarousel navigation={{navigate: jest.fn()}} />);
+    renderer = create(<OfferCarousel navigation={{navigate: jest.fn()}} offers={offers} />);
   });
   act(() => jest.advanceTimersByTime(20));
   scroll.mockClear();

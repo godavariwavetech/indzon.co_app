@@ -4,7 +4,9 @@ import Geolocation from 'react-native-geolocation-service';
 import {check, request, PERMISSIONS, RESULTS} from 'react-native-permissions';
 import {freeMaps} from '../config/freeMaps';
 import {isValidPhoneNumber} from '../utils/phone';
-import {STATIC_APP_FLOW} from '../config/appMode';
+import {STATIC_APP_FLOW, ENABLE_LIVE_DATA} from '../config/appMode';
+import api from '../utils/api';
+import {endpoints} from '../config/config';
 
 export function validCoordinates(coordinates) {
   return (
@@ -328,7 +330,20 @@ const addressKey = customerId =>
     customerId ?? 'guest'
   }`;
 
+// Real logins have a numeric backend customer_id; the static preview flow
+// never has one, so local AsyncStorage stays the fallback either way.
+function isLiveCustomer(customerId) {
+  return ENABLE_LIVE_DATA && Number.isFinite(Number(customerId));
+}
+
 async function getSavedAddresses(customerId) {
+  if (isLiveCustomer(customerId)) {
+    const response = await api.post(endpoints.GET_ADDRESS_LIST, {
+      customer_id: customerId,
+    });
+    const rows = response.data?.data;
+    return Array.isArray(rows) ? rows : [];
+  }
   const value = await AsyncStorage.getItem(addressKey(customerId));
   if (!value) {
     return [];
@@ -376,19 +391,55 @@ async function saveAddress(customerId, fields, place, addressId) {
   if (error) {
     throw new Error(error);
   }
+  const addressType =
+    fields.type === 'Others' ? fields.customType.trim() : fields.type;
+  const fullAddress = fields.doorNo.trim().endsWith(place.fullAddress)
+    ? fields.doorNo.trim()
+    : [fields.doorNo.trim(), place.fullAddress].join(', ');
+
+  if (isLiveCustomer(customerId)) {
+    const isBackendId = addressId && !String(addressId).startsWith('local-');
+    const payload = {
+      ...(isBackendId ? {id: addressId} : {}),
+      customer_id: customerId,
+      address_type: addressType,
+      full_address: fullAddress,
+      customer_latitude: String(place.latitude),
+      customer_longitude: String(place.longitude),
+      location_id: null,
+      customer_name: fields.name.trim(),
+      customer_mobile_number: fields.contact,
+      pincode: fields.pincode,
+      landmark: fields.landmark.trim(),
+      city: place.city,
+      state: place.state,
+    };
+    const response = await api.post(endpoints.SET_ADDRESS_LIST, payload);
+    // post_customer_delivery_address runs INSERT/UPDATE then a nearest-location
+    // lookup in one call: data = [writeResult, [{location_id, location_name}]].
+    const [writeResult, locationMatches] = Array.isArray(response.data?.data)
+      ? response.data.data
+      : [];
+    const resolvedId = isBackendId ? addressId : writeResult?.insertId ?? addressId;
+    const match = Array.isArray(locationMatches) ? locationMatches[0] : null;
+    return {
+      ...payload,
+      id: resolvedId,
+      location_id: match?.location_id ?? null,
+      location_name: match?.location_name ?? place.area,
+    };
+  }
+
   const address = {
     id: String(addressId || '').startsWith('local-')
       ? addressId
       : `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     storage: 'local',
     customer_id: customerId ?? null,
-    address_type:
-      fields.type === 'Others' ? fields.customType.trim() : fields.type,
+    address_type: addressType,
     door_no: fields.doorNo.trim(),
     street_address: place.fullAddress,
-    full_address: fields.doorNo.trim().endsWith(place.fullAddress)
-      ? fields.doorNo.trim()
-      : [fields.doorNo.trim(), place.fullAddress].join(', '),
+    full_address: fullAddress,
     customer_latitude: String(place.latitude),
     customer_longitude: String(place.longitude),
     location_id: null,
@@ -408,6 +459,13 @@ async function saveAddress(customerId, fields, place, addressId) {
 }
 
 async function deleteSavedAddress(customerId, addressId) {
+  if (isLiveCustomer(customerId) && !String(addressId).startsWith('local-')) {
+    await api.post(endpoints.DELETE_ADDRESS_LIST, {
+      id: addressId,
+      customer_id: customerId,
+    });
+    return;
+  }
   await updateAddresses(customerId, records =>
     records.filter(record => record.id !== addressId),
   );

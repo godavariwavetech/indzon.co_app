@@ -52,7 +52,7 @@ export default function OrderShipment({group, order, items, navigation}) {
           accessibilityRole="button"
           accessibilityLabel={`View ${item.name}`}
           onPress={() =>
-            navigation.navigate('ProductDetails', {productId: item.id})
+            navigation.navigate('ProductDetails', {productId: item.id, liveProduct: item})
           }
           style={styles.product}>
           <ReferenceArtwork art={item.art} width={44} height={48} />

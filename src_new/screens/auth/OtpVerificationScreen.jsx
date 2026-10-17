@@ -17,7 +17,7 @@ import {
   rememberStaticLogin,
 } from '../../redux/reducers/auth';
 import {staticPersistor} from '../../redux/store';
-import {STATIC_APP_FLOW} from '../../config/appMode';
+import {ENABLE_LIVE_DATA} from '../../config/appMode';
 import authService from '../../services/authService';
 import {sanitizeOtp} from '../../utils/phone';
 
@@ -49,7 +49,7 @@ export default function OtpVerificationScreen({navigation, route}) {
     setError('');
     try {
       // Static navigation only: do not create a server authentication session.
-      if (STATIC_APP_FLOW) {
+      if (!ENABLE_LIVE_DATA) {
         Keyboard.dismiss();
         dispatch(rememberStaticLogin(phoneNumber));
         // The navigator switches to location setup when this flag changes.
@@ -81,7 +81,7 @@ export default function OtpVerificationScreen({navigation, route}) {
     setPending('resend');
     setError('');
     try {
-      const response = STATIC_APP_FLOW
+      const response = !ENABLE_LIVE_DATA
         ? {resendAfterSeconds: DEFAULT_RESEND_SECONDS}
         : await authService.requestOtp(phoneNumber);
       restart(response.resendAfterSeconds);
@@ -138,7 +138,7 @@ export default function OtpVerificationScreen({navigation, route}) {
       </View>
       <View style={styles.form}>
         <Text style={styles.subtitle}>
-          {STATIC_APP_FLOW
+          {!ENABLE_LIVE_DATA
             ? `Enter any ${OTP_LENGTH}-digit code to continue with`
             : verified
             ? 'Your phone number has been verified.'

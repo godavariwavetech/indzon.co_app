@@ -1,5 +1,5 @@
 import {Text, TextInput} from '../../components/Typography';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   Pressable,
   ScrollView,
@@ -11,11 +11,16 @@ import {useDispatch, useSelector} from 'react-redux';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
-import {products, shops} from '../../config/catalog';
+import {getLiveItems} from '../../services/catalogService';
 import {
   addSupportMessage,
   setProfileDetails,
 } from '../../redux/reducers/commerce';
+import {
+  getCustomerProfile,
+  updateCustomerProfile,
+} from '../../redux/reducers/auth';
+import {ENABLE_LIVE_DATA} from '../../config/appMode';
 import {
   colors,
   EmptyState,
@@ -32,35 +37,27 @@ import CartPill from '../../components/main/CartPill';
 export function ShopDetailsScreen({navigation, route}) {
   const {width} = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const shop = shops.find(item => item.id === route.params?.shopId);
-  const items = products.filter(
-    product =>
-      product.categoryId === shop?.categoryId &&
-      product.subcategoryId === shop?.subcategoryId,
-  );
+  const {shopId, shopItemsTableName, shopName} = route.params || {};
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(Boolean(shopItemsTableName));
+  useEffect(() => {
+    if (!shopItemsTableName) {
+      return undefined;
+    }
+    let active = true;
+    getLiveItems({shopItemsTableName, shopId})
+      .then(rows => active && setItems(rows))
+      .catch(() => active && setItems([]))
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, [shopId, shopItemsTableName]);
   return (
     <Page>
-      <Heading title={shop?.name || 'Shop'} navigation={navigation} back />
+      <Heading title={shopName || 'Shop'} navigation={navigation} back />
       <ScrollView contentContainerStyle={styles.content}>
-        {shop ? (
-          <View style={styles.shop}>
-            <ReferenceArtwork
-              art={shop.art}
-              width={82}
-              height={82}
-              style={{borderRadius: 12}}
-            />
-            <View style={{flex: 1}}>
-              <Text style={styles.itemName}>{shop.name}</Text>
-              <Text style={styles.muted}>
-                ★ {shop.rating} · {shop.time}
-              </Text>
-            </View>
-          </View>
-        ) : null}
-        <Text style={[ui.sectionTitle, {marginVertical: 20}]}>
-          {shop?.categoryId === 'food' ? 'Menu' : 'Products'}
-        </Text>
+        <Text style={[ui.sectionTitle, {marginVertical: 20}]}>Products</Text>
         <View style={styles.grid}>
           {items.map(product => (
             <ProductCard
@@ -71,8 +68,8 @@ export function ShopDetailsScreen({navigation, route}) {
             />
           ))}
         </View>
-        {!items.length ? (
-          <EmptyState message="No products available in this selection." />
+        {!items.length && !loading ? (
+          <EmptyState message="No products available in this shop." />
         ) : null}
       </ScrollView>
       <CartPill navigation={navigation} bottomInset={insets.bottom} />
@@ -90,6 +87,25 @@ export function MyAccountScreen({navigation}) {
   const [name, setName] = useState(initialName);
   const [email, setEmail] = useState(savedEmail || '');
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (!ENABLE_LIVE_DATA || !auth.customerId) {
+      return;
+    }
+    dispatch(getCustomerProfile({customer_id: auth.customerId}))
+      .unwrap()
+      .then(data => {
+        const profile = Array.isArray(data?.data) ? data.data[0] : null;
+        if (profile?.customer_name) {
+          setName(profile.customer_name);
+        }
+        if (profile?.customer_email) {
+          setEmail(profile.customer_email);
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.customerId]);
   const phone = String(auth.mobileNumber || '').trim();
   const displayPhone = phone
     ? phone.startsWith('+')
@@ -102,7 +118,7 @@ export function MyAccountScreen({navigation}) {
     .map(part => part[0])
     .join('')
     .toUpperCase();
-  const saveName = () => {
+  const saveName = async () => {
     if (!name.trim()) {
       setError('Enter your name to continue.');
       return;
@@ -110,6 +126,26 @@ export function MyAccountScreen({navigation}) {
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setError('Enter a valid email address.');
       return;
+    }
+    if (ENABLE_LIVE_DATA && auth.customerId) {
+      setSaving(true);
+      try {
+        await dispatch(
+          updateCustomerProfile({
+            customer_id: auth.customerId,
+            customer_name: name.trim(),
+            customer_mobile_number: auth.mobileNumber || '',
+            customer_email: email.trim(),
+            imageevent: 0,
+            previous_image: '',
+          }),
+        ).unwrap();
+      } catch (err) {
+        setError(err.message || 'Could not save your profile. Please try again.');
+        setSaving(false);
+        return;
+      }
+      setSaving(false);
     }
     dispatch(setProfileDetails({name, email}));
     navigation.goBack();
@@ -262,11 +298,14 @@ export function MyAccountScreen({navigation}) {
       </ScrollView>
       <Footer style={styles.accountFooter}>
         <Pressable
-          style={[ui.action, styles.accountSaveButton]}
+          style={[ui.action, styles.accountSaveButton, saving && {opacity: 0.6}]}
           accessibilityRole="button"
+          disabled={saving}
           onPress={saveName}>
           <MaterialIcons name="check" size={19} color="#FFFFFF" />
-          <Text style={ui.actionText}>Save changes</Text>
+          <Text style={ui.actionText}>
+            {saving ? 'Saving…' : 'Save changes'}
+          </Text>
         </Pressable>
       </Footer>
     </Page>

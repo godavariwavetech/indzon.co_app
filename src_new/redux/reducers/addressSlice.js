@@ -49,7 +49,7 @@ export const globalSearch = createAsyncThunk(
   ) => {
     const response = await api.post(endpoints.GLOBAL_SEARCH, {
       searchterm: searchText,
-      location_id: 1,
+      location_id: getState().Auth.locationId,
     })
     if (response) {
       if (response.data) {

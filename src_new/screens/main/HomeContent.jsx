@@ -1,5 +1,5 @@
 import {Text} from '../../components/Typography';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   Pressable,
   ScrollView,
@@ -11,7 +11,15 @@ import {useSelector} from 'react-redux';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
-import {artwork, categories, moreArtwork, products} from '../../config/catalog';
+import {moreArtwork} from '../../config/catalog';
+import {
+  getLiveBanners,
+  getLiveCategories,
+  getLiveItems,
+  getLiveShops,
+  liveCatalogEnabled,
+  searchAll,
+} from '../../services/catalogService';
 import {
   colors,
   EmptyState,
@@ -31,60 +39,138 @@ export default function HomeContent({navigation}) {
   const {width} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const address = useSelector(state => state.Auth.deliveryAddress);
+  const deliveryLocation = useSelector(state => state.Auth.location);
+  const locationId = useSelector(state => state.Auth.locationId);
   const [query, setQuery] = useState('');
+  const [liveCategories, setLiveCategories] = useState(null);
+  const [liveBanners, setLiveBanners] = useState([]);
+  const [bannerIndex, setBannerIndex] = useState(0);
+  useEffect(() => {
+    if (!liveCatalogEnabled || !locationId) {
+      return;
+    }
+    let active = true;
+    getLiveBanners({locationId})
+      .then(rows => active && setLiveBanners(rows))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [locationId]);
+  useEffect(() => {
+    if (!liveCatalogEnabled) {
+      return;
+    }
+    let active = true;
+    getLiveCategories()
+      .then(rows => {
+        if (active && rows.length) {
+          setLiveCategories(rows);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+  // Featured items for "Top picks"/"Suggested" — real items from the first
+  // live category's first shop, instead of catalog.js's hand-picked deals.
+  const [liveFeaturedItems, setLiveFeaturedItems] = useState([]);
+  useEffect(() => {
+    if (!liveCatalogEnabled || !liveCategories?.length || !locationId) {
+      return;
+    }
+    let active = true;
+    getLiveShops({
+      categoryId: liveCategories[0].id,
+      locationId,
+      coordinates: deliveryLocation,
+    })
+      .then(shops => {
+        if (!active || !shops.length) {
+          return null;
+        }
+        return getLiveItems({
+          shopItemsTableName: shops[0].shopItemsTableName,
+          shopId: shops[0].id,
+        });
+      })
+      .then(items => {
+        if (active && items) {
+          setLiveFeaturedItems(items);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [liveCategories, deliveryLocation, locationId]);
+  const [liveSearchResults, setLiveSearchResults] = useState(null);
+  useEffect(() => {
+    if (!liveCatalogEnabled) {
+      return;
+    }
+    const term = query.trim();
+    if (!term) {
+      setLiveSearchResults(null);
+      return;
+    }
+    let active = true;
+    const timeout = setTimeout(() => {
+      searchAll(term, locationId)
+        .then(rows => {
+          if (active) {
+            setLiveSearchResults(
+              rows.filter(r => r.kind === 'item').map(r => r.product),
+            );
+          }
+        })
+        .catch(() => active && setLiveSearchResults([]));
+    }, 300);
+    return () => {
+      active = false;
+      clearTimeout(timeout);
+    };
+  }, [query, locationId]);
   const contentWidth = width - 32;
+  const bannerAspectRatio = 546 / 162;
   const productWidth = (contentWidth - 20) / 3;
   const iconWidth = Math.min((contentWidth - 32) / 5, 72);
-  const suggested = products
-    .filter(
-      item =>
-        !query.trim() ||
-        item.name.toLowerCase().includes(query.trim().toLowerCase()),
-    )
-    .slice(0, query ? 18 : 6);
+  const suggested = (liveSearchResults ?? liveFeaturedItems).slice(
+    0,
+    query ? 18 : 6,
+  );
   const openCategory = id =>
     navigation.navigate('CategoryDetails', {
       categoryId: id,
       selectionRequest: Date.now(),
     });
   const homeCategories = [
-    ...categories.slice(0, 9),
+    ...(liveCategories || []).slice(0, 9),
     {id: 'more', name: 'More', art: moreArtwork},
   ];
-  const deals = [
-    {
-      title: 'Women Dresses',
-      caption: 'Deals for you!',
-      art: artwork.dressDeal,
-      categoryId: 'fashion',
-    },
-    {
-      title: 'Men Watches',
-      caption: 'Starting From 199',
-      art: artwork.watchDeal,
-      categoryId: 'electronics',
-    },
-    {
-      title: 'Groceries',
-      caption: 'Deals for you!',
-      art: artwork.cerealDeal,
-      categoryId: 'grocery',
-    },
-    ...['shoes', 'luggage', 'kitkat', 'sambar', 'rice', 'eggs', 'salt'].map(
-      id => {
-        const product = products.find(item => item.id === id);
-        return {
-          title: product.name,
-          caption: `Save ${Math.round(
-            (1 - product.price / product.originalPrice) * 100,
-          )}%`,
-          art: product.art,
-          categoryId: product.categoryId,
-          productId: product.id,
-        };
-      },
-    ),
+  const deals = liveFeaturedItems.slice(0, 10).map(item => ({
+    title: item.name,
+    caption:
+      item.originalPrice > item.price
+        ? `Save ${Math.round((1 - item.price / item.originalPrice) * 100)}%`
+        : item.unit,
+    art: item.art,
+    categoryId: item.categoryId,
+    productId: item.id,
+    liveItem: item,
+  }));
+  const promoStyles = [
+    {colors: ['#EFF8E9', '#D9ECCD'], ink: '#245A32'},
+    {colors: ['#F1EDFF', '#DED6FA'], ink: '#37326E'},
   ];
+  const promos = (liveCategories || []).slice(0, 2).map((category, index) => ({
+    ...promoStyles[index],
+    id: category.id,
+    art: {source: category.art.source, resizeMode: 'contain'},
+    eyebrow: 'EXPLORE',
+    title: category.name,
+  }));
   return (
     <Page style={{paddingTop: 0}}>
       <ScrollView
@@ -130,18 +216,51 @@ export default function HomeContent({navigation}) {
           style={styles.search}
           onPress={() => navigation.navigate('Search')}
         />
-        <Pressable
-          style={[styles.mainBanner, pageReady && styles.surfaceShadow]}
-          onPress={() => openCategory('grocery')}
-          accessibilityRole="button"
-          accessibilityLabel="Shop grocery savings">
-          <ReferenceArtwork
-            art={artwork.banner}
-            width={contentWidth}
-            height={contentWidth / artwork.banner.aspectRatio}
-            style={{borderRadius: 13}}
-          />
-        </Pressable>
+        {liveBanners.length > 0 && (
+          <View style={styles.mainBanner}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={e =>
+                setBannerIndex(
+                  Math.round(e.nativeEvent.contentOffset.x / contentWidth),
+                )
+              }>
+              {liveBanners.map(banner => (
+                <Pressable
+                  key={banner.id}
+                  disabled={!banner.categoryId}
+                  onPress={() => openCategory(banner.categoryId)}
+                  accessibilityRole="button"
+                  accessibilityLabel={banner.title || 'Offer banner'}>
+                  <Image
+                    source={{uri: banner.uri}}
+                    resizeMode="cover"
+                    style={{
+                      width: contentWidth,
+                      height: contentWidth / bannerAspectRatio,
+                      borderRadius: 13,
+                    }}
+                  />
+                </Pressable>
+              ))}
+            </ScrollView>
+            {liveBanners.length > 1 && (
+              <View style={styles.bannerDots}>
+                {liveBanners.map((banner, index) => (
+                  <View
+                    key={banner.id}
+                    style={[
+                      styles.bannerDot,
+                      index === bannerIndex && styles.bannerDotActive,
+                    ]}
+                  />
+                ))}
+              </View>
+            )}
+          </View>
+        )}
         <View style={styles.categoryGrid}>
           {homeCategories.map(item => (
             <Pressable
@@ -167,25 +286,9 @@ export default function HomeContent({navigation}) {
             </Pressable>
           ))}
         </View>
+        {promos.length > 0 && (
         <View style={styles.promos}>
-          {[
-            {
-              art: artwork.groceryPromo,
-              id: 'grocery',
-              eyebrow: 'FRESH EVERY DAY',
-              title: 'Groceries,\nmade simple.',
-              colors: ['#EFF8E9', '#D9ECCD'],
-              ink: '#245A32',
-            },
-            {
-              art: artwork.electronicsPromo,
-              id: 'electronics',
-              eyebrow: 'SMARTER PICKS',
-              title: 'Upgrade your\neveryday tech.',
-              colors: ['#F1EDFF', '#DED6FA'],
-              ink: '#37326E',
-            },
-          ].map(item => {
+          {promos.map(item => {
             const promoWidth = (contentWidth - 10) / 2;
             const promoHeight = 92;
             return (
@@ -205,12 +308,12 @@ export default function HomeContent({navigation}) {
                 />
                 <ReferenceArtwork
                   art={item.art}
-                  width={promoWidth}
-                  height={promoHeight}
-                  resizeMode="cover"
+                  width={promoHeight - 20}
+                  height={promoHeight - 20}
+                  resizeMode="contain"
                   style={[
                     styles.promoPhoto,
-                    {width: promoWidth, height: promoHeight},
+                    {width: promoHeight - 20, height: promoHeight - 20},
                   ]}
                 />
                 <View pointerEvents="none" style={styles.promoCopy}>
@@ -235,6 +338,7 @@ export default function HomeContent({navigation}) {
             );
           })}
         </View>
+        )}
         <LinearGradient colors={['#F2EAFE', '#C39DFA']} style={styles.deals}>
           <Text style={[ui.sectionTitle, styles.dealsTitle]}>
             Top Deals for you!
@@ -250,6 +354,7 @@ export default function HomeContent({navigation}) {
                   deal.productId
                     ? navigation.navigate('ProductDetails', {
                         productId: deal.productId,
+                        liveProduct: deal.liveItem,
                       })
                     : openCategory(deal.categoryId)
                 }
@@ -272,7 +377,19 @@ export default function HomeContent({navigation}) {
             ))}
           </ScrollView>
         </LinearGradient>
-        <OfferCarousel navigation={navigation} />
+        {liveBanners.length > 0 && (
+          <OfferCarousel
+            navigation={navigation}
+            offers={liveBanners.map(banner => ({
+              id: banner.id,
+              categoryId: banner.categoryId,
+              title: banner.title,
+              source: {uri: banner.uri},
+              background: '#EAF1FC',
+              imageOnly: true,
+            }))}
+          />
+        )}
         <Text style={[ui.sectionTitle, styles.suggestedTitle]}>
           Suggested for you
         </Text>
@@ -328,8 +445,23 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 12,
     borderRadius: 13,
+    overflow: 'hidden',
     backgroundColor: '#EAF1FC',
   },
+  bannerDots: {
+    position: 'absolute',
+    bottom: 8,
+    alignSelf: 'center',
+    flexDirection: 'row',
+  },
+  bannerDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginHorizontal: 3,
+    backgroundColor: 'rgba(255,255,255,0.55)',
+  },
+  bannerDotActive: {backgroundColor: '#FFFFFF'},
   categoryGrid: {paddingHorizontal: 10, flexDirection: 'row', flexWrap: 'wrap'},
   category: {width: '20%', alignItems: 'center', marginBottom: 8},
   categoryName: {
@@ -360,11 +492,9 @@ const styles = StyleSheet.create({
   },
   promoPhoto: {
     position: 'absolute',
-    right: 0,
-    top: 0,
-    resizeMode: 'cover',
-    borderTopRightRadius: 14,
-    borderBottomRightRadius: 14,
+    right: 8,
+    top: 10,
+    resizeMode: 'contain',
   },
   promoCopy: {
     width: '62%',

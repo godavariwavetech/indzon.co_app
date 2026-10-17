@@ -1,5 +1,4 @@
 import {createSlice} from '@reduxjs/toolkit';
-import {products} from '../../config/catalog';
 
 const initialState = {
   cart: {},
@@ -19,9 +18,10 @@ const commerce = createSlice({
       state.couponCode = payload;
     },
     addItem(state, {payload}) {
-      if (products.some(product => product.id === payload)) {
-        state.cart[payload] = (state.cart[payload] || 0) + 1;
-      }
+      // Used to require the id to exist in the bundled static catalog —
+      // silently dropped every add-to-cart for a live (backend-fetched)
+      // product, whose id never appears in that local list.
+      state.cart[payload] = (state.cart[payload] || 0) + 1;
     },
     removeItem(state, {payload}) {
       if (state.cart[payload] > 1) {
@@ -52,9 +52,6 @@ const commerce = createSlice({
       };
     },
     toggleWishlist(state, {payload}) {
-      if (!products.some(product => product.id === payload)) {
-        return;
-      }
       if (state.wishlist.includes(payload)) {
         state.wishlist = state.wishlist.filter(id => id !== payload);
       } else {

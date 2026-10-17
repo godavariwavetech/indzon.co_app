@@ -13,31 +13,60 @@ import {
 import {Text, TextInput} from '../../components/ReadableText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import {categories, moreArtwork, products} from '../../config/catalog';
+import {useSelector} from 'react-redux';
+import {moreArtwork} from '../../config/catalog';
 import {colors, Page} from '../../components/main/MainUi';
+import {
+  getLiveCategories,
+  liveCatalogEnabled,
+  searchAll,
+} from '../../services/catalogService';
 
 const RECENT_KEY = 'amaraa.search.recent.v1';
-const DEFAULT_RECENTS = [
-  'Laptop',
-  'Wireless Mouse',
-  'Headphones',
-  'Milk',
-  'Rice',
-];
-const SEARCH_CATEGORIES = [
-  ...categories.slice(0, 9),
-  {id: 'more', name: 'More', art: moreArtwork},
-];
-
 export default function SearchScreen({navigation}) {
   const {width} = useWindowDimensions();
   const scale = Math.min(width / 393, 1.4);
   const styles = useMemo(() => makeStyles(scale), [scale]);
   const input = useRef(null);
   const [query, setQuery] = useState('');
-  const [recent, setRecent] = useState(DEFAULT_RECENTS);
+  const [recent, setRecent] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const locationId = useSelector(state => state.Auth.locationId);
+  const [liveCategories, setLiveCategories] = useState(null);
+  const [liveResults, setLiveResults] = useState([]);
+  useEffect(() => {
+    if (!liveCatalogEnabled) {
+      return;
+    }
+    getLiveCategories()
+      .then(rows => rows.length && setLiveCategories(rows))
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (!liveCatalogEnabled || !locationId) {
+      return;
+    }
+    const term = query.trim();
+    if (!term) {
+      setLiveResults([]);
+      return;
+    }
+    let active = true;
+    const timeout = setTimeout(() => {
+      searchAll(term, locationId)
+        .then(rows => active && setLiveResults(rows))
+        .catch(() => active && setLiveResults([]));
+    }, 300);
+    return () => {
+      active = false;
+      clearTimeout(timeout);
+    };
+  }, [query, locationId]);
+  const liveSearchCategories = [
+    ...(liveCategories || []).slice(0, 9),
+    {id: 'more', name: 'More', art: moreArtwork},
+  ];
   useEffect(() => {
     if (!selectedCategory) return undefined;
     const listener = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -72,21 +101,6 @@ export default function SearchScreen({navigation}) {
       AsyncStorage.setItem(RECENT_KEY, JSON.stringify(recent)).catch(() => {});
   }, [loaded, recent]);
 
-  const matchingCategories = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    if (!term) return [];
-    return categories.filter(category =>
-      category.name.toLowerCase().includes(term),
-    );
-  }, [query]);
-  const matchingProducts = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    if (!term) return [];
-    return products
-      .filter(product => product.name.toLowerCase().includes(term))
-      .slice(0, 8);
-  }, [query]);
-
   const remember = term => {
     const value = term.trim();
     if (!value) return;
@@ -104,15 +118,11 @@ export default function SearchScreen({navigation}) {
       selectionRequest: Date.now(),
     });
   };
-  const openProduct = product => {
-    remember(product.name);
-    navigation.navigate('ProductDetails', {productId: product.id});
-  };
   const submit = () => {
     const value = query.trim();
     if (!value) return;
     remember(value);
-    const category = categories.find(
+    const category = (liveCategories || []).find(
       item => item.name.toLowerCase() === value.toLowerCase(),
     );
     if (category) openCategory(category);
@@ -177,25 +187,45 @@ export default function SearchScreen({navigation}) {
             accessibilityLabel="Close subcategories"
           />
         ) : null}
-        {query.trim() ? (
+        {query.trim() && liveCatalogEnabled ? (
           <>
-            <View style={styles.sectionHeading}>
-              <Text style={styles.title}>Categories</Text>
-            </View>
-            {matchingCategories.map(category => (
+            {liveResults.map(result => (
               <Pressable
-                key={category.id}
+                key={result.key}
                 style={styles.resultRow}
-                onPress={() => openCategory(category)}
+                onPress={() => {
+                  remember(result.name);
+                  if (result.kind === 'category') {
+                    navigation.navigate('CategoryDetails', {
+                      categoryId: result.categoryId,
+                      selectionRequest: Date.now(),
+                    });
+                  } else if (result.kind === 'shop') {
+                    navigation.navigate('ProductList', {
+                      shopId: result.shopId,
+                      shopItemsTableName: result.shopItemsTableName,
+                      shopName: result.name,
+                    });
+                  } else {
+                    navigation.navigate('ProductDetails', {
+                      productId: result.product.id,
+                      liveProduct: result.product,
+                    });
+                  }
+                }}
                 accessibilityRole="button">
                 <View style={[styles.resultIcon, {backgroundColor: '#EEF3FF'}]}>
-                  <Image
-                    source={category.art.source}
-                    style={styles.resultImage}
+                  <ReferenceArtwork
+                    art={result.art}
+                    width={styles.resultImage.width}
+                    height={styles.resultImage.height}
                     resizeMode="contain"
                   />
                 </View>
-                <Text style={styles.resultName}>{category.name}</Text>
+                <View style={{flex: 1}}>
+                  <Text style={styles.resultName}>{result.name}</Text>
+                  <Text style={styles.action}>{result.tagline}</Text>
+                </View>
                 <MaterialIcons
                   name="chevron-right"
                   size={22 * scale}
@@ -203,32 +233,7 @@ export default function SearchScreen({navigation}) {
                 />
               </Pressable>
             ))}
-            {matchingProducts.length ? (
-              <>
-                <View style={[styles.sectionHeading, styles.productsHeading]}>
-                  <Text style={styles.title}>Products</Text>
-                </View>
-                {matchingProducts.map(product => (
-                  <Pressable
-                    key={product.id}
-                    style={styles.resultRow}
-                    onPress={() => openProduct(product)}
-                    accessibilityRole="button">
-                    <View
-                      style={[styles.resultIcon, {backgroundColor: '#F4F5F8'}]}>
-                      <ReferenceArtwork art={product.art} width={styles.resultImage.width} height={styles.resultImage.height} resizeMode="contain" />
-                    </View>
-                    <Text style={styles.resultName}>{product.name}</Text>
-                    <MaterialIcons
-                      name="chevron-right"
-                      size={22 * scale}
-                      color="#13213C"
-                    />
-                  </Pressable>
-                ))}
-              </>
-            ) : null}
-            {!matchingCategories.length && !matchingProducts.length ? (
+            {!liveResults.length ? (
               <Text style={styles.empty}>
                 No matches found. Try another search.
               </Text>
@@ -238,7 +243,7 @@ export default function SearchScreen({navigation}) {
           <>
             <View style={styles.categoryRegion}>
               <View style={styles.categoryGrid}>
-                {SEARCH_CATEGORIES.map(item => (
+                {liveSearchCategories.map(item => (
                   <Pressable
                     key={item.id}
                     style={styles.categoryCard}
@@ -253,9 +258,10 @@ export default function SearchScreen({navigation}) {
                         navigation.navigate('Home', {screen: 'CategoriesTab'});
                         return;
                       }
-                      setSelectedCategory(current =>
-                        current?.id === item.id ? null : item,
-                      );
+                      navigation.navigate('CategoryDetails', {
+                        categoryId: item.id,
+                        selectionRequest: Date.now(),
+                      });
                     }}>
                     <View style={styles.categoryIcon}>
                       <Image
@@ -274,49 +280,6 @@ export default function SearchScreen({navigation}) {
                 ))}
               </View>
             </View>
-            {selectedCategory ? (
-              <View
-                style={[
-                  styles.subcategoryPanel,
-                  {
-                    top:
-                      (Math.floor(
-                        SEARCH_CATEGORIES.findIndex(
-                          item => item.id === selectedCategory.id,
-                        ) / 5,
-                      ) *
-                        94 +
-                        96) *
-                      scale,
-                  },
-                ]}
-                testID="search-subcategory-panel">
-                {selectedCategory.subcategories.map(sub => (
-                  <Pressable
-                    key={sub.id}
-                    style={styles.subcategory}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Browse ${sub.name}`}
-                    onPress={() => {
-                      remember(sub.name);
-                      setSelectedCategory(null);
-                      navigation.navigate('ProductList', {
-                        categoryId: selectedCategory.id,
-                        subcategoryId: sub.id,
-                        title: sub.name,
-                      });
-                    }}>
-                    <ReferenceArtwork art={sub.art} width={styles.subcategoryImage.width} height={styles.subcategoryImage.height} resizeMode="contain" />
-                    <Text
-                      allowFontScaling={false}
-                      numberOfLines={2}
-                      style={styles.subcategoryName}>
-                      {sub.name}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            ) : null}
             <View style={styles.recents}>
               <View style={styles.sectionHeading}>
                 <Text style={styles.title}>Recent Searches</Text>

@@ -3,15 +3,20 @@ import React, {useEffect, useRef, useState} from 'react';
 import {Animated, Pressable, StyleSheet, View} from 'react-native';
 import {useSelector} from 'react-redux';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import {money, products} from '../../config/catalog';
+import {money} from '../../config/catalog';
 import ReferenceArtwork from './ReferenceArtwork';
+import {useLiveItemsByIds} from '../../services/catalogService';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export default function CartPill({navigation, bottomInset = 0}) {
   const cart = useSelector(state => state.commerce.cart);
-  const items = products.filter(product => cart[product.id]);
-  const count = items.reduce((total, item) => total + cart[item.id], 0);
+  const cartIds = Object.keys(cart);
+  const {itemsById} = useLiveItemsByIds(cartIds);
+  const items = cartIds
+    .map(id => itemsById[id])
+    .filter(Boolean);
+  const count = Object.values(cart).reduce((total, qty) => total + qty, 0);
   const entrance = useRef(new Animated.Value(0)).current;
   const [entranceComplete, setEntranceComplete] = useState(false);
   useEffect(() => {

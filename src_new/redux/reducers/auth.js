@@ -137,8 +137,9 @@ export const deleteAccount = createAsyncThunk(
   'deleteAccount',
   async (_, {getState, rejectWithValue, fulfillWithValue}) => {
     const {customerId} = getState().Auth;
+    // deleteaccountMdl reads data.customer_id, not user_id.
     const response = await api.post(endpoints.DELETE_ACCOUNT, {
-      user_id: customerId,
+      customer_id: customerId,
     });
     const deletionResponse = response?.data;
     const deletionStatus = deletionResponse?.status;
@@ -206,7 +207,12 @@ export const AuthSlice = createSlice({
       Object.assign(state, initialState);
     },
     completeAuthentication: (state, action) => {
-      Object.assign(state, initialState, action.payload, {isLogged: true});
+      // previewLoginComplete is what StaticAppNavigation checks to treat the
+      // user as signed in — a real backend session must satisfy that gate too.
+      Object.assign(state, initialState, action.payload, {
+        isLogged: true,
+        previewLoginComplete: true,
+      });
     },
     rememberStaticLogin: (state, action) => {
       // Remember the local preview flow without creating backend credentials.
