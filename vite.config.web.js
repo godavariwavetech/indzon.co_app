@@ -98,7 +98,7 @@ export default defineConfig({
   resolve: {
     extensions,
     alias: [
-      {find: /^react-native$/, replacement: 'react-native-web'},
+      {find: /^react-native$/, replacement: shim('react-native.js')},
       {
         find: /^(\.\.\/)+src\/navigation\/RentalNavigation$/,
         replacement: shim('legacy-navigation.js'),
