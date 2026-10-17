@@ -74,16 +74,28 @@ export function SkeletonGroup({children, style}) {
 
 // App artwork is bundled locally, so render it directly through the native
 // image view instead of wrapping it in a second absolute-positioned view.
+// A remote picture that fails to load (dead or missing URL) would leave a
+// blank hole; show a neutral placeholder tile instead.
 export const LoadingImage = forwardRef(function LoadingImage(
-  {source, resizeMethod = 'auto', fadeDuration = 0, ...props},
+  {source, resizeMethod = 'auto', fadeDuration = 0, style, onError, ...props},
   ref,
 ) {
+  const uri = source && typeof source === 'object' ? source.uri : null;
+  const [failedUri, setFailedUri] = useState(null);
+  if (uri && failedUri === uri) {
+    return <View style={[style, {backgroundColor: '#EFECF8'}]} />;
+  }
   return (
     <NativeImage
       {...props}
+      style={style}
       source={source}
       resizeMethod={resizeMethod}
       fadeDuration={fadeDuration}
+      onError={event => {
+        setFailedUri(uri);
+        onError?.(event);
+      }}
       ref={ref}
     />
   );
