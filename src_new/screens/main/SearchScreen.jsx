@@ -13,6 +13,7 @@ import {
 import {Text, TextInput} from '../../components/ReadableText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import LinearGradient from 'react-native-linear-gradient';
 import {useSelector} from 'react-redux';
 import {moreArtwork} from '../../config/catalog';
 import {colors, Page} from '../../components/main/MainUi';
@@ -172,6 +173,12 @@ export default function SearchScreen({navigation}) {
         </View>
       </View>
 
+      <View style={styles.body}>
+      <LinearGradient
+        pointerEvents="none"
+        colors={['#E4E2FF', '#FFFFFF']}
+        style={styles.belowInput}
+      />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
@@ -340,6 +347,7 @@ export default function SearchScreen({navigation}) {
           </>
         )}
       </ScrollView>
+      </View>
     </Page>
   );
 }
@@ -380,6 +388,14 @@ const makeStyles = s =>
       padding: 0,
       color: '#111B34',
       fontSize: 14 * s,
+    },
+    body: {flex: 1},
+    belowInput: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 150 * s,
     },
     scroll: {flex: 1},
     content: {flexGrow: 1, paddingTop: 28 * s, paddingBottom: 28 * s},
