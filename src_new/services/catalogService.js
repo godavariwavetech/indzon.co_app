@@ -57,6 +57,8 @@ export async function getLiveBanners({locationId}) {
     .map(row => ({
       id: String(row.id),
       uri: mediaUrl(row.banner_image),
+      // banner_image2 is the picture sized for the offer-card carousel.
+      cardUri: mediaUrl(row.banner_image2) || mediaUrl(row.banner_image),
       title: row.banner_offer_title,
       categoryId: row.category_id ? String(row.category_id) : null,
     }));

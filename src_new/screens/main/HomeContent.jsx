@@ -157,7 +157,7 @@ export default function HomeContent({navigation}) {
     };
   }, [query, locationId]);
   const contentWidth = width - 32;
-  const bannerAspectRatio = 3;
+  const bannerAspectRatio = 546 / 162;
   const productWidth = (contentWidth - 20) / 3;
   const iconWidth = Math.min((contentWidth - 32) / 5, 72);
   const suggested = (liveSearchResults ?? liveFeaturedItems).slice(
@@ -351,7 +351,7 @@ export default function HomeContent({navigation}) {
               id: banner.id,
               categoryId: banner.categoryId,
               title: banner.title,
-              source: {uri: banner.uri},
+              source: {uri: banner.cardUri},
               background: '#EAF1FC',
               imageOnly: true,
             }))}
