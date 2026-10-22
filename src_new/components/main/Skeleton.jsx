@@ -74,16 +74,28 @@ export function SkeletonGroup({children, style}) {
 
 // App artwork is bundled locally, so render it directly through the native
 // image view instead of wrapping it in a second absolute-positioned view.
+// A remote picture that fails to load (dead or missing URL) would leave a
+// blank hole; show a neutral placeholder tile instead.
 export const LoadingImage = forwardRef(function LoadingImage(
-  {source, resizeMethod = 'auto', fadeDuration = 0, ...props},
+  {source, resizeMethod = 'auto', fadeDuration = 0, style, onError, ...props},
   ref,
 ) {
+  const uri = source && typeof source === 'object' ? source.uri : null;
+  const [failedUri, setFailedUri] = useState(null);
+  if (uri && failedUri === uri) {
+    return <View style={[style, {backgroundColor: '#EFECF8'}]} />;
+  }
   return (
     <NativeImage
       {...props}
+      style={style}
       source={source}
       resizeMethod={resizeMethod}
       fadeDuration={fadeDuration}
+      onError={event => {
+        setFailedUri(uri);
+        onError?.(event);
+      }}
       ref={ref}
     />
   );
@@ -138,6 +150,63 @@ export function CategoryGridSkeleton({cardWidth, compact = true}) {
   );
 }
 
+export function HomeBannerSkeleton({width, height}) {
+  return (
+    <SkeletonGroup style={{marginHorizontal: 16, marginVertical: 12}}>
+      <SkeletonBlock width={width} height={height} style={{borderRadius: 13}} />
+    </SkeletonGroup>
+  );
+}
+
+export function HomeCategoriesSkeleton({iconWidth}) {
+  return (
+    <SkeletonGroup style={styles.homeCategories}>
+      {Array.from({length: 10}, (_, index) => (
+        <View key={index} style={styles.homeCategory}>
+          <SkeletonBlock
+            width={iconWidth}
+            height={iconWidth}
+            style={{borderRadius: 15}}
+          />
+          <SkeletonBlock width="70%" height={10} style={{marginTop: 8}} />
+        </View>
+      ))}
+    </SkeletonGroup>
+  );
+}
+
+export function HomeDealsSkeleton({size}) {
+  return (
+    <SkeletonGroup style={{flexDirection: 'row', gap: 9}}>
+      {[0, 1, 2].map(index => (
+        <View key={index} style={{width: size}}>
+          <SkeletonBlock
+            width={size - 10}
+            height={size - 10}
+            style={{borderRadius: 10}}
+          />
+          <SkeletonBlock width="80%" height={10} style={{marginTop: 8}} />
+          <SkeletonBlock width="50%" height={10} style={{marginTop: 6}} />
+        </View>
+      ))}
+    </SkeletonGroup>
+  );
+}
+
+export function HomeProductsSkeleton({width}) {
+  return (
+    <SkeletonGroup style={styles.homeProducts}>
+      {[0, 1, 2, 3].map(index => (
+        <View key={index} style={[styles.card, {width}]}>
+          <SkeletonBlock height={width * 0.7} style={{borderRadius: 10}} />
+          <SkeletonBlock width="85%" height={12} style={{marginTop: 10}} />
+          <SkeletonBlock width="50%" height={12} style={{marginTop: 6}} />
+        </View>
+      ))}
+    </SkeletonGroup>
+  );
+}
+
 export function AddressListSkeleton() {
   return (
     <SkeletonGroup style={{padding: 16, gap: 20}}>
@@ -170,6 +239,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#EDF0F5',
     backgroundColor: '#F8F9FC',
+  },
+  homeCategories: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 10,
+    rowGap: 14,
+  },
+  homeCategory: {width: '20%', alignItems: 'center'},
+  homeProducts: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    paddingHorizontal: 16,
   },
   footer: {
     flexDirection: 'row',

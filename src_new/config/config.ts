@@ -1,6 +1,13 @@
-export const baseURL = "https://amaraa.co.in:2026/";
+// export const baseURL = "https://amaraa.co.in:2026/";
 //2630
 // export const baseURL = 'https://melocalapp.com:1035/';
+
+// Local backend (XAMPP MySQL + node app.js on D:\client\indzon_backend\amaraa_backend)
+// Android emulator: http://10.0.2.2:2406/
+// iOS simulator / same machine: http://localhost:2406/
+// Physical device on same Wi-Fi: http://<this machine's LAN IP>:2406/
+// Live: https://api.indzon.godavariwave.com/
+export const baseURL = "http://192.168.0.129:2406/";
 
 
 export const endpoints = {
@@ -42,5 +49,9 @@ export const endpoints = {
   GET_SINGLE_SHOP_DETAILS: "public_app/getsingleshopdetails",
   GET_SEARCH_SUB_CATEGORIES: "public_app/getsearchsubcategoriesshoplist",
   GET_SEARCH_CATEGORIES: "public_app/getsearchcategoriesshoplist",
-  UPDATE_CUSTOMER_PROFILE: 'public_app/update_customer_profile'
+  UPDATE_CUSTOMER_PROFILE: 'public_app/update_customer_profile',
+  GET_PROFILE: 'public_app/getprofile',
+  ADD_WISHLIST: 'public_app/addwishlist',
+  DELETE_WISHLIST: 'public_app/deletewishlist',
+  GET_USER_WISHLIST: 'public_app/getuserwishlist',
 };

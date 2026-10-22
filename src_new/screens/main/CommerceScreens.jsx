@@ -6,6 +6,7 @@ import SuccessCelebration from '../../components/main/SuccessCelebration';
 import {Text, TextInput} from '../../components/Typography';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
+  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -17,13 +18,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
-import {
-  categories,
-  money,
-  products,
-  sampleOrders,
-  shops,
-} from '../../config/catalog';
+import {money} from '../../config/catalog';
 import {
   addItem,
   removeItem,
@@ -47,8 +42,21 @@ import ReferenceArtwork from '../../components/main/ReferenceArtwork';
 import {LoadingImage as Image} from '../../components/main/Skeleton';
 import ProductCard from '../../components/main/ProductCard';
 import CartPill from '../../components/main/CartPill';
-import {evaluateCoupon} from '../../config/coupons';
 import {matchesFilter} from './MainCategoriesScreen';
+import api from '../../utils/api';
+import {endpoints} from '../../config/config';
+import {
+  evaluateLiveCoupon,
+  getLiveCategories,
+  getLiveCoupons,
+  cancelLiveOrder,
+  getLiveItems,
+  getLiveSubcategories,
+  liveCatalogEnabled,
+  useAllOrders,
+  useLiveItemsByIds,
+  useLiveOrderItems,
+} from '../../services/catalogService';
 
 function IconButton({icon, label, onPress, badge, selected = false}) {
   return (
@@ -183,14 +191,71 @@ export function ProductListScreen({navigation, route, embedded = false}) {
   const {width} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const {
-    categoryId = 'grocery',
+    categoryId: routeCategoryId,
     subcategoryId,
     filter: initialFilter = 'all',
+    shopId,
+    shopItemsTableName,
+    shopName,
   } = route.params || {};
-  const category = categories.find(item => item.id === categoryId);
-  const subcategory = category?.subcategories.find(
-    item => item.id === subcategoryId,
-  );
+  const locationId = useSelector(state => state.Auth.locationId);
+  const [categoryList, setCategoryList] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [liveItems, setLiveItems] = useState([]);
+  const [liveItemsLoading, setLiveItemsLoading] = useState(liveCatalogEnabled);
+  useEffect(() => {
+    if (!liveCatalogEnabled) {
+      return;
+    }
+    getLiveCategories()
+      .then(setCategoryList)
+      .catch(() => {});
+  }, []);
+  const categoryId = routeCategoryId || categoryList[0]?.id;
+  const category = categoryList.find(item => item.id === categoryId);
+  const tableName = shopItemsTableName || category?.shopItemsTableName;
+  // Subcategories come from the backend per category and service area; the
+  // items are those of the shops that stock them (or of one shop when the
+  // screen was opened from a shop).
+  useEffect(() => {
+    if (!liveCatalogEnabled || !categoryId || !tableName || !locationId) {
+      return;
+    }
+    let active = true;
+    setLiveItemsLoading(true);
+    getLiveSubcategories({categoryId, locationId})
+      .then(async subs => {
+        const shopIds = shopId
+          ? [String(shopId)]
+          : [...new Set(subs.flatMap(sub => sub.shopIds))];
+        const lists = await Promise.all(
+          shopIds.map(id =>
+            getLiveItems({shopItemsTableName: tableName, shopId: id}).catch(
+              () => [],
+            ),
+          ),
+        );
+        if (active) {
+          setSubcategories(subs);
+          setLiveItems(lists.flat());
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setSubcategories([]);
+          setLiveItems([]);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLiveItemsLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [categoryId, tableName, shopId, locationId]);
+  const subcategory = subcategories.find(item => item.id === subcategoryId);
   const productScroll = useRef(null);
   const sidebarWidth = 86;
   const productAreaWidth = width - sidebarWidth - 24;
@@ -209,10 +274,9 @@ export function ProductListScreen({navigation, route, embedded = false}) {
   const normalizedQuery = query.trim().toLowerCase();
   const visible = useMemo(
     () =>
-      products
+      liveItems
         .filter(
           item =>
-            item.categoryId === categoryId &&
             (!subcategoryId || item.subcategoryId === subcategoryId) &&
             matchesFilter(item, filter) &&
             item.name.toLowerCase().includes(normalizedQuery),
@@ -228,24 +292,15 @@ export function ProductListScreen({navigation, route, embedded = false}) {
             ? 1 - b.price / b.originalPrice - (1 - a.price / a.originalPrice)
             : 0,
         ),
-    [categoryId, filter, normalizedQuery, sort, subcategoryId],
-  );
-  const restaurants = useMemo(
-    () =>
-      shops.filter(
-        item =>
-          categoryId === 'food' &&
-          item.categoryId === categoryId &&
-          (!subcategoryId || item.subcategoryId === subcategoryId) &&
-          item.name.toLowerCase().includes(normalizedQuery),
-      ),
-    [categoryId, normalizedQuery, subcategoryId],
+    [filter, normalizedQuery, sort, subcategoryId, liveItems],
   );
   return (
     <Page style={{paddingTop: 0}}>
       <View style={{paddingTop: insets.top}}>
         <Heading
-          title={embedded ? 'Categories' : category?.name || 'Products'}
+          title={
+            embedded ? 'Categories' : shopName || category?.name || 'Products'
+          }
           titleStyle={{fontSize: 18, lineHeight: 24}}
           navigation={navigation}
           back={!embedded}
@@ -323,13 +378,13 @@ export function ProductListScreen({navigation, route, embedded = false}) {
           showsHorizontalScrollIndicator={false}
           style={{flexGrow: 0, marginBottom: 8}}
           contentContainerStyle={{paddingHorizontal: 12, gap: 8}}>
-          {categories.map(item => (
+          {categoryList.map(item => (
             <Pressable
               key={item.id}
               accessibilityRole="button"
               accessibilityLabel={`Browse ${item.name}`}
               accessibilityState={{selected: item.id === categoryId}}
-              onPress={() => navigation.setParams({categoryId: item.id, subcategoryId: null, filter: 'all'})}
+              onPress={() => navigation.setParams({categoryId: item.id, subcategoryId: null, filter: 'all', shopId: null, shopItemsTableName: null, shopName: null})}
               style={{width: 76, alignItems: 'center', paddingVertical: 8, paddingHorizontal: 4, borderRadius: 13, backgroundColor: item.id === categoryId ? '#E7E2FF' : 'transparent', borderWidth: 1, borderColor: item.id === categoryId ? '#C8BDFF' : 'transparent'}}>
               <ReferenceArtwork art={item.art} width={42} height={42} resizeMode="contain" />
               <Text numberOfLines={2} style={{fontSize: 12, lineHeight: 15, height: 26, marginTop: 5, textAlign: 'center', fontWeight: item.id === categoryId ? '700' : '500', color: item.id === categoryId ? colors.primary : colors.ink}}>{item.shortName || item.name}</Text>
@@ -339,7 +394,7 @@ export function ProductListScreen({navigation, route, embedded = false}) {
       ) : null}
       <View style={{flex: 1, flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#EEEAF7'}}>
         <ScrollView style={{width: sidebarWidth, flexGrow: 0, backgroundColor: '#FFFFFF', borderRightWidth: 1, borderRightColor: '#EEEAF7'}} contentContainerStyle={{paddingVertical: 8, paddingBottom: 90}} showsVerticalScrollIndicator={false}>
-          {[{id: undefined, name: 'All', art: category?.art}, ...(category?.subcategories || [])].map(sub => (
+          {[{id: undefined, name: 'All', art: category?.art}, ...subcategories].map(sub => (
             <Pressable
               key={sub.id || 'all'}
               accessibilityRole="button"
@@ -379,36 +434,15 @@ export function ProductListScreen({navigation, route, embedded = false}) {
             />
           ))}
         </View>
-        {!visible.length && !restaurants.length ? (
-          <EmptyState message="No products match your search and filters." />
+        {!visible.length && !liveItemsLoading ? (
+          <EmptyState
+            message={
+              liveItems.length
+                ? 'No products match your search and filters.'
+                : 'No items available in this category yet.'
+            }
+          />
         ) : null}
-        {restaurants.length ? (
-          <Text style={[ui.sectionTitle, {marginTop: 24}]}>
-            Restaurants near you
-          </Text>
-        ) : null}
-        {restaurants.map(shop => (
-          <Pressable
-            key={shop.id}
-            style={s.productRow}
-            accessibilityRole="button"
-            onPress={() =>
-              navigation.navigate('ShopDetails', {shopId: shop.id})
-            }>
-            <ReferenceArtwork art={shop.art} width={65} height={65} />
-            <View style={{flex: 1}}>
-              <Text style={s.bold}>{shop.name}</Text>
-              <Text style={s.muted}>
-                ★ {shop.rating} · {shop.time}
-              </Text>
-            </View>
-            <MaterialIcons
-              name="chevron-right"
-              size={24}
-              color={colors.primary}
-            />
-          </Pressable>
-        ))}
       </ScrollView>
       </View>
       <CartPill navigation={navigation} bottomInset={insets.bottom} />
@@ -441,7 +475,10 @@ export function ProductListScreen({navigation, route, embedded = false}) {
 export function WishlistScreen({navigation}) {
   const {width} = useWindowDimensions();
   const wishlist = useSelector(state => state.commerce.wishlist);
-  const items = products.filter(item => wishlist.includes(item.id));
+  const {itemsById} = useLiveItemsByIds(wishlist);
+  const items = wishlist
+    .map(id => itemsById[id])
+    .filter(Boolean);
   return (
     <Page>
       <Heading title="Wishlist" navigation={navigation} back />
@@ -476,16 +513,58 @@ export function CartScreen({navigation}) {
   const cart = useSelector(state => state.commerce.cart);
   const address = useSelector(state => state.Auth.deliveryAddress);
   const phone = useSelector(state => state.Auth.mobileNumber);
+  const customerId = useSelector(state => state.Auth.customerId);
+  const locationId = useSelector(state => state.Auth.locationId);
   const [collapsed, setCollapsed] = useState([]);
   const coupon = useSelector(state => state.commerce.couponCode);
-  const orders = useSelector(state => state.commerce.orders);
-  const items = products.filter(item => cart[item.id]);
-  const groups = categories
-    .map(category => ({
-      ...category,
-      items: items.filter(item => item.categoryId === category.id),
-    }))
-    .filter(group => group.items.length);
+  const cartIds = Object.keys(cart);
+  const {itemsById: liveCartItemsById} = useLiveItemsByIds(cartIds);
+  const items = cartIds
+    .map(id => liveCartItemsById[id])
+    .filter(Boolean);
+  const firstCartItem = items[0];
+  const [liveGroupNames, setLiveGroupNames] = useState({});
+  useEffect(() => {
+    if (!liveCatalogEnabled) {
+      return;
+    }
+    const missing = [...new Set(items.map(item => item.categoryId))].filter(
+      id => !liveGroupNames[id],
+    );
+    if (!missing.length) {
+      return;
+    }
+    getLiveCategories()
+      .then(rows => {
+        const found = {};
+        rows.forEach(row => {
+          if (missing.includes(row.id)) {
+            found[row.id] = row;
+          }
+        });
+        if (Object.keys(found).length) {
+          setLiveGroupNames(current => ({...current, ...found}));
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.map(item => item.categoryId).join(',')]);
+  const groups = Object.values(
+    items.reduce((byCategory, item) => {
+      const key = item.categoryId;
+      if (!byCategory[key]) {
+        const liveCategory = liveGroupNames[key];
+        byCategory[key] = {
+          id: key,
+          name: liveCategory?.name || 'Items',
+          art: liveCategory?.art || items[0]?.art,
+          items: [],
+        };
+      }
+      byCategory[key].items.push(item);
+      return byCategory;
+    }, {}),
+  );
   const amount = items.reduce(
     (sum, item) => sum + item.price * cart[item.id],
     0,
@@ -494,16 +573,51 @@ export function CartScreen({navigation}) {
     (sum, item) => sum + item.originalPrice * cart[item.id],
     0,
   );
+  const [liveOffers, setLiveOffers] = useState([]);
+  useEffect(() => {
+    if (!liveCatalogEnabled || !coupon || !locationId) {
+      return;
+    }
+    getLiveCoupons({
+      locationId,
+      categoryId: firstCartItem?.categoryId || 0,
+      shopId: firstCartItem?.shopId || 0,
+    })
+      .then(setLiveOffers)
+      .catch(() => setLiveOffers([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coupon, locationId, firstCartItem?.categoryId, firstCartItem?.shopId]);
   const discount = coupon
-    ? evaluateCoupon(
+    ? evaluateLiveCoupon(
         coupon,
+        liveOffers,
         items.map(item => ({...item, quantity: cart[item.id]})),
-        orders,
       ).discount
     : 0;
   const total = amount - discount;
-  const recommendations = products.filter(item => !cart[item.id]).slice(0, 6);
-  const checkout = () => {
+  const [liveRecommendations, setLiveRecommendations] = useState([]);
+  useEffect(() => {
+    if (!liveCatalogEnabled || !firstCartItem?.shopItemsTableName) {
+      return;
+    }
+    let active = true;
+    getLiveItems({
+      shopItemsTableName: firstCartItem.shopItemsTableName,
+      shopId: firstCartItem.shopId,
+    })
+      .then(rows => {
+        if (active) {
+          setLiveRecommendations(rows.filter(row => !cart[row.id]).slice(0, 6));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [firstCartItem?.shopItemsTableName, firstCartItem?.shopId]);
+  const recommendations = liveRecommendations;
+  const [placingLive, setPlacingLive] = useState(false);
+  const checkout = async () => {
     if (!address) {
       navigation.navigate('AddressList', {isFromCart: true});
       return;
@@ -550,6 +664,97 @@ export function CartScreen({navigation}) {
       })),
       items: items.map(item => ({...item, quantity: cart[item.id]})),
     };
+
+    if (liveCatalogEnabled && customerId) {
+      setPlacingLive(true);
+      try {
+        const liveCoupon = discount > 0
+          ? liveOffers.find(o => o.code === coupon)
+          : null;
+        const subOrderArray = items.map(item => {
+          const qty = cart[item.id];
+          const lineTotal = item.price * qty;
+          return {
+            item_id: item.itemId,
+            item_name: item.name,
+            item_image: item.art?.source?.uri || null,
+            category_id: item.categoryId,
+            sub_category_id: item.subcategoryId,
+            category_name: null,
+            sub_category_name: null,
+            actualitem_price: item.originalPrice,
+            item_price: item.price,
+            sub_item_count: qty,
+            item_total_amount: lineTotal,
+            filter_name: null,
+            item_description: item.description || '',
+            saving_price: (item.originalPrice - item.price) * qty,
+            shop_id: item.shopId,
+            filter_one: null,
+            item_gst_amount: (lineTotal * (item.gstPercent || 0)) / 100,
+            item_gst: item.gstPercent || 0,
+          };
+        });
+        const response = await api.post(endpoints.PLACE_ORDER, {
+          customer_id: customerId,
+          customer_name: address.customer_name || '',
+          customer_mobile_number: address.customer_mobile_number || phone || '',
+          category_id: firstCartItem?.categoryId || 0,
+          shop_id: firstCartItem?.shopId || 0,
+          admin_percentage: 0,
+          item_count: Object.values(cart).reduce((sum, count) => sum + count, 0),
+          actual_total_amount: original,
+          total_amount: amount,
+          total_saving_amount: original - amount,
+          coupon_amount: discount,
+          coupon_id: liveCoupon?.id,
+          coupon_type: 0,
+          delivery_charges: 0,
+          delivery_charges_gst: 0,
+          handling_charges: 0,
+          packing_charges: 0,
+          packing_charges_gst: 0,
+          donation_charges: 0,
+          surcharges: 0,
+          gstonplatform_fee: 0,
+          total_item_gst_amount: subOrderArray.reduce((sum, i) => sum + i.item_gst_amount, 0),
+          grand_total: total,
+          location_id: address.location_id || locationId,
+          location_name: address.location_name || '',
+          payment_type: 'Cash On Delivery',
+          order_status: 0,
+          order_type: 0,
+          slot_indication: 0,
+          order_instructions: '',
+          delivery_instruction: '',
+          delivery_address: address.full_address || '',
+          order_latitude: address.customer_latitude || '0',
+          order_longitude: address.customer_longitude || '0',
+          order_distance: 0,
+          ext_del_charge: 0,
+          sub_order_array: subOrderArray,
+        });
+        if (response.data?.status !== 200) {
+          throw new Error(response.data?.message || 'Could not place order.');
+        }
+        dispatch(
+          placePreviewOrder({
+            ...order,
+            id: response.data.order_id || order.id,
+            realOrderId: response.data.id,
+          }),
+        );
+        navigation.replace('OrderConfirmation', {
+          orderId: response.data.order_id || order.id,
+        });
+      } catch (err) {
+        placing.current = false;
+        setPlacingLive(false);
+        Alert.alert('Order failed', err.message || 'Please try again.');
+      }
+      return;
+    }
+
     dispatch(placePreviewOrder(order));
     navigation.replace('OrderConfirmation', {orderId: order.id});
   };
@@ -796,11 +1001,16 @@ export function CartScreen({navigation}) {
               <Text style={s.green}>Saved {money(original - total)}</Text>
             </View>
             <Pressable
-              style={ui.action}
+              style={[ui.action, placingLive && {opacity: 0.6}]}
               accessibilityRole="button"
+              disabled={placingLive}
               onPress={checkout}>
               <Text style={ui.actionText}>
-                {address ? 'Place order' : 'Choose address'}
+                {placingLive
+                  ? 'Placing order…'
+                  : address
+                  ? 'Place order'
+                  : 'Choose address'}
               </Text>
             </Pressable>
           </>
@@ -835,6 +1045,12 @@ export function OrderConfirmationScreen({navigation, route}) {
   );
   return (
     <Page>
+      <Image
+        source={require('../../assets/main/references/order-confirmed-background.png')}
+        style={StyleSheet.absoluteFill}
+        resizeMode="cover"
+        accessible={false}
+      />
       <ScrollView
         contentContainerStyle={[
           s.confirmation,
@@ -856,6 +1072,7 @@ export function OrderConfirmationScreen({navigation, route}) {
         <Text style={s.confirmAddress} numberOfLines={3}>
           {order?.address?.full_address || 'Your delivery address'}
         </Text>
+        <View style={s.confirmSpacer} />
         <View style={s.saved}>
           <MaterialIcons name="verified" size={27} color={colors.primary} />
           <Text style={s.savedText}>
@@ -888,17 +1105,28 @@ export function OrderConfirmationScreen({navigation, route}) {
 }
 
 export function OrderDetailsScreen({navigation, route}) {
-  const previewOrders = useSelector(state => state.commerce.orders);
+  const allOrders = useAllOrders();
   const auth = useSelector(state => state.Auth);
   const savedFeedback = useSelector(
     state => state.commerce.feedback[route.params?.orderId],
   );
-  const order = [...previewOrders, ...sampleOrders].find(
-    item => item.id === route.params?.orderId,
-  );
+  const foundOrder = allOrders.find(item => item.id === route.params?.orderId);
+  const liveOrderItems = useLiveOrderItems(foundOrder);
+  const order =
+    foundOrder?.live && liveOrderItems
+      ? {
+          ...foundOrder,
+          items: liveOrderItems,
+          groups: foundOrder.groups.map(group => ({
+            ...group,
+            productIds: liveOrderItems.map(item => item.id),
+          })),
+        }
+      : foundOrder;
   const [rating, setRating] = useState(savedFeedback?.rating || 0);
   const [feedback, setFeedback] = useState(savedFeedback?.text || '');
   const [saved, setSaved] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const dispatch = useDispatch();
   if (!order) {
     return (
@@ -914,10 +1142,7 @@ export function OrderDetailsScreen({navigation, route}) {
   const ids = groups.flatMap(group => group.productIds);
   const items = order.items
     ? order.items.filter(item => ids.includes(item.id))
-    : ids
-        .map(id => products.find(item => item.id === id))
-        .filter(Boolean)
-        .map(item => ({...item, quantity: 1}));
+    : [];
   const address = order.address || auth.deliveryAddress;
   const amount = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -954,6 +1179,46 @@ export function OrderDetailsScreen({navigation, route}) {
             of {order.groups.length} delivered
           </Text>
         </Section>
+        {order.live && order.status === 'Cancelled' && order.cancelReason ? (
+          <Section>
+            <Text style={s.bold}>Order cancelled</Text>
+            <Text style={s.muted}>{order.cancelReason}</Text>
+          </Section>
+        ) : null}
+        {order.live && order.status === 'Placed' ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Cancel this order"
+            disabled={cancelling}
+            onPress={() =>
+              Alert.alert('Cancel order?', 'You can only cancel before the shop accepts it.', [
+                {text: 'Keep order', style: 'cancel'},
+                {
+                  text: 'Cancel order',
+                  style: 'destructive',
+                  onPress: async () => {
+                    setCancelling(true);
+                    try {
+                      const done = await cancelLiveOrder(order.realOrderId);
+                      if (done) {
+                        navigation.goBack();
+                      } else {
+                        Alert.alert('Cannot cancel', 'The shop has already accepted this order.');
+                      }
+                    } catch (err) {
+                      Alert.alert('Could not cancel', 'Please try again.');
+                    }
+                    setCancelling(false);
+                  },
+                },
+              ])
+            }
+            style={{marginHorizontal: 16, marginBottom: 12, minHeight: 46, borderRadius: 12, borderWidth: 1, borderColor: '#E5B3B8', backgroundColor: '#FFF0F0', alignItems: 'center', justifyContent: 'center', opacity: cancelling ? 0.6 : 1}}>
+            <Text style={{fontSize: 15, fontWeight: '700', color: '#BC3C47'}}>
+              {cancelling ? 'Cancelling...' : 'Cancel order'}
+            </Text>
+          </Pressable>
+        ) : null}
         {groups.map(group => (
           <OrderShipment
             key={group.id || group.name}
@@ -1378,10 +1643,10 @@ const s = StyleSheet.create({
   confirmation: {
     flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
     paddingHorizontal: 28,
-    paddingTop: 18,
+    paddingTop: 72,
   },
+  confirmSpacer: {flexGrow: 1, minHeight: 28},
   confirmOrder: {
     fontSize: 28,
     fontWeight: '800',

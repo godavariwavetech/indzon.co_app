@@ -54,6 +54,7 @@ test('the OTP is verified by the server and its actual session is returned', asy
   await expect(authService.verifyOtp('9876543210', '1234')).resolves.toEqual({
     token: 'server-token',
     customerId: 42,
+    customerName: '',
     mobileNumber: '9876543210',
   });
   expect(api.post).toHaveBeenCalledWith(endpoints.VERIFY_CUSTOMER_OTP, {
@@ -67,6 +68,7 @@ test('a verified customer ID is accepted without inventing an access token', asy
   await expect(authService.verifyOtp('9876543210', '1234')).resolves.toEqual({
     token: null,
     customerId: 42,
+    customerName: '',
     mobileNumber: '9876543210',
   });
 });
@@ -116,4 +118,16 @@ test('new authentication replaces the previous customer session and logout clear
     customerId: null,
     mobileNumber: '',
   });
+});
+
+test('the customer name from the server is returned so a missing name can be asked for', async () => {
+  api.post.mockResolvedValue({
+    data: {
+      status: 200,
+      data: {customer_id: 42, customer_name: ' Asha Rao ', token: 't'},
+    },
+  });
+  await expect(
+    authService.verifyOtp('9876543210', '1234'),
+  ).resolves.toMatchObject({customerId: 42, customerName: 'Asha Rao'});
 });

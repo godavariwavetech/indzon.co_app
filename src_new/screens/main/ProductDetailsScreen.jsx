@@ -1,5 +1,5 @@
 import ReferenceArtwork from '../../components/main/ReferenceArtwork';
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Image,
   Platform,
@@ -13,7 +13,8 @@ import {Text} from '../../components/ReadableText';
 import {useDispatch, useSelector} from 'react-redux';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {categories, money, products} from '../../config/catalog';
+import {money} from '../../config/catalog';
+import {getLiveItems} from '../../services/catalogService';
 import {
   addItem,
   removeItem,
@@ -148,14 +149,10 @@ function Details({product, navigation}) {
         {source: product.art.source, zoom: 1.45, label: 'Close-up'},
         {source: product.art.source, zoom: 1.9, label: 'Detail view'},
       ];
-  const category = categories.find(item => item.id === product.categoryId);
-  const subcategory = category?.subcategories.find(
-    item => item.id === product.subcategoryId,
-  );
   const information = [
     ...(product.brand ? [['Brand', product.brand]] : []),
-    ['Category', category?.name],
-    ['Product type', subcategory?.name],
+    ['Category', product.categoryName],
+    ['Product type', product.subcategoryName],
     ['Pack size', product.unit],
     ['Selling price', money(product.price)],
     ['Maximum retail price', money(product.originalPrice)],
@@ -167,16 +164,36 @@ function Details({product, navigation}) {
     ],
     ...(product.vegetarian ? [['Dietary preference', 'Vegetarian']] : []),
   ].filter(([, value]) => Boolean(value));
-  const similar = products
-    .filter(
-      item => item.id !== product.id && item.categoryId === product.categoryId,
-    )
-    .sort(
-      (a, b) =>
-        Number(b.subcategoryId === product.subcategoryId) -
-        Number(a.subcategoryId === product.subcategoryId),
-    )
-    .slice(0, 6);
+  const [similar, setSimilar] = useState([]);
+  useEffect(() => {
+    if (!product.shopItemsTableName) {
+      return undefined;
+    }
+    let active = true;
+    getLiveItems({
+      shopItemsTableName: product.shopItemsTableName,
+      shopId: product.shopId,
+    })
+      .then(rows => {
+        if (!active) {
+          return;
+        }
+        setSimilar(
+          rows
+            .filter(item => item.id !== product.id)
+            .sort(
+              (a, b) =>
+                Number(b.subcategoryId === product.subcategoryId) -
+                Number(a.subcategoryId === product.subcategoryId),
+            )
+            .slice(0, 6),
+        );
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [product.id, product.shopId, product.shopItemsTableName, product.subcategoryId]);
   const weight = product.unit.match(/^([\d.]+)\s*(kg|g)$/i);
   const per100 = weight
     ? product.price /
@@ -525,7 +542,10 @@ function Details({product, navigation}) {
 }
 
 export default function ProductDetailsScreen({navigation, route}) {
-  const product = products.find(item => item.id === route.params?.productId);
+  // Live items have a compound id (shopItemsTableName:itemId) that won't
+  // match catalog.js — ProductCard passes the full live object through nav
+  // params instead of relying on a lookup-by-id (no single-item API exists).
+  const product = route.params?.liveProduct;
   if (!product) {
     return (
       <Page>

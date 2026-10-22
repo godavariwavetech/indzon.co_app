@@ -5,6 +5,7 @@ import TermsConditionsScreen from '../../src/screens/daddy/TermsConditionsScreen
 import PrivacyPolicyScreen from '../../src/screens/daddy/PrivacyPolicyScreen';
 import HomeNavigation from '../../src/navigation/RentalNavigation';
 import LocationSetupScreen from '../screens/location/LocationSetupScreen';
+import NamePromptScreen from '../screens/auth/NamePromptScreen';
 import AddAddressScreen from '../screens/location/AddAddressScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import OtpVerificationScreen from '../screens/auth/OtpVerificationScreen';
@@ -26,7 +27,7 @@ import {
 } from '../screens/main/CommerceScreens';
 import SearchScreen from '../screens/main/SearchScreen';
 import CouponsScreen from '../screens/main/CouponsScreen';
-import {STATIC_APP_FLOW} from '../config/appMode';
+import {ENABLE_LIVE_DATA, STATIC_APP_FLOW} from '../config/appMode';
 // Onboarding is temporarily disabled.
 // import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 
@@ -47,6 +48,7 @@ const staticRoutes = [
   {name: 'TermsConditions', component: TermsConditionsScreen},
   {name: 'PrivacyPolicy', component: PrivacyPolicyScreen},
   {name: 'LocationSetup', component: LocationSetupScreen},
+  {name: 'NamePrompt', component: NamePromptScreen},
   {name: 'AddAddress', component: AddAddressScreen},
   {name: 'AddressList', component: AddressListScreen},
   {name: 'Home', component: MainTabs},
@@ -111,12 +113,16 @@ function StaticAppNavigation() {
   const hasDeliveryAddress = useSelector(state =>
     Boolean(state.Auth.deliveryAddress),
   );
+  const needsName = useSelector(state =>
+    Boolean(ENABLE_LIVE_DATA && state.Auth.customerId && !state.Auth.customerName),
+  );
+  const setupRoute = needsName ? 'NamePrompt' : 'LocationSetup';
   return (
     <RentalNavigation
       key={remembered ? 'static-signed-in' : 'static-guest'}
       routes={remembered ? staticRoutes : defaultGuestRoutes}
       initialRouteName={
-        remembered ? (hasDeliveryAddress ? 'Home' : 'LocationSetup') : 'Login'
+        remembered ? (hasDeliveryAddress ? 'Home' : setupRoute) : 'Login'
       }
     />
   );

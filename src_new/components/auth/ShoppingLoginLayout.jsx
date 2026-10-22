@@ -60,6 +60,19 @@ export default function ShoppingLoginLayout({children, navigation}) {
               accessible={false}
               testID="login-shopping-artwork"
             />
+            <Image
+              source={require('../../assets/branding/indzon-logo.png')}
+              style={{
+                position: 'absolute',
+                left: contentWidth * 0.08,
+                top: contentWidth * 0.295,
+                width: contentWidth * 0.27,
+                height: contentWidth * 0.27,
+              }}
+              resizeMode="contain"
+              accessibilityLabel="indzon.co"
+              testID="login-brand-logo"
+            />
           </View>
           <View style={styles.card}>{children}</View>
           <View style={styles.benefits}>

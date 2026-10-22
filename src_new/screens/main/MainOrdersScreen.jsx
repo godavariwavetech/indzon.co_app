@@ -1,9 +1,9 @@
 import {Text, TextInput} from '../../components/Typography';
 import React, {useState} from 'react';
 import {Pressable, ScrollView, StyleSheet, View} from 'react-native';
-import {useSelector} from 'react-redux';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import {money, sampleOrders} from '../../config/catalog';
+import {money} from '../../config/catalog';
+import {useAllOrders} from '../../services/catalogService';
 import {
   colors,
   Heading,
@@ -14,18 +14,15 @@ import {shipmentStatus} from '../../components/main/OrderShipment';
 
 export function DeliveryAddress({address, phoneNumber}) {
   const rows = [
-    ['person-outline', 'NAME', address?.customer_name || 'Nitin'],
+    ['person-outline', 'NAME', address?.customer_name || ''],
     [
       'phone',
       'PH NO',
-      `+91${address?.customer_mobile_number || phoneNumber || '9876543210'}`,
+      address?.customer_mobile_number || phoneNumber
+        ? `+91${address?.customer_mobile_number || phoneNumber}`
+        : '',
     ],
-    [
-      'location-on',
-      'ADDRESS',
-      address?.full_address ||
-        'Magadi Main Rd, next to Prasanna Theatre, Cholourpalya, Bengaluru, Karnataka 560023',
-    ],
+    ['location-on', 'ADDRESS', address?.full_address || ''],
   ];
   return (
     <View style={styles.delivery}>
@@ -44,10 +41,10 @@ export function DeliveryAddress({address, phoneNumber}) {
 }
 export default function MainOrdersScreen({navigation}) {
   const pageReady = usePageReady();
-  const previewOrders = useSelector(state => state.commerce.orders);
+  const allOrders = useAllOrders();
   const [search, setSearch] = useState('');
   const query = search.trim().toLowerCase().replace(/^#/, '');
-  const filteredOrders = [...previewOrders, ...sampleOrders].filter(order => {
+  const filteredOrders = allOrders.filter(order => {
     const searchable = [
       String(order.id).replace('preview-', ''),
       ...(order.groups || []).flatMap(group => [

@@ -9,7 +9,7 @@ import {
   clearSelectedAddress,
   setUserDetails,
 } from '../../redux/reducers/addressSlice';
-import {STATIC_APP_FLOW} from '../../config/appMode';
+import {ENABLE_LIVE_DATA} from '../../config/appMode';
 import locationService from '../../services/locationService';
 import {resetCommerce} from '../../redux/reducers/commerce';
 import {staticPersistor} from '../../redux/store';
@@ -109,7 +109,7 @@ export default function MainProfileScreen({navigation}) {
   };
 
   const removeAccount = async () => {
-    if (!STATIC_APP_FLOW) {
+    if (ENABLE_LIVE_DATA && auth.customerId) {
       await dispatch(deleteAccount()).unwrap();
     }
     await locationService.clearSavedAddresses(auth.customerId);

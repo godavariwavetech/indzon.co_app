@@ -18,12 +18,14 @@ import {
 import {Text as NativeText} from '../../components/ReadableText';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
+import {useSelector} from 'react-redux';
 import {
-  artwork,
-  categories,
-  products,
-  sidebarCategories,
-} from '../../config/catalog';
+  getLiveBanners,
+  getLiveCategories,
+  getLiveItems,
+  getLiveSubcategories,
+  liveCatalogEnabled,
+} from '../../services/catalogService';
 import {
   colors,
   EmptyState,
@@ -93,9 +95,7 @@ export default function MainCategoriesScreen({
 }) {
   const {width} = useWindowDimensions();
   const pageReady = usePageReady();
-  const [categoryId, setCategoryId] = useState(
-    route.params?.categoryId || 'grocery',
-  );
+  const [categoryId, setCategoryId] = useState(route.params?.categoryId || null);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
   const [filterVisible, setFilterVisible] = useState(false);
@@ -105,13 +105,41 @@ export default function MainCategoriesScreen({
   const sidebar = useRef(null);
   const content = useRef(null);
   const categoryPositions = useRef({});
+  const locationId = useSelector(state => state.Auth.locationId);
+  const [liveCategories, setLiveCategories] = useState(null);
+  const [subcategories, setSubcategories] = useState([]);
+  const [categoryItems, setCategoryItems] = useState([]);
+  const [liveBanners, setLiveBanners] = useState([]);
+  const [dataLoading, setDataLoading] = useState(liveCatalogEnabled);
+  const categoryList = useMemo(() => liveCategories || [], [liveCategories]);
   useEffect(() => {
-    if (categories.some(item => item.id === route.params?.categoryId)) {
+    if (!liveCatalogEnabled) {
+      return;
+    }
+    getLiveCategories()
+      .then(rows => {
+        if (rows.length) {
+          setLiveCategories(rows);
+          setCategoryId(current => current || rows[0].id);
+        }
+      })
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (!liveCatalogEnabled || !locationId) {
+      return;
+    }
+    getLiveBanners({locationId})
+      .then(setLiveBanners)
+      .catch(() => {});
+  }, [locationId]);
+  useEffect(() => {
+    if (categoryList.some(item => item.id === route.params?.categoryId)) {
       setCategoryId(route.params.categoryId);
       setQuery('');
       setFilter('all');
     }
-  }, [route.params?.categoryId, route.params?.selectionRequest]);
+  }, [route.params?.categoryId, route.params?.selectionRequest, categoryList]);
   useEffect(() => {
     sidebar.current?.scrollTo({
       y: Math.max(0, (categoryPositions.current[categoryId] || 0) - 20),
@@ -119,24 +147,66 @@ export default function MainCategoriesScreen({
     });
     content.current?.scrollTo({y: 0, animated: false});
   }, [categoryId]);
-  const selected = categories.find(item => item.id === deferredCategoryId);
+  const selected =
+    categoryList.find(item => item.id === deferredCategoryId) ||
+    categoryList[0] ||
+    null;
+  // Subcategories come from the backend; the items of the shops that stock
+  // them are loaded too so each tile can show a count and search can match
+  // product names.
+  useEffect(() => {
+    if (!liveCatalogEnabled || !selected || !locationId) {
+      return;
+    }
+    let active = true;
+    setDataLoading(true);
+    getLiveSubcategories({categoryId: selected.id, locationId})
+      .then(async subs => {
+        const shopIds = [...new Set(subs.flatMap(sub => sub.shopIds))];
+        const lists = await Promise.all(
+          shopIds.map(shopId =>
+            getLiveItems({
+              shopItemsTableName: selected.shopItemsTableName,
+              shopId,
+            }).catch(() => []),
+          ),
+        );
+        if (active) {
+          setSubcategories(subs);
+          setCategoryItems(lists.flat());
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setSubcategories([]);
+          setCategoryItems([]);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setDataLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [selected, locationId]);
   const sidebarWidth = Math.max(80, Math.min(102, width * 0.23));
   // Measure inside the divider and padding: calculating from window width
   // made two cards exceed the row by one pixel and wrap into a single column.
   const availableWidth = gridWidth || width - sidebarWidth - 25;
   const cardWidth = Math.floor((availableWidth - 10) / 2);
   const bannerWidth = Math.max(0, (viewportWidth || width - sidebarWidth) - 25);
-  const bannerAsset = Image.resolveAssetSource(artwork.banner.source);
-  const bannerHeight = bannerWidth * (bannerAsset.height / bannerAsset.width);
-  const loading = !gridWidth || deferredCategoryId !== categoryId;
+  const bannerHeight = bannerWidth / (546 / 162);
+  const loading =
+    !gridWidth || dataLoading || deferredCategoryId !== categoryId;
+  const categoryBanner = liveBanners.find(
+    banner => banner.categoryId === selected?.id,
+  );
   const categoryProducts = useMemo(
     () =>
-      products.filter(
-        product =>
-          product.categoryId === deferredCategoryId &&
-          matchesFilter(product, filter),
-      ),
-    [deferredCategoryId, filter],
+      categoryItems.filter(product => matchesFilter(product, filter)),
+    [categoryItems, filter],
   );
   const subcategoryCounts = useMemo(
     () =>
@@ -150,7 +220,7 @@ export default function MainCategoriesScreen({
   const normalizedQuery = query.trim().toLowerCase();
   const visible = useMemo(
     () =>
-      selected.subcategories.filter(sub => {
+      subcategories.filter(sub => {
         const matchesQuery =
           sub.name.toLowerCase().includes(normalizedQuery) ||
           categoryProducts.some(
@@ -166,14 +236,14 @@ export default function MainCategoriesScreen({
       categoryProducts,
       filter,
       normalizedQuery,
-      selected.subcategories,
+      subcategories,
       subcategoryCounts,
     ],
   );
   return (
     <Page>
       <Heading
-        title={standalone ? selected.name : 'Categories'}
+        title={standalone ? selected?.name || 'Categories' : 'Categories'}
         navigation={navigation}
         back={standalone}
       />
@@ -202,7 +272,7 @@ export default function MainCategoriesScreen({
             style={{width: sidebarWidth, flexGrow: 0}}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.sidebar}>
-            {sidebarCategories.map(item => (
+            {categoryList.map(item => (
               <Pressable
                 key={item.id}
                 onLayout={event => {
@@ -219,7 +289,6 @@ export default function MainCategoriesScreen({
                   setCategoryId(item.id);
                   setQuery('');
                   setFilter('all');
-                  navigation.navigate('ProductList', {categoryId: item.id, subcategoryId: null});
                 }}
                 accessibilityRole="button"
                 accessibilityState={{selected: item.id === categoryId}}
@@ -262,41 +331,18 @@ export default function MainCategoriesScreen({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.contentPadding}>
-          {standalone ? (
-            selected.id === 'grocery' ? (
+          {standalone && selected ? (
+            categoryBanner ? (
               <Image
-                source={artwork.banner.source}
-                resizeMode="contain"
-                accessibilityLabel="Big savings every day on groceries"
+                source={{uri: categoryBanner.uri}}
+                resizeMode="cover"
+                accessibilityLabel={categoryBanner.title || selected.name}
                 style={[
                   styles.groceryBanner,
                   {width: bannerWidth, height: bannerHeight},
                 ]}
               />
-            ) : (
-              <View style={[styles.categoryBanner, {width: bannerWidth}]}>
-                <View pointerEvents="none" style={styles.bannerArtPanel}>
-                  <View style={styles.bannerArtCircle} />
-                  <Image
-                    source={selected.art.source}
-                    resizeMode="contain"
-                    style={styles.bannerProduct}
-                  />
-                </View>
-                <View style={styles.bannerCopy}>
-                  <Text style={styles.bannerEyebrow}>THE EVERYDAY EDIT</Text>
-                  <Text style={styles.bannerTitle}>{selected.name}</Text>
-                  <Text style={styles.bannerCaption}>
-                    Find your next favourite.
-                  </Text>
-                  <View style={styles.bannerBadge}>
-                    <Text style={styles.bannerBadgeText}>
-                      Explore the collection
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            )
+            ) : null
           ) : null}
           <View
             style={styles.grid}
@@ -317,19 +363,30 @@ export default function MainCategoriesScreen({
                   width={cardWidth}
                   count={subcategoryCounts[sub.id] || 0}
                   shadowsReady={pageReady && !loading}
-                  onPress={() =>
+                  onPress={() => {
+                    const stocked = categoryItems.find(
+                      product => product.subcategoryId === sub.id,
+                    );
                     navigation.navigate('ProductList', {
                       categoryId,
                       subcategoryId: sub.id,
                       filter,
-                    })
-                  }
+                      shopId: stocked?.shopId || sub.shopIds[0],
+                      shopItemsTableName: selected.shopItemsTableName,
+                    });
+                  }}
                 />
               ))
             )}
           </View>
           {!loading && !visible.length ? (
-            <EmptyState message="No matching categories. Try another search or filter." />
+            <EmptyState
+              message={
+                query || filter !== 'all'
+                  ? 'No matching categories. Try another search or filter.'
+                  : 'No subcategories available here yet.'
+              }
+            />
           ) : null}
         </ScrollView>
       </View>

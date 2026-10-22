@@ -13,9 +13,8 @@ import {Text} from '../ReadableText';
 import {useIsFocused} from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import {homeOffers} from '../../config/catalog';
 
-export default function OfferCarousel({navigation}) {
+export default function OfferCarousel({navigation, offers}) {
   const {width} = useWindowDimensions();
   const cardWidth = Math.min(width * 0.8, 440);
   const step = cardWidth + 12;
@@ -37,8 +36,8 @@ export default function OfferCarousel({navigation}) {
   const [reduceMotion, setReduceMotion] = useState(null);
   const [appState, setAppState] = useState(AppState.currentState || 'active');
   const items = useMemo(
-    () => [homeOffers[homeOffers.length - 1], ...homeOffers, homeOffers[0]],
-    [],
+    () => [offers[offers.length - 1], ...offers, offers[0]],
+    [offers],
   );
 
   useEffect(() => {
@@ -90,7 +89,7 @@ export default function OfferCarousel({navigation}) {
   }, [focused, appState]);
 
   useEffect(() => {
-    if (!layoutReady || !focused || appState !== 'active' || interacting || reduceMotion !== false) {
+    if (!layoutReady || !focused || appState !== 'active' || interacting || reduceMotion !== false || offers.length < 2) {
       return undefined;
     }
     const timer = setTimeout(() => {
@@ -108,7 +107,7 @@ export default function OfferCarousel({navigation}) {
     }, 4000);
     autoTimer.current = timer;
     return () => clearTimeout(timer);
-  }, [focused, appState, interacting, reduceMotion, slide, step, layoutReady, autoplayCycle]);
+  }, [focused, appState, interacting, reduceMotion, slide, step, layoutReady, autoplayCycle, offers.length]);
 
   useEffect(() => () => {
     clearTimeout(idleTimer.current);
@@ -125,7 +124,7 @@ export default function OfferCarousel({navigation}) {
       Math.min(items.length - 1, Math.round(currentOffset / step)),
     );
     const index =
-      raw === 0 ? homeOffers.length : raw === items.length - 1 ? 1 : raw;
+      raw === 0 ? offers.length : raw === items.length - 1 ? 1 : raw;
     position.current = index;
     offset.current = index * step;
     setSlide(index - 1);
@@ -247,6 +246,7 @@ export default function OfferCarousel({navigation}) {
                   style={styles.photo}
                   resizeMode="cover"
                 />
+                {!item.imageOnly && (
                 <LinearGradient
                   colors={[
                     item.background,
@@ -258,6 +258,8 @@ export default function OfferCarousel({navigation}) {
                   end={{x: 1, y: 0}}
                   style={StyleSheet.absoluteFillObject}
                 />
+                )}
+                {!item.imageOnly && (
                 <View style={styles.copy}>
                   <Text
                     allowFontScaling={false}
@@ -283,18 +285,19 @@ export default function OfferCarousel({navigation}) {
                     />
                   </View>
                 </View>
+                )}
               </Pressable>
             </Animated.View>
           </View>
         )}
       />
       <View style={styles.controls}>
-        {homeOffers.map((item, index) => (
+        {offers.length > 1 && offers.map((item, index) => (
           <Pressable
             key={item.id}
             accessibilityRole="button"
             accessibilityLabel={`Show offer ${index + 1} of ${
-              homeOffers.length
+              offers.length
             }`}
             accessibilityState={{selected: slide === index}}
             style={styles.dotButton}

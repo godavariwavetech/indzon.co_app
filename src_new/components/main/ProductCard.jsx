@@ -11,6 +11,7 @@ import {
 } from '../../redux/reducers/commerce';
 import {money} from '../../config/catalog';
 import {colors} from './MainUi';
+import {toggleLiveWishlist} from '../../services/catalogService';
 
 function ProductCard({product, width, navigation, variant = 'compact'}) {
   const categoryGrid = variant === 'categoryGrid';
@@ -31,6 +32,8 @@ function ProductCard({product, width, navigation, variant = 'compact'}) {
   const wished = useSelector(state =>
     state.commerce.wishlist.includes(product.id),
   );
+  const customerId = useSelector(state => state.Auth.customerId);
+  const locationId = useSelector(state => state.Auth.locationId);
   const discount = Math.round(
     (1 - product.price / product.originalPrice) * 100,
   );
@@ -48,7 +51,12 @@ function ProductCard({product, width, navigation, variant = 'compact'}) {
             accessibilityRole="button"
             accessibilityLabel={`View ${product.name}`}
             onPress={() =>
-              navigation.navigate('ProductDetails', {productId: product.id})
+              navigation.navigate('ProductDetails', {
+                productId: product.id,
+                // Live items have no single-item fetch endpoint — hand the
+                // already-fetched object through instead of looking it up.
+                liveProduct: product.itemId != null ? product : undefined,
+              })
             }
             onPressIn={() => animateImage(0.975)}
             onPressOut={() => animateImage(1)}
@@ -74,7 +82,19 @@ function ProductCard({product, width, navigation, variant = 'compact'}) {
           </Pressable>
         </Animated.View>
         <Pressable
-          onPress={() => dispatch(toggleWishlist(product.id))}
+          onPress={() => {
+            dispatch(toggleWishlist(product.id));
+            if (customerId) {
+              toggleLiveWishlist({
+                customerId,
+                locationId,
+                item: product,
+                wished: !wished,
+              }).catch(
+                () => {},
+              );
+            }
+          }}
           style={[styles.heart, categoryGrid && {top: 4, right: 4, width: 23, height: 23}]}
           hitSlop={8}
           accessibilityRole="button"
