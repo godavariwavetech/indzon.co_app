@@ -37,6 +37,7 @@ jest.mock('react-native-vector-icons/MaterialIcons', () => 'MaterialIcon');
 jest.mock('@react-navigation/native', () => ({
   ...jest.requireActual('@react-navigation/native'),
   useFocusEffect: callback => require('react').useEffect(callback, [callback]),
+  useIsFocused: () => true,
 }));
 
 const renderers = [];

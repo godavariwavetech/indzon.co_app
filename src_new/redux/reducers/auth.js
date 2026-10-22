@@ -12,6 +12,7 @@ const initialState = {
   isLogged: false,
   previewLoginComplete: false,
   customerId: null,
+  customerName: '',
   location: null,
   locationName: null,
   locationId: null,
@@ -240,6 +241,9 @@ export const AuthSlice = createSlice({
     actionLogin: state => {
       state.token = 'sample token';
     },
+    setCustomerName: (state, action) => {
+      state.customerName = String(action.payload || '').trim();
+    },
     setMobile: (state, action) => {
       state.mobileNumber = action.payload;
     },
@@ -383,6 +387,7 @@ export const {
   setDeliveryAddress,
   actionLogin,
   setMobile,
+  setCustomerName,
   setInitial,
   setLocation,
   setLocationName,

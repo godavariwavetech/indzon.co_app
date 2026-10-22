@@ -1045,6 +1045,12 @@ export function OrderConfirmationScreen({navigation, route}) {
   );
   return (
     <Page>
+      <Image
+        source={require('../../assets/main/references/order-confirmed-background.png')}
+        style={StyleSheet.absoluteFill}
+        resizeMode="cover"
+        accessible={false}
+      />
       <ScrollView
         contentContainerStyle={[
           s.confirmation,
@@ -1066,6 +1072,7 @@ export function OrderConfirmationScreen({navigation, route}) {
         <Text style={s.confirmAddress} numberOfLines={3}>
           {order?.address?.full_address || 'Your delivery address'}
         </Text>
+        <View style={s.confirmSpacer} />
         <View style={s.saved}>
           <MaterialIcons name="verified" size={27} color={colors.primary} />
           <Text style={s.savedText}>
@@ -1636,10 +1643,10 @@ const s = StyleSheet.create({
   confirmation: {
     flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
     paddingHorizontal: 28,
-    paddingTop: 18,
+    paddingTop: 72,
   },
+  confirmSpacer: {flexGrow: 1, minHeight: 28},
   confirmOrder: {
     fontSize: 28,
     fontWeight: '800',

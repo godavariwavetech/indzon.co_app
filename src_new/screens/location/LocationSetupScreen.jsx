@@ -3,7 +3,10 @@ import React, {useEffect, useRef, useState} from 'react';
 import {
   AccessibilityInfo,
   Animated,
+  ActivityIndicator,
   AppState,
+  ImageBackground,
+  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -11,10 +14,16 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import {useIsFocused} from '@react-navigation/native';
+import {useDispatch, useSelector} from 'react-redux';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import LocationButton from '../../components/location/LocationButton';
 import locationService from '../../services/locationService';
+import {setDeliveryAddress} from '../../redux/reducers/auth';
+import {updateUserAddress} from '../../redux/reducers/daddy';
+import {setSelectedAddress} from '../../redux/reducers/addressSlice';
+import {ENABLE_LIVE_DATA, STATIC_APP_FLOW} from '../../config/appMode';
+import {persistorStore, staticPersistor} from '../../redux/store';
 
 export default function LocationSetupScreen({navigation}) {
   const insets = useSafeAreaInsets();
@@ -22,6 +31,13 @@ export default function LocationSetupScreen({navigation}) {
   const focused = useIsFocused();
   const motion = useRef(new Animated.Value(0)).current;
   const illustrationHeight = Math.min(width * 0.8, height * 0.34, 310);
+  const dispatch = useDispatch();
+  const {customerId, customerName, mobileNumber} = useSelector(
+    state => state.Auth,
+  );
+  const liveCustomer = Boolean(ENABLE_LIVE_DATA && customerId);
+  const [areas, setAreas] = useState([]);
+  const [choosing, setChoosing] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const busy = useRef(false);
@@ -79,6 +95,40 @@ export default function LocationSetupScreen({navigation}) {
     },
     [],
   );
+  const customer = {customerId, name: customerName, mobileNumber};
+  // Makes the address the delivery address and enters the app.
+  const select = async address => {
+    dispatch(setDeliveryAddress(address));
+    dispatch(updateUserAddress(address));
+    dispatch(setSelectedAddress(address));
+    await (STATIC_APP_FLOW ? staticPersistor : persistorStore).flush();
+    navigation.reset({index: 0, routes: [{name: 'Home'}]});
+  };
+  const loadAreas = async () => {
+    try {
+      setAreas(await locationService.getServiceAreas());
+    } catch {
+      setAreas([]);
+    }
+  };
+  const chooseArea = async area => {
+    if (choosing) {
+      return;
+    }
+    setChoosing(area.id);
+    try {
+      const {address} = await locationService.pickAddressForArea({
+        customer,
+        coordinates: {latitude: area.latitude, longitude: area.longitude},
+        area: {id: area.id, name: area.name},
+        label: area.name,
+      });
+      await select(address);
+    } catch {
+      setChoosing(null);
+      setError('Could not select that area. Please try again.');
+    }
+  };
   const locate = async () => {
     if (busy.current) {
       return;
@@ -89,14 +139,46 @@ export default function LocationSetupScreen({navigation}) {
     setError('');
     try {
       const coordinates = await locationService.getCurrentLocation();
-      if (version === attempt.current) {
-        navigation.navigate('AddAddress', {coordinates, onboarding: true});
+      if (version !== attempt.current) {
+        return;
       }
+      if (liveCustomer) {
+        // undefined = could not check (offline), null = outside our delivery areas.
+        let area;
+        try {
+          area = await locationService.findServiceArea(coordinates);
+        } catch {
+          area = undefined;
+        }
+        if (version !== attempt.current) {
+          return;
+        }
+        if (area) {
+          const {address} = await locationService.pickAddressForArea({
+            customer,
+            coordinates,
+            area,
+          });
+          await select(address);
+          return;
+        }
+        if (area === null) {
+          setError(
+            "We don't deliver to your current location yet. Choose a serviceable area below or pick a place on the map.",
+          );
+          loadAreas();
+          return;
+        }
+      }
+      navigation.navigate('AddAddress', {coordinates, onboarding: true});
     } catch (err) {
       if (version === attempt.current) {
         setError(
           err.message || 'Could not get your location. Please try again.',
         );
+        if (liveCustomer) {
+          loadAreas();
+        }
       }
     } finally {
       if (version === attempt.current) {
@@ -105,8 +187,18 @@ export default function LocationSetupScreen({navigation}) {
       }
     }
   };
+  // Pick the delivery address straight after login instead of asking for it every time.
+  useEffect(() => {
+    if (liveCustomer) {
+      locate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
-    <View style={styles.screen}>
+    <ImageBackground
+      source={require('../../assets/location/location-background.png')}
+      resizeMode="cover"
+      style={styles.screen}>
       <StatusBar
         barStyle="dark-content"
         backgroundColor="transparent"
@@ -116,44 +208,15 @@ export default function LocationSetupScreen({navigation}) {
         contentContainerStyle={[
           styles.content,
           {
-            paddingTop: insets.top + 22,
+            paddingTop: insets.top + height * 0.12,
             paddingBottom: Math.max(insets.bottom, 20),
           },
         ]}>
-        <View style={styles.eyebrow}>
-          <MaterialIcons name="near-me" size={17} color="#3832FF" />
-          <Text style={styles.eyebrowText}>LET'S GET YOU SET UP</Text>
-        </View>
         <Text style={styles.title} accessibilityRole="header">
-          Where should we deliver?
-        </Text>
-        <Text style={styles.subtitle}>
-          Set your location to discover nearby stores and get your essentials
-          delivered to the right door.
+          Set your location to explore nearby food and enjoy faster, accurate
+          food delivery
         </Text>
         <View style={[styles.illustration, {height: illustrationHeight}]}>
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.halo,
-              {
-                width: illustrationHeight * 0.85,
-                height: illustrationHeight * 0.85,
-                opacity: motion.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.6, 0.25],
-                }),
-                transform: [
-                  {
-                    scale: motion.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.9, 1.12],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          />
           <Animated.Image
             source={require('../../assets/location/delivery-location.png')}
             resizeMode="contain"
@@ -174,18 +237,7 @@ export default function LocationSetupScreen({navigation}) {
             accessible={false}
           />
         </View>
-        <View style={styles.infoCard}>
-          <View style={styles.infoIcon}>
-            <MaterialIcons name="place" size={23} color="#3832FF" />
-          </View>
-          <View style={styles.infoCopy}>
-            <Text style={styles.infoTitle}>Find your delivery spot</Text>
-            <Text style={styles.infoBody}>
-              Use your current location, then confirm the pin and add your
-              address details.
-            </Text>
-          </View>
-        </View>
+        <View style={styles.spacer} />
         {error ? (
           <Text
             style={styles.error}
@@ -194,15 +246,37 @@ export default function LocationSetupScreen({navigation}) {
             {error}
           </Text>
         ) : null}
+        {areas.length ? (
+          <View style={styles.areas}>
+            <Text style={styles.areasLabel}>Serviceable areas</Text>
+            {areas.map(area => (
+              <Pressable
+                key={area.id}
+                style={styles.area}
+                onPress={() => chooseArea(area)}
+                disabled={Boolean(choosing)}
+                accessibilityRole="button"
+                accessibilityLabel={`Deliver to ${area.name}`}>
+                <MaterialIcons name="location-on" size={21} color="#3832FF" />
+                <Text style={styles.areaName}>{area.name}</Text>
+                {choosing === area.id ? (
+                  <ActivityIndicator color="#3832FF" />
+                ) : (
+                  <MaterialIcons name="chevron-right" size={21} color="#9299AA" />
+                )}
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
         <View style={styles.actions}>
           <LocationButton
-            label="Use my current location"
+            label="Turn on Device Location"
             onPress={locate}
             loading={loading}
             testID="location-device"
           />
           <LocationButton
-            label="Enter address manually"
+            label="Enter Delivery Location Manually"
             secondary
             onPress={() => {
               attempt.current++;
@@ -214,102 +288,53 @@ export default function LocationSetupScreen({navigation}) {
             testID="location-manual"
           />
         </View>
-        <View style={styles.reassurance}>
-          <MaterialIcons name="edit-location-alt" size={16} color="#7C8393" />
-          <Text style={styles.reassuranceText}>
-            You can change your delivery address anytime.
-          </Text>
-        </View>
       </ScrollView>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {flex: 1, backgroundColor: '#FFFFFF'},
+  screen: {flex: 1, backgroundColor: '#F4F6FF'},
   content: {
     flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  eyebrow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    marginBottom: 14,
-  },
-  eyebrowText: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1,
-    color: '#3832FF',
+    paddingHorizontal: 20,
   },
   title: {
     width: '100%',
     maxWidth: 480,
-    fontSize: 31,
-    lineHeight: 39,
+    fontSize: 29,
+    lineHeight: 36,
     textAlign: 'center',
     fontWeight: '700',
-    color: '#202427',
-  },
-  subtitle: {
-    fontSize: 17,
-    lineHeight: 25,
-    textAlign: 'center',
-    color: '#737B8C',
-    maxWidth: 370,
-    marginTop: 12,
+    fontFamily: 'display',
+    color: '#0B0B0B',
   },
   illustration: {
     width: '100%',
     maxWidth: 430,
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 12,
+    marginTop: 40,
   },
-  halo: {position: 'absolute', backgroundColor: '#E9E6FF', borderRadius: 200},
   artwork: {width: '100%', maxWidth: 400},
-  infoCard: {
-    width: '100%',
-    maxWidth: 480,
-    padding: 15,
+  spacer: {flexGrow: 1, minHeight: 24},
+  actions: {width: '100%', maxWidth: 480, gap: 14},
+  areas: {width: '100%', maxWidth: 480, marginBottom: 16},
+  areasLabel: {fontSize: 12, fontWeight: '700', color: '#6B7280', marginBottom: 8},
+  area: {
     flexDirection: 'row',
-    gap: 12,
-    borderRadius: 16,
-    backgroundColor: '#F5F4FF',
-    borderWidth: 1,
-    borderColor: '#ECE9FF',
-    marginBottom: 22,
-  },
-  infoIcon: {
-    width: 40,
-    height: 40,
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 50,
+    paddingHorizontal: 14,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#EAE7FF',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E1E5F0',
+    marginBottom: 8,
   },
-  infoCopy: {flex: 1},
-  infoTitle: {fontSize: 18, fontWeight: '700', color: '#29263F'},
-  infoBody: {fontSize: 15, lineHeight: 22, color: '#737086', marginTop: 5},
-  actions: {width: '100%', maxWidth: 480, gap: 12},
-  reassurance: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 18,
-    marginBottom: 10,
-    maxWidth: 480,
-  },
-  reassuranceText: {
-    fontSize: 12,
-    lineHeight: 18,
-    color: '#7C8393',
-    flexShrink: 1,
-  },
+  areaName: {flex: 1, fontSize: 15, fontWeight: '600', color: '#202427'},
   error: {
     fontSize: 13,
     lineHeight: 19,

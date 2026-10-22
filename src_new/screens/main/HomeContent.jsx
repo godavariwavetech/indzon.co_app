@@ -30,7 +30,13 @@ import {
   ui,
 } from '../../components/main/MainUi';
 import ReferenceArtwork from '../../components/main/ReferenceArtwork';
-import {LoadingImage as Image} from '../../components/main/Skeleton';
+import {
+  HomeBannerSkeleton,
+  HomeCategoriesSkeleton,
+  HomeDealsSkeleton,
+  HomeProductsSkeleton,
+  LoadingImage as Image,
+} from '../../components/main/Skeleton';
 import ProductCard from '../../components/main/ProductCard';
 import CartPill from '../../components/main/CartPill';
 import OfferCarousel from '../../components/main/OfferCarousel';
@@ -69,6 +75,9 @@ export default function HomeContent({navigation}) {
   const [liveCategories, setLiveCategories] = useState(null);
   const [liveBanners, setLiveBanners] = useState([]);
   const [bannerIndex, setBannerIndex] = useState(0);
+  const [bannersDone, setBannersDone] = useState(false);
+  const [categoriesDone, setCategoriesDone] = useState(false);
+  const [featuredDone, setFeaturedDone] = useState(false);
   useEffect(() => {
     if (!liveCatalogEnabled || !locationId) {
       return;
@@ -76,7 +85,8 @@ export default function HomeContent({navigation}) {
     let active = true;
     getLiveBanners({locationId})
       .then(rows => active && setLiveBanners(rows))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => active && setBannersDone(true));
     return () => {
       active = false;
     };
@@ -92,7 +102,8 @@ export default function HomeContent({navigation}) {
           setLiveCategories(rows);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => active && setCategoriesDone(true));
     return () => {
       active = false;
     };
@@ -124,7 +135,8 @@ export default function HomeContent({navigation}) {
           setLiveFeaturedItems(items);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => active && setFeaturedDone(true));
     return () => {
       active = false;
     };
@@ -164,6 +176,13 @@ export default function HomeContent({navigation}) {
     0,
     query ? 18 : 6,
   );
+  const loadingBanners = liveCatalogEnabled && !bannersDone && !outOfArea;
+  const loadingCategories = liveCatalogEnabled && !categoriesDone;
+  const loadingFeatured =
+    liveCatalogEnabled &&
+    !featuredDone &&
+    !outOfArea &&
+    !(categoriesDone && !liveCategories?.length);
   const openCategory = id =>
     navigation.navigate('CategoryDetails', {
       categoryId: id,
@@ -236,6 +255,12 @@ export default function HomeContent({navigation}) {
           style={styles.search}
           onPress={() => navigation.navigate('Search')}
         />
+        {loadingBanners ? (
+          <HomeBannerSkeleton
+            width={contentWidth}
+            height={contentWidth / bannerAspectRatio}
+          />
+        ) : null}
         {liveBanners.length > 0 && (
           <View style={styles.mainBanner}>
             <ScrollView
@@ -281,6 +306,9 @@ export default function HomeContent({navigation}) {
             )}
           </View>
         )}
+        {loadingCategories ? (
+          <HomeCategoriesSkeleton iconWidth={iconWidth} />
+        ) : (
         <View style={styles.categoryGrid}>
           {homeCategories.map(item => (
             <Pressable
@@ -306,6 +334,7 @@ export default function HomeContent({navigation}) {
             </Pressable>
           ))}
         </View>
+        )}
         <LinearGradient colors={['#F2EAFE', '#C39DFA']} style={styles.deals}>
           <Text style={[ui.sectionTitle, styles.dealsTitle]}>
             Top Deals for you!
@@ -314,6 +343,9 @@ export default function HomeContent({navigation}) {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{gap: 9}}>
+            {loadingFeatured ? (
+              <HomeDealsSkeleton size={contentWidth * 0.28} />
+            ) : null}
             {deals.map(deal => (
               <Pressable
                 key={deal.title}
@@ -360,6 +392,9 @@ export default function HomeContent({navigation}) {
         <Text style={[ui.sectionTitle, styles.suggestedTitle]}>
           Suggested for you
         </Text>
+        {loadingFeatured ? (
+          <HomeProductsSkeleton width={productWidth} />
+        ) : null}
         <View style={styles.products}>
           {suggested.map(product => (
             <ProductCard
@@ -371,7 +406,7 @@ export default function HomeContent({navigation}) {
             />
           ))}
         </View>
-        {!suggested.length ? (
+        {!suggested.length && !loadingFeatured ? (
           <EmptyState message="No matching products. Try another search." />
         ) : null}
       </ScrollView>

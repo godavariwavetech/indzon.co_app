@@ -25,10 +25,14 @@ afterEach(() =>
   act(() => renderers.splice(0).forEach(renderer => renderer.unmount())),
 );
 
-async function renderNavigation(address) {
+async function renderNavigation(address, session = {}) {
   const store = configureStore({reducer: {Auth: authReducer}});
   store.dispatch(
-    completeAuthentication({customerId: 42, mobileNumber: '9876543210'}),
+    completeAuthentication({
+      customerId: 42,
+      mobileNumber: '9876543210',
+      ...session,
+    }),
   );
   if (address) {
     store.dispatch(setDeliveryAddress(address));
@@ -48,12 +52,10 @@ async function renderNavigation(address) {
 test('verified customers without a saved delivery address enter the location flow', async () => {
   const {renderer} = await renderNavigation();
   const props = renderer.root.findByType('RentalNavigation').props;
-  expect(props.initialRouteName).toBe('LocationSetup');
-  expect(props.routes.map(route => route.name)).toEqual([
-    'LocationSetup',
-    'AddAddress',
-    'Home',
-  ]);
+  expect(props.initialRouteName).toBe('NamePrompt');
+  expect(props.routes.map(route => route.name)).toEqual(
+    expect.arrayContaining(['NamePrompt', 'LocationSetup', 'AddAddress', 'Home']),
+  );
 });
 
 test('returning customers with a saved delivery address start at Home', async () => {
@@ -76,6 +78,13 @@ test('a new verified customer cannot inherit the previous delivery address', asy
   await act(async () => {
     store.dispatch(completeAuthentication({customerId: 43}));
   });
+  expect(
+    renderer.root.findByType('RentalNavigation').props.initialRouteName,
+  ).toBe('NamePrompt');
+});
+
+test('customers who already have a name go straight to the location screen', async () => {
+  const {renderer} = await renderNavigation(undefined, {customerName: 'Asha'});
   expect(
     renderer.root.findByType('RentalNavigation').props.initialRouteName,
   ).toBe('LocationSetup');

@@ -55,7 +55,12 @@ const verifyOtp = async (phoneNumber, otp) => {
       body.message || 'Could not verify this code. Please try again.',
     );
   }
-  return {token, customerId, mobileNumber: phoneNumber};
+  return {
+    token,
+    customerId,
+    customerName: (customer?.customer_name || '').trim(),
+    mobileNumber: phoneNumber,
+  };
 };
 
 export default {requestOtp, verifyOtp};

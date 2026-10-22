@@ -398,7 +398,7 @@ async function saveAddress(customerId, fields, place, addressId) {
     : [fields.doorNo.trim(), place.fullAddress].join(', ');
 
   if (isLiveCustomer(customerId)) {
-    const isBackendId = addressId && !String(addressId).startsWith('local-');
+    const isBackendId = addressId && Number.isFinite(Number(addressId));
     const payload = {
       ...(isBackendId ? {id: addressId} : {}),
       customer_id: customerId,
@@ -471,6 +471,106 @@ async function deleteSavedAddress(customerId, addressId) {
   );
 }
 
+
+const toRad = degrees => (degrees * Math.PI) / 180;
+export function distanceKm(a, b) {
+  const dLat = toRad(b.latitude - a.latitude);
+  const dLon = toRad(b.longitude - a.longitude);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.latitude)) *
+      Math.cos(toRad(b.latitude)) *
+      Math.sin(dLon / 2) ** 2;
+  return 12742 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+// The serviceable area (if any) that covers these coordinates.
+async function findServiceArea(coordinates) {
+  const response = await api.post(endpoints.CHECK_ADDRESS_EXISTENCE, {
+    location_latitude: coordinates.latitude,
+    location_longitude: coordinates.longitude,
+  });
+  const match = response.data?.data?.available_locations?.[0];
+  return match
+    ? {id: Number(match.id), name: match.location_name}
+    : null;
+}
+
+// Every area we deliver to, for the "pick your area" list.
+async function getServiceAreas() {
+  const response = await api.get(endpoints.GET_SERVICES_LIST);
+  const rows = Array.isArray(response.data?.data) ? response.data.data : [];
+  return rows
+    .map(row => ({
+      id: Number(row.id),
+      name: row.location_name,
+      latitude: Number(row.location_latitude),
+      longitude: Number(row.location_longitude),
+    }))
+    .filter(area => area.name && validCoordinates(area));
+}
+
+// An address shaped like the saved ones, for a place that is not in the address book
+// (current location or a chosen service area). Never written to the server.
+function makeDerivedAddress({id, type, fullAddress, coordinates, area, customer}) {
+  return {
+    id,
+    storage: 'derived',
+    customer_id: customer.customerId ?? null,
+    address_type: type,
+    full_address: fullAddress,
+    customer_latitude: String(coordinates.latitude),
+    customer_longitude: String(coordinates.longitude),
+    location_id: area.id,
+    location_name: area.name,
+    customer_name: customer.name || '',
+    customer_mobile_number: customer.mobileNumber || '',
+  };
+}
+
+// Picks the delivery address after login: a saved address inside the serviceable area
+// (closest to the user) when there is one, otherwise an address built from the coordinates.
+async function pickAddressForArea({customer, coordinates, area, label}) {
+  let saved = [];
+  try {
+    saved = await getSavedAddresses(customer.customerId);
+  } catch {
+    saved = [];
+  }
+  const inArea = saved
+    .filter(record => Number(record.location_id) === area.id)
+    .map(record => ({
+      record,
+      distance: distanceKm(coordinates, {
+        latitude: Number(record.customer_latitude),
+        longitude: Number(record.customer_longitude),
+      }),
+    }))
+    .sort((a, b) => (a.distance || 0) - (b.distance || 0));
+  if (inArea.length) {
+    return {address: inArea[0].record, source: 'saved'};
+  }
+  let fullAddress = label || area.name;
+  if (!label) {
+    try {
+      fullAddress = (await reverseGeocode(coordinates)).fullAddress;
+    } catch {
+      fullAddress = area.name;
+    }
+  }
+  return {
+    address: makeDerivedAddress({
+      id: label ? `area-${area.id}` : 'current-location',
+      type: label ? 'Area' : 'Current location',
+      fullAddress,
+      coordinates,
+      area,
+      customer,
+    }),
+    source: label ? 'area' : 'current',
+  };
+}
+
 export default {
   clearSavedAddresses: customerId => updateAddresses(customerId, () => []),
   getCurrentLocation,
@@ -480,4 +580,7 @@ export default {
   saveAddress,
   getSavedAddresses,
   deleteSavedAddress,
+  findServiceArea,
+  getServiceAreas,
+  pickAddressForArea,
 };

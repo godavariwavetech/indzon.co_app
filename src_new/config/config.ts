@@ -6,7 +6,8 @@
 // Android emulator: http://10.0.2.2:2406/
 // iOS simulator / same machine: http://localhost:2406/
 // Physical device on same Wi-Fi: http://<this machine's LAN IP>:2406/
-export const baseURL = "http://192.168.0.148:2406/";
+// Live: https://api.indzon.godavariwave.com/
+export const baseURL = "http://192.168.0.129:2406/";
 
 
 export const endpoints = {

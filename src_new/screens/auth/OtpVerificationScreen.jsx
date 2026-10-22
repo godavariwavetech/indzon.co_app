@@ -17,6 +17,7 @@ import {
   rememberStaticLogin,
 } from '../../redux/reducers/auth';
 import {staticPersistor} from '../../redux/store';
+import {setProfileName} from '../../redux/reducers/commerce';
 import {ENABLE_LIVE_DATA} from '../../config/appMode';
 import authService from '../../services/authService';
 import {sanitizeOtp} from '../../utils/phone';
@@ -59,6 +60,9 @@ export default function OtpVerificationScreen({navigation, route}) {
       const session = await authService.verifyOtp(phoneNumber, otp);
       setVerified(true);
       dispatch(completeAuthentication(session));
+      if (session.customerName) {
+        dispatch(setProfileName(session.customerName));
+      }
     } catch (err) {
       setError(
         err.response?.data?.message ||

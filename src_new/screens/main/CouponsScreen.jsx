@@ -49,7 +49,7 @@ function CodeBox({code, color, onCopy, style}) {
         allowFontScaling={false}
         numberOfLines={1}
         adjustsFontSizeToFit
-        minimumFontScale={0.75}
+        minimumFontScale={0.85}
         style={[styles.codeText, {color}]}>
         {code}
       </Text>
@@ -276,7 +276,7 @@ export default function CouponsScreen({navigation}) {
                   code={featured.code}
                   color="#3832FF"
                   onCopy={copy}
-                  style={{flex: 1}}
+                  style={styles.featuredCode}
                 />
                 <Pressable
                   accessibilityRole="button"
@@ -286,7 +286,10 @@ export default function CouponsScreen({navigation}) {
                     styles.featuredApply,
                     selected === featured.code && styles.applied,
                   ]}>
-                  <Text allowFontScaling={false} style={styles.applyText}>
+                  <Text
+                    allowFontScaling={false}
+                    numberOfLines={1}
+                    style={[styles.applyText, styles.featuredApplyText]}>
                     {selected === featured.code ? 'Applied' : 'Apply Now'}
                   </Text>
                 </Pressable>
@@ -326,9 +329,13 @@ export default function CouponsScreen({navigation}) {
                   style={[styles.cardCircle, {backgroundColor: theme.circle}]}
                 />
                 <View style={styles.cardArt} pointerEvents="none">
-                  <Illustration uri={art} size={64} icon="local-offer" color={theme.ink} />
+                  <Illustration uri={art} size={56} icon="local-offer" color={theme.ink} />
                 </View>
-                <View style={[styles.tag, {backgroundColor: theme.ink}]}>
+                <View
+                  style={[
+                    styles.tag,
+                    {backgroundColor: theme.ink, maxWidth: cardWidth - 76},
+                  ]}>
                   <Text
                     allowFontScaling={false}
                     numberOfLines={1}
@@ -526,14 +533,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#F4EFFF',
   },
   featuredLeft: {
-    width: 118,
+    width: 104,
     backgroundColor: '#3B2FF0',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 22,
   },
   featuredFlat: {fontSize: 14, fontWeight: '700', letterSpacing: 4, color: '#FFFFFF'},
-  featuredValue: {fontSize: 44, fontWeight: '800', color: '#FFFFFF', maxWidth: 104},
+  featuredValue: {fontSize: 44, fontWeight: '800', color: '#FFFFFF', maxWidth: 92},
   notch: {
     position: 'absolute',
     right: -14,
@@ -544,7 +551,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: '#F4EFFF',
   },
-  featuredRight: {flex: 1, padding: 14, paddingLeft: 20},
+  featuredRight: {flex: 1, padding: 12, paddingLeft: 18},
   bestDeal: {
     alignSelf: 'flex-start',
     backgroundColor: '#FF4F81',
@@ -560,11 +567,13 @@ const styles = StyleSheet.create({
   featuredApply: {
     backgroundColor: '#3832FF',
     borderRadius: 12,
-    paddingHorizontal: 12,
-    minHeight: 40,
+    paddingHorizontal: 10,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  featuredCode: {flex: 1, marginTop: 0, minHeight: 44, borderRadius: 12, paddingHorizontal: 8},
+  featuredApplyText: {fontSize: 13},
   featuredArt: {position: 'absolute', right: 6, top: 6},
   applied: {backgroundColor: '#16845E'},
   applyText: {fontSize: 14, fontWeight: '700', color: '#FFFFFF'},
@@ -606,15 +615,14 @@ const styles = StyleSheet.create({
     borderRadius: 55,
     opacity: 0.7,
   },
-  cardArt: {position: 'absolute', right: 8, top: 6},
+  cardArt: {position: 'absolute', right: 6, top: 6, width: 56, height: 56},
   tag: {
     alignSelf: 'flex-start',
     borderRadius: 12,
-    paddingHorizontal: 10,
+    paddingHorizontal: 9,
     paddingVertical: 4,
-    maxWidth: '62%',
   },
-  tagText: {fontSize: 11, fontWeight: '800', letterSpacing: 1, color: '#FFFFFF'},
+  tagText: {fontSize: 10, fontWeight: '800', letterSpacing: 0.5, color: '#FFFFFF'},
   cardTitle: {fontSize: 22, fontWeight: '800', color: '#101223', marginTop: 34},
   cardCaption: {fontSize: 13, color: '#6F7482', marginTop: 4, minHeight: 34},
   codeBox: {
