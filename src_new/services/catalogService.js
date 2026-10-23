@@ -36,17 +36,25 @@ const photoArt = url => ({
 export async function getLiveCategories() {
   const response = await api.post(endpoints.DADDY_GET_CATEGORIES, {});
   const rows = Array.isArray(response.data?.data) ? response.data.data : [];
-  return rows.map(row => ({
-    id: String(row.id),
-    name: row.category_name,
-    shortName: row.category_name,
-    art: categoryArt(row.category_image),
-    icon: 'shopping-basket',
-    shopItemsTableName: row.shop_items_tb_nm,
-    // category_tbl.highlight: set on the dashboard to feature a category under "Top Deals".
-    highlight: Number(row.highlight) === 1,
-    subcategories: [],
-  }));
+  // category_active_status 0 = active (the API already filters; this guards
+  // against rows that do carry the flag); rows without the field are kept.
+  return rows
+    .filter(
+      row =>
+        row.category_active_status == null ||
+        Number(row.category_active_status) === 0,
+    )
+    .map(row => ({
+      id: String(row.id),
+      name: row.category_name,
+      shortName: row.category_name,
+      art: categoryArt(row.category_image),
+      icon: 'shopping-basket',
+      shopItemsTableName: row.shop_items_tb_nm,
+      // category_tbl.highlight: set on the dashboard to feature a category under "Top Deals".
+      highlight: Number(row.highlight) === 1,
+      subcategories: [],
+    }));
 }
 
 export async function getLiveBanners({locationId}) {
@@ -199,8 +207,41 @@ export async function getHomeSections({locationId} = {}) {
   };
 }
 
+// The dashboard saves attributes / variant_options / item_images as JSON text.
+const parseJson = value => {
+  if (value && typeof value === 'object') {
+    return value;
+  }
+  try {
+    return value ? JSON.parse(value) : null;
+  } catch (error) {
+    return null;
+  }
+};
+
+// Dashboard-entered details of one item row: gallery, specs (material, warranty,
+// ...) and this row's variant (size, colour, storage, ...).
+function itemDetails(row) {
+  const gallery = parseJson(row.item_images);
+  const images = [row.item_image, ...(Array.isArray(gallery) ? gallery : [])]
+    .filter(Boolean)
+    .map(mediaUrl);
+  const toEntries = value =>
+    Object.entries(parseJson(value) || {}).filter(
+      ([key, entry]) =>
+        entry !== null && entry !== '' && !['qa_batch', 'image_type', 'color_hex'].includes(key),
+    );
+  return {
+    images: [...new Set(images)].map(uri => ({uri})),
+    attributes: toEntries(row.attributes),
+    variantOptions: toEntries(row.variant_options),
+    uniqueCode: row.unique_code,
+  };
+}
+
 function mapLiveItem(row, shopItemsTableName) {
   return {
+    ...itemDetails(row),
     // Each shop_items_tb_nm table has its own independent auto-increment id,
     // so a bare numeric id can collide across shops/categories once used as
     // a cart/wishlist key — keep it globally unique.
@@ -219,6 +260,9 @@ function mapLiveItem(row, shopItemsTableName) {
     unit: row.quantity_varient || '1 item',
     gstPercent: Number(row.item_gst) || 0,
     art: photoArt(row.item_image),
+    // average of the customers' ratings of this item; null until someone rates it
+    rating: Number(row.item_rating) || null,
+    reviewCount: Number(row.item_rating_count) || 0,
   };
 }
 
@@ -241,6 +285,7 @@ export async function getLiveItemById(compoundId, locationId) {
     return null;
   }
   return {
+    ...itemDetails(row),
     id: compoundId,
     itemId: row.id,
     shopItemsTableName,
@@ -276,6 +321,7 @@ export async function searchAll(term, locationId) {
       return {
         ...base,
         kind: 'item',
+        art: photoArt(row.search_image),
         product: {
           id: `${row.table_name}:${row.id}`,
           itemId: row.id,
@@ -329,7 +375,9 @@ export function useLiveItemsByIds(ids) {
       missing.map(id =>
         getLiveItemById(id, locationId)
           .then(item => itemCache.set(cacheKey(id), item))
-          .catch(() => itemCache.set(cacheKey(id), null)),
+          // a failed request (server down, network) is not cached, so reopening
+          // the screen retries instead of the cart staying empty for the session
+          .catch(() => {}),
       ),
     ).then(() => {
       if (active) {
@@ -351,6 +399,7 @@ export function useLiveItemsByIds(ids) {
   return {itemsById, loading: liveIds.length > 0 && missing.length > 0};
 }
 
+// categoryId / shopId null lists every coupon of the location.
 export async function getLiveCoupons({locationId, categoryId = 0, shopId = 0}) {
   const response = await api.post(endpoints.GET_COUPONS, {
     location_id: locationId,
@@ -376,31 +425,17 @@ export async function getLiveCoupons({locationId, categoryId = 0, shopId = 0}) {
     cap: Number(row.coupon_upto_price) || 0,
     minBill: Number(row.coupon_max_price_limit) || 0,
     categoryId: row.category_id ? String(row.category_id) : null,
+    // a coupon tied to one shop only applies to that shop's items
+    shopId: row.shop_id ? String(row.shop_id) : null,
   }));
 }
 
 // Every offer for the service area, whatever category it belongs to, so the
 // coupons screen can list them all (the endpoint filters by one category at a time).
-export async function getAllLiveCoupons({locationId}) {
-  const categories = await getLiveCategories();
-  const lists = await Promise.all([
-    getLiveCoupons({locationId, categoryId: 0}),
-    ...categories.map(category =>
-      getLiveCoupons({locationId, categoryId: category.id}),
-    ),
-  ]);
-  const seen = new Set();
-  return lists.flat().filter(offer => {
-    if (seen.has(offer.id)) {
-      return false;
-    }
-    seen.add(offer.id);
-    return true;
-  });
+export function getAllLiveCoupons({locationId}) {
+  return getLiveCoupons({locationId, categoryId: null, shopId: null});
 }
 
-// Mirrors config/coupons.js's evaluateCoupon() shape ({discount, error, code})
-// but against real coupon_code_t fields instead of the made-up static schema.
 export function evaluateLiveCoupon(code, offers, items) {
   const offer = offers.find(
     o => o.code.toUpperCase() === String(code || '').trim().toUpperCase(),
@@ -411,9 +446,12 @@ export function evaluateLiveCoupon(code, offers, items) {
   if (!items.length) {
     return {discount: 0, error: 'Add items to your cart before applying a coupon.'};
   }
-  const eligible = !offer.categoryId || offer.categoryId === '0'
-    ? items
-    : items.filter(item => String(item.categoryId) === offer.categoryId);
+  const eligible = items.filter(
+    item =>
+      (!offer.categoryId || offer.categoryId === '0' ||
+        String(item.categoryId) === offer.categoryId) &&
+      (!offer.shopId || String(item.shopId) === offer.shopId),
+  );
   const amount = eligible.reduce((sum, item) => sum + item.price * item.quantity, 0);
   if (!amount) {
     return {discount: 0, error: 'This coupon does not apply to items in your cart.'};
@@ -470,6 +508,8 @@ const ORDER_STATUS = {
   8: 'Packed',
   2: 'Out for delivery',
   3: 'Delivered',
+  // 5 is the dashboards' cancelled/rejected; 4 is what older customer cancels saved
+  4: 'Cancelled',
   5: 'Cancelled',
 };
 
@@ -531,6 +571,20 @@ export async function getLiveOrders({customerId}) {
       price,
       originalPrice,
       productIds: [],
+      shopId: String(row.shop_id),
+      // the customer's rating of this delivered shipment (0 = not rated yet)
+      rating: Number(row.order_rating_status) || 0,
+      ratingComment: row.rating_comment || '',
+      cancelReason: row.order_cancel_msg || null,
+      // set once a delivery partner has been assigned to the order
+      deliveryPartner: row.delivery_boy_name
+        ? {
+            name: row.delivery_boy_name,
+            phone: row.delivery_boy_mobile_number,
+            rating: Number(row.delivery_boy_rating) || null,
+            photo: row.delivery_boy_image ? mediaUrl(row.delivery_boy_image) : null,
+          }
+        : null,
     };
     const existing = orders.get(String(row.order_id));
     if (existing) {
@@ -562,17 +616,63 @@ export async function getLiveOrders({customerId}) {
       groups: [group],
     });
   });
+  // The order's own status follows its shipments: Cancelled only when every
+  // shipment is, otherwise the first one still in progress.
+  orders.forEach(order => {
+    const active = order.groups.filter(group => group.status !== 'Cancelled');
+    order.status = active.length ? active[0].status : 'Cancelled';
+    order.cancelReason =
+      order.groups.find(group => group.cancelReason)?.cancelReason || null;
+  });
   return Array.from(orders.values());
 }
 
-// Only an order that is still "Placed" can be cancelled; the backend answers
-// status 300 once the shop has accepted it.
-export async function cancelLiveOrder(realOrderIds) {
+// A shipment (one order row per category) can be cancelled while it is still
+// "Placed"; the backend answers status 300 once the shop has accepted it.
+// Resolves to how many of the given rows were actually cancelled.
+export async function cancelLiveOrder(realOrderIds, {customerId, reason} = {}) {
   const ids = [].concat(realOrderIds);
   const results = await Promise.all(
-    ids.map(id => api.post(endpoints.CANCEL_ORDER, {order_id: id})),
+    ids.map(id =>
+      api
+        .post(endpoints.CANCEL_ORDER, {
+          order_id: id,
+          customer_id: customerId,
+          cancel_reason: reason || 'Cancelled by customer',
+        })
+        .then(response => response.data?.status === 200)
+        .catch(() => false),
+    ),
   );
-  return results.every(response => response.data?.status === 200);
+  return {cancelled: results.filter(Boolean).length, total: ids.length};
+}
+
+// Rating needs a delivered shipment; the backend answers status 300 otherwise.
+export async function rateLiveShipments(realOrderIds, {customerId, rating, comment}) {
+  const results = await Promise.all(
+    [].concat(realOrderIds).map(id =>
+      api
+        .post(endpoints.GIVE_ORDER_RATING, {
+          usr_id: customerId,
+          order_id: id,
+          rating,
+          comment,
+        })
+        .then(response => response.data?.status === 200)
+        .catch(() => false),
+    ),
+  );
+  return results.some(Boolean);
+}
+
+export async function rateLiveOrderItem({orderItemId, customerId, rating, comment}) {
+  const response = await api.post(endpoints.GIVE_ITEM_RATING, {
+    customer_id: customerId,
+    order_item_id: orderItemId,
+    rating,
+    comment,
+  });
+  return response.data?.status === 200;
 }
 
 export async function getLiveOrderItems(realOrderId) {
@@ -585,6 +685,9 @@ export async function getLiveOrderItems(realOrderId) {
     // the order_lst_t row (one per category) this item belongs to
     orderRowId: realOrderId,
     itemId: row.item_id,
+    orderItemId: row.id,
+    myRating: Number(row.my_rating) || 0,
+    myComment: row.my_comment || '',
     name: row.item_name,
     unit: row.quantity_varient || '1 item',
     price: Number(row.item_price) || 0,

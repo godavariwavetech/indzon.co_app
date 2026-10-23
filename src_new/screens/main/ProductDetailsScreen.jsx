@@ -77,7 +77,10 @@ function RelatedProduct({product, navigation, scale}) {
           accessibilityRole="button"
           accessibilityLabel={`View ${product.name}`}
           onPress={() =>
-            navigation.push('ProductDetails', {productId: product.id})
+            navigation.push('ProductDetails', {
+              productId: product.id,
+              liveProduct: product,
+            })
           }>
           <ReferenceArtwork art={product.art} width={130 * scale} height={132 * scale} resizeMode="contain" />
         </Pressable>
@@ -94,21 +97,45 @@ function RelatedProduct({product, navigation, scale}) {
             color={wished ? '#ED4242' : '#65717B'}
           />
         </Pressable>
-        <View style={styles.relatedRating}>
-          <MaterialIcons name="star" size={18 * scale} color="#009A62" />
-          <Label style={{fontSize: 14 * scale, fontWeight: '700'}}>
-            {product.rating}
-          </Label>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Add ${product.name} to cart`}
-          onPress={() => dispatch(addItem(product.id))}
-          style={styles.relatedAdd}>
-          <Label style={{color: blue, fontSize: 12 * scale, fontWeight: '700'}}>
-            {quantity ? `${quantity} +` : 'ADD'}
-          </Label>
-        </Pressable>
+        {product.rating ? (
+          <View style={styles.relatedRating}>
+            <MaterialIcons name="star" size={18 * scale} color="#009A62" />
+            <Label style={{fontSize: 14 * scale, fontWeight: '700'}}>
+              {product.rating}
+            </Label>
+          </View>
+        ) : null}
+        {quantity ? (
+          <View style={styles.relatedStepper}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Remove one ${product.name}`}
+              hitSlop={6}
+              onPress={() => dispatch(removeItem(product.id))}
+              style={styles.relatedStepperButton}>
+              <Label style={styles.relatedStepperText}>−</Label>
+            </Pressable>
+            <Label style={styles.relatedStepperCount}>{quantity}</Label>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Add one ${product.name}`}
+              hitSlop={6}
+              onPress={() => dispatch(addItem(product.id))}
+              style={styles.relatedStepperButton}>
+              <Label style={styles.relatedStepperText}>+</Label>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Add ${product.name} to cart`}
+            onPress={() => dispatch(addItem(product.id))}
+            style={styles.relatedAdd}>
+            <Label style={{color: blue, fontSize: 12 * scale, fontWeight: '700'}}>
+              ADD
+            </Label>
+          </Pressable>
+        )}
       </View>
       <Label
         numberOfLines={1}
@@ -136,11 +163,22 @@ function RelatedProduct({product, navigation, scale}) {
   );
 }
 
-function Details({product, navigation}) {
+const optionLabel = key =>
+  key.replace(/_/g, ' ').replace(/^./, letter => letter.toUpperCase());
+
+function Details({product: base, navigation}) {
   const {width} = useWindowDimensions();
   const scale = Math.min(width / 393, 1.4);
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
+  // Every row of the shop's list; rows sharing a unique_code are the variants
+  // (colour, size, storage...) of one product the dashboard saved.
+  const [rows, setRows] = useState([]);
+  const [selectedId, setSelectedId] = useState(base.id);
+  const product = rows.find(row => row.id === selectedId) || base;
+  const siblings = product.uniqueCode
+    ? rows.filter(row => row.uniqueCode === product.uniqueCode)
+    : [];
   const quantity = useSelector(state => state.commerce.cart[product.id] || 0);
   const wished = useSelector(state =>
     state.commerce.wishlist.includes(product.id),
@@ -148,6 +186,45 @@ function Details({product, navigation}) {
   const [expanded, setExpanded] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
   const gallery = useRef(null);
+  useEffect(() => {
+    setImageIndex(0);
+    gallery.current?.scrollTo({x: 0, animated: false});
+  }, [product.id]);
+  // Picking a value switches to the sibling row that has it, keeping the other
+  // options where that row allows.
+  const pickOption = (key, value) => {
+    const wanted = Object.fromEntries(product.variantOptions);
+    wanted[key] = value;
+    const matches = siblings.filter(row =>
+      row.variantOptions.some(([k, v]) => k === key && v === value),
+    );
+    const best = matches.reduce(
+      (found, row) => {
+        const score = row.variantOptions.filter(
+          ([k, v]) => wanted[k] === v,
+        ).length;
+        return score > found.score ? {row, score} : found;
+      },
+      {row: null, score: -1},
+    ).row;
+    if (best) {
+      setSelectedId(best.id);
+    }
+  };
+  const optionGroups = siblings.length > 1
+    ? product.variantOptions
+        .map(([key]) => [
+          key,
+          [
+            ...new Set(
+              siblings.flatMap(row =>
+                row.variantOptions.filter(([k]) => k === key).map(([, v]) => v),
+              ),
+            ),
+          ],
+        ])
+        .filter(([, values]) => values.length > 1)
+    : [];
   const images = product.images?.length
     ? product.images.map(source => ({source, zoom: 1, label: 'Product image'}))
     : [
@@ -169,37 +246,47 @@ function Details({product, navigation}) {
       )}%)`,
     ],
     ...(product.vegetarian ? [['Dietary preference', 'Vegetarian']] : []),
+    ...(product.variantOptions || [])
+      .filter(([key]) => key !== 'measurement')
+      .map(([key, value]) => [optionLabel(key), String(value)]),
+    ...(product.attributes || []).map(([key, value]) => [
+      optionLabel(key),
+      String(value),
+    ]),
   ].filter(([, value]) => Boolean(value));
-  const [similar, setSimilar] = useState([]);
   useEffect(() => {
-    if (!product.shopItemsTableName) {
+    if (!base.shopItemsTableName) {
       return undefined;
     }
     let active = true;
     getLiveItems({
-      shopItemsTableName: product.shopItemsTableName,
-      shopId: product.shopId,
+      shopItemsTableName: base.shopItemsTableName,
+      shopId: base.shopId,
     })
-      .then(rows => {
-        if (!active) {
-          return;
-        }
-        setSimilar(
-          rows
-            .filter(item => item.id !== product.id)
-            .sort(
-              (a, b) =>
-                Number(b.subcategoryId === product.subcategoryId) -
-                Number(a.subcategoryId === product.subcategoryId),
-            )
-            .slice(0, 6),
-        );
-      })
+      .then(list => active && setRows(list))
       .catch(() => {});
     return () => {
       active = false;
     };
-  }, [product.id, product.shopId, product.shopItemsTableName, product.subcategoryId]);
+  }, [base.id, base.shopId, base.shopItemsTableName]);
+  const similar = rows
+    .filter(
+      item =>
+        item.id !== product.id &&
+        (!product.uniqueCode || item.uniqueCode !== product.uniqueCode),
+    )
+    // one card per product, not one per variant
+    .filter(
+      (item, index, list) =>
+        !item.uniqueCode ||
+        list.findIndex(other => other.uniqueCode === item.uniqueCode) === index,
+    )
+    .sort(
+      (a, b) =>
+        Number(b.subcategoryId === product.subcategoryId) -
+        Number(a.subcategoryId === product.subcategoryId),
+    )
+    .slice(0, 6);
   const weight = product.unit.match(/^([\d.]+)\s*(kg|g)$/i);
   const per100 = weight
     ? product.price /
@@ -313,38 +400,40 @@ function Details({product, navigation}) {
               />
             ))}
           </View>
-          <View
-            style={[
-              styles.rating,
-              {
-                right: 8 * scale,
-                height: 28 * scale,
-                paddingHorizontal: 7 * scale,
-              },
-            ]}
-            accessibilityLabel={`${product.rating} stars${
-              product.reviewCount ? `, ${product.reviewCount} reviews` : ''
-            }`}>
-            {[0, 1, 2, 3, 4].map(index => (
-              <MaterialIcons
-                key={index}
-                name={
-                  Number(product.rating) >= index + 1
-                    ? 'star'
-                    : Number(product.rating) > index
-                    ? 'star-half'
-                    : 'star-border'
-                }
-                size={12 * scale}
-                color="#F2BC00"
-              />
-            ))}
-            <Label style={{fontSize: 10 * scale, marginLeft: 4 * scale}}>
-              {product.reviewCount
-                ? `(${product.reviewCount.toLocaleString('en-IN')})`
-                : product.rating}
-            </Label>
-          </View>
+          {product.rating ? (
+            <View
+              style={[
+                styles.rating,
+                {
+                  right: 8 * scale,
+                  height: 28 * scale,
+                  paddingHorizontal: 7 * scale,
+                },
+              ]}
+              accessibilityLabel={`${product.rating} stars${
+                product.reviewCount ? `, ${product.reviewCount} reviews` : ''
+              }`}>
+              {[0, 1, 2, 3, 4].map(index => (
+                <MaterialIcons
+                  key={index}
+                  name={
+                    Number(product.rating) >= index + 1
+                      ? 'star'
+                      : Number(product.rating) > index
+                      ? 'star-half'
+                      : 'star-border'
+                  }
+                  size={12 * scale}
+                  color="#F2BC00"
+                />
+              ))}
+              <Label style={{fontSize: 10 * scale, marginLeft: 4 * scale}}>
+                {product.reviewCount
+                  ? `(${product.reviewCount.toLocaleString('en-IN')})`
+                  : product.rating}
+              </Label>
+            </View>
+          ) : null}
         </View>
         <View
           style={[
@@ -385,6 +474,41 @@ function Details({product, navigation}) {
             ]}>
             {product.unit}
           </Label>
+          {optionGroups.map(([key, values]) => (
+            <View key={key} style={{marginTop: 10 * scale}}>
+              <Label style={{fontSize: 13 * scale, fontWeight: '700'}}>
+                {optionLabel(key)}:{' '}
+                <Label style={{fontWeight: '400', fontSize: 13 * scale}}>
+                  {product.variantOptions.find(([k]) => k === key)?.[1]}
+                </Label>
+              </Label>
+              <View style={styles.optionRow}>
+                {values.map(value => {
+                  const selected = product.variantOptions.some(
+                    ([k, v]) => k === key && v === value,
+                  );
+                  return (
+                    <Pressable
+                      key={value}
+                      accessibilityRole="button"
+                      accessibilityState={{selected}}
+                      accessibilityLabel={`${optionLabel(key)} ${value}`}
+                      onPress={() => pickOption(key, value)}
+                      style={[styles.optionChip, selected && styles.optionChipOn]}>
+                      <Label
+                        style={{
+                          fontSize: 13 * scale,
+                          fontWeight: selected ? '700' : '500',
+                          color: selected ? blue : '#202427',
+                        }}>
+                        {value}
+                      </Label>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
           <View style={[styles.priceRow, {marginTop: 7 * scale}]}>
             <Label style={{fontSize: 16 * scale, fontWeight: '700'}}>
               {money(product.price)}
@@ -518,8 +642,27 @@ function Details({product, navigation}) {
             <Quantity product={product} quantity={quantity} scale={scale} />
             <Pressable
               accessibilityRole="button"
-              onPress={() => navigation.navigate('Cart')}>
-              <Label style={{textAlign: 'center', color: blue, marginTop: 5}}>
+              accessibilityLabel="View cart"
+              onPress={() => navigation.navigate('Cart')}
+              style={{
+                marginTop: 8 * scale,
+                height: 40 * scale,
+                borderRadius: 11,
+                borderWidth: 1.5,
+                borderColor: blue,
+                backgroundColor: '#EEF0FF',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+              }}>
+              <MaterialIcons
+                name="shopping-cart"
+                size={18 * scale}
+                color={blue}
+              />
+              <Label
+                style={{fontSize: 15 * scale, fontWeight: '700', color: blue}}>
                 View cart
               </Label>
             </Pressable>
@@ -554,6 +697,18 @@ export default function ProductDetailsScreen({navigation, route}) {
 }
 
 const styles = StyleSheet.create({
+  optionRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 7},
+  optionChip: {
+    minWidth: 44,
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#C9CFD8',
+    backgroundColor: '#FFFFFF',
+  },
+  optionChipOn: {borderColor: blue, backgroundColor: '#EEF0FF'},
   expandedDetails: {paddingTop: 14},
   detailsHeading: {
     fontSize: 14,
@@ -670,6 +825,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 3,
     backgroundColor: '#FFFFFFDD',
+  },
+  relatedStepper: {
+    position: 'absolute',
+    right: 6,
+    bottom: 6,
+    height: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: blue,
+    overflow: 'hidden',
+  },
+  relatedStepperButton: {
+    width: 20,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  relatedStepperText: {color: '#FFFFFF', fontSize: 14, lineHeight: 18, fontWeight: '700'},
+  relatedStepperCount: {
+    minWidth: 14,
+    textAlign: 'center',
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
   relatedAdd: {
     position: 'absolute',

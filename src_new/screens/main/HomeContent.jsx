@@ -165,7 +165,6 @@ export default function HomeContent({navigation}) {
   const bannerAspectRatio = 546 / 162;
   const productWidth = (contentWidth - 20) / 3;
   const iconWidth = Math.min((contentWidth - 32) / 5, 72);
-  const highlighted = homeSections.highlightedCategories;
   const suggested = (liveSearchResults ?? homeSections.suggested).slice(
     0,
     query ? 18 : 12,
@@ -186,26 +185,15 @@ export default function HomeContent({navigation}) {
     ...(liveCategories || []).slice(0, 9),
     {id: 'more', name: 'More', art: moreArtwork},
   ];
-  // Top Deals: categories flagged "highlight" on the dashboard; without any, the best-discount products.
-  const deals = highlighted.length
-    ? highlighted.map(category => ({
-        title: category.name,
-        caption: 'Deals for you!',
-        art: category.art,
-        categoryId: category.id,
-      }))
-    : homeSections.topDeals.map(item => ({
-        title: item.name,
-        caption: `From ₹${item.price}`,
-        badge:
-          item.originalPrice > item.price
-            ? `Flat ${Math.round((1 - item.price / item.originalPrice) * 100)}%`
-            : null,
-        art: item.art,
-        categoryId: item.categoryId,
-        productId: item.id,
-        liveItem: item,
-      }));
+  // Top Deals: active categories with "highlight" switched on in the dashboard.
+  const deals = (liveCategories || [])
+    .filter(category => category.highlight)
+    .map(category => ({
+      title: category.name,
+      caption: 'Deals for you!',
+      art: category.art,
+      categoryId: category.id,
+    }));
   return (
     <Page style={{paddingTop: 0}}>
       {outOfArea ? (
@@ -364,7 +352,7 @@ export default function HomeContent({navigation}) {
             ))}
           </View>
         )}
-        {loadingCategories || loadingFeatured || deals.length > 0 ? (
+        {loadingCategories || deals.length > 0 ? (
         <LinearGradient colors={['#F2EAFE', '#C39DFA']} style={styles.deals}>
           <Text style={[ui.sectionTitle, styles.dealsTitle]}>
             Top Deals for you!
@@ -373,7 +361,7 @@ export default function HomeContent({navigation}) {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{gap: 9}}>
-            {loadingCategories || (loadingFeatured && !highlighted.length) ? (
+            {loadingCategories ? (
               <HomeDealsSkeleton size={contentWidth * 0.28} />
             ) : null}
             {deals.map(deal => (

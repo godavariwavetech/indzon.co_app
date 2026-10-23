@@ -55,7 +55,7 @@ function ProductCard({product, width, navigation, variant = 'compact'}) {
                 productId: product.id,
                 // Live items have no single-item fetch endpoint — hand the
                 // already-fetched object through instead of looking it up.
-                liveProduct: product.itemId != null ? product : undefined,
+                liveProduct: product,
               })
             }
             onPressIn={() => animateImage(0.975)}
@@ -111,28 +111,30 @@ function ProductCard({product, width, navigation, variant = 'compact'}) {
         {detailed && !categoryGrid && product.bestseller ? (
           <Text style={styles.bestseller}>Bestseller</Text>
         ) : null}
-        <View
-          style={[
-            styles.rating,
-            detailed && {left: 8, bottom: 9},
-            suggested && styles.suggestedRating,
-            categoryGrid && {left: 4, bottom: 5, paddingHorizontal: 2, paddingVertical: 3, alignItems: 'center', gap: 1},
-          ]}>
-          <MaterialIcons
-            name="star"
-            size={categoryGrid ? 12 : detailed ? 19 : 12}
-            color="#009A5D"
-          />
-          <Text
+        {product.rating ? (
+          <View
             style={[
-              styles.ratingText,
-              detailed && {fontSize: 16},
-              suggested && {fontSize: 12, lineHeight: 16},
-              categoryGrid && {fontSize: 11},
+              styles.rating,
+              detailed && {left: 8, bottom: 9},
+              suggested && styles.suggestedRating,
+              categoryGrid && {left: 4, bottom: 5, paddingHorizontal: 2, paddingVertical: 3, alignItems: 'center', gap: 1},
             ]}>
-            {product.rating}
-          </Text>
-        </View>
+            <MaterialIcons
+              name="star"
+              size={categoryGrid ? 12 : detailed ? 19 : 12}
+              color="#009A5D"
+            />
+            <Text
+              style={[
+                styles.ratingText,
+                detailed && {fontSize: 16},
+                suggested && {fontSize: 12, lineHeight: 16},
+                categoryGrid && {fontSize: 11},
+              ]}>
+              {product.rating}
+            </Text>
+          </View>
+        ) : null}
         {wishlistCard ? null : quantity ? (
           <View
             style={[

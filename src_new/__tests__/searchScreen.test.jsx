@@ -3,7 +3,11 @@ import React from 'react';
 import {act, create} from 'react-test-renderer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SearchScreen from '../screens/main/SearchScreen';
-import {getLiveCategories, searchAll} from '../services/catalogService';
+import {
+  getLiveCategories,
+  getLiveSubcategories,
+  searchAll,
+} from '../services/catalogService';
 
 jest.mock('../components/main/MainUi', () => ({
   Page: ({children}) => children,
@@ -16,6 +20,7 @@ jest.mock('react-redux', () => ({
 jest.mock('../services/catalogService', () => ({
   liveCatalogEnabled: true,
   getLiveCategories: jest.fn(),
+  getLiveSubcategories: jest.fn(),
   searchAll: jest.fn(),
 }));
 
@@ -32,6 +37,15 @@ beforeEach(() => {
       shortName: 'Grocery',
       art: {source: {uri: 'http://x/grocery.png'}},
     },
+  ]);
+  getLiveSubcategories.mockResolvedValue([
+    {
+      id: '19',
+      name: 'Pulses',
+      shopIds: ['702'],
+      art: {source: {uri: 'http://x/pulses.png'}},
+    },
+    {id: '20', name: 'Rice', shopIds: ['702'], art: {source: {uri: 'http://x/rice.png'}}},
   ]);
   searchAll.mockResolvedValue([
     {
@@ -65,6 +79,29 @@ test('a live category opens its shop list', async () => {
   expect(navigation.navigate).toHaveBeenCalledWith('CategoryDetails', {
     categoryId: '10',
     selectionRequest: expect.any(Number),
+  });
+});
+
+test('shows one subcategory from each category and opens its products', async () => {
+  await mount();
+  expect(getLiveSubcategories).toHaveBeenCalledWith({
+    categoryId: '10',
+    locationId: 1,
+  });
+  // only the first subcategory of the category is listed
+  expect(
+    renderer.root.findAllByProps({accessibilityLabel: 'Rice in Grocery'}),
+  ).toHaveLength(0);
+  act(() =>
+    renderer.root
+      .findByProps({accessibilityLabel: 'Pulses in Grocery'})
+      .props.onPress(),
+  );
+  expect(navigation.navigate).toHaveBeenCalledWith('ProductList', {
+    categoryId: '10',
+    subcategoryId: '19',
+    shopId: '702',
+    shopItemsTableName: undefined,
   });
 });
 

@@ -55,11 +55,14 @@ import {
   getLiveCategories,
   getLiveCoupons,
   cancelLiveOrder,
+  rateLiveOrderItem,
+  rateLiveShipments,
   getLiveItems,
   getLiveSubcategories,
   getOrderCharges,
   liveCatalogEnabled,
   useAllOrders,
+  useOrders,
   useLiveItemsByIds,
   useLiveOrderItems,
 } from '../../services/catalogService';
@@ -877,6 +880,7 @@ export function CartScreen({navigation}) {
                         onPress={() =>
                           navigation.navigate('ProductDetails', {
                             productId: item.id,
+                            liveProduct: item,
                           })
                         }>
                         <ReferenceArtwork
@@ -1109,26 +1113,39 @@ export function OrderConfirmationScreen({navigation, route}) {
   const order = useSelector(state =>
     state.commerce.orders.find(item => item.id === route.params?.orderId),
   );
-  const {width} = useWindowDimensions();
+  const {width, height} = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  // The artwork is 393x852. Scale it to cover the whole window and pin it to the
+  // bottom-centre so the waves stay visible on any aspect ratio.
+  const backgroundScale = Math.max(width / 393, height / 852);
   useFocusEffect(
     useCallback(() => {
       if (!order?.id) return;
       const timer = setTimeout(
         () => navigation.replace('OrderDetails', {orderId: order.id}),
-        1500,
+        2500,
       );
       return () => clearTimeout(timer);
     }, [navigation, order?.id]),
   );
   return (
     <Page>
-      <Image
-        source={require('../../assets/main/references/order-confirmed-background.png')}
-        style={StyleSheet.absoluteFill}
-        resizeMode="cover"
-        accessible={false}
-      />
+      <View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, {overflow: 'hidden', backgroundColor: '#F1F3FF'}]}>
+        <Image
+          source={require('../../assets/main/references/order-confirmed-background.png')}
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: (width - 393 * backgroundScale) / 2,
+            width: 393 * backgroundScale,
+            height: 852 * backgroundScale,
+          }}
+          resizeMode="stretch"
+          accessible={false}
+        />
+      </View>
       <ScrollView
         contentContainerStyle={[
           s.confirmation,
@@ -1183,7 +1200,7 @@ export function OrderConfirmationScreen({navigation, route}) {
 }
 
 export function OrderDetailsScreen({navigation, route}) {
-  const allOrders = useAllOrders();
+  const {orders: allOrders, refresh: refreshOrders} = useOrders();
   const auth = useSelector(state => state.Auth);
   const savedFeedback = useSelector(
     state => state.commerce.feedback[route.params?.orderId],
@@ -1204,11 +1221,29 @@ export function OrderDetailsScreen({navigation, route}) {
           })),
         }
       : foundOrder;
-  const [rating, setRating] = useState(savedFeedback?.rating || 0);
-  const [feedback, setFeedback] = useState(savedFeedback?.text || '');
-  const [saved, setSaved] = useState(false);
+  // a live order's rating is what the server holds (set on its delivered shipments)
+  const ratedGroup = foundOrder?.groups?.find(group => group.rating);
+  const [rating, setRating] = useState(
+    ratedGroup?.rating || savedFeedback?.rating || 0,
+  );
+  const [feedback, setFeedback] = useState(
+    ratedGroup?.ratingComment || savedFeedback?.text || '',
+  );
+  const [saved, setSaved] = useState(Boolean(ratedGroup));
+  const [feedbackError, setFeedbackError] = useState('');
+  // the order can arrive after this screen mounts; take the server's rating when it does
+  useEffect(() => {
+    if (ratedGroup) {
+      setRating(ratedGroup.rating);
+      setFeedback(ratedGroup.ratingComment || '');
+      setSaved(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ratedGroup?.rating, ratedGroup?.ratingComment]);
   const [cancelling, setCancelling] = useState(false);
   const [cancelDialog, setCancelDialog] = useState(null);
+  // the shipments (order rows) the open confirm dialog will cancel
+  const [cancelTarget, setCancelTarget] = useState(null);
   const dispatch = useDispatch();
   if (!order) {
     return (
@@ -1221,6 +1256,13 @@ export function OrderDetailsScreen({navigation, route}) {
   const groups = order.groups.filter(
     group => !route.params?.groupName || group.name === route.params.groupName,
   );
+  // a shipment can be cancelled only while it is still Placed (not yet accepted by the shop)
+  const deliveredGroups = order.live
+    ? order.groups.filter(group => shipmentStatus(group, order) === 'Delivered')
+    : [];
+  const cancellableGroups = order.live
+    ? order.groups.filter(group => shipmentStatus(group, order) === 'Placed')
+    : [];
   const ids = groups.flatMap(group => group.productIds);
   const items = order.items
     ? order.items.filter(item => ids.includes(item.id))
@@ -1276,15 +1318,27 @@ export function OrderDetailsScreen({navigation, route}) {
             <Text style={s.muted}>{order.cancelReason}</Text>
           </Section>
         ) : null}
-        {order.live && order.status === 'Placed' ? (
+        {cancellableGroups.length ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Cancel this order"
             disabled={cancelling}
-            onPress={() => setCancelDialog('confirm')}
+            onPress={() => {
+              setCancelTarget({
+                ids: cancellableGroups.map(group => group.realOrderId),
+                name: cancellableGroups.length === order.groups.length
+                  ? null
+                  : cancellableGroups.map(group => group.name).join(', '),
+              });
+              setCancelDialog('confirm');
+            }}
             style={{marginHorizontal: 16, marginBottom: 12, minHeight: 46, borderRadius: 12, borderWidth: 1, borderColor: '#E5B3B8', backgroundColor: '#FFF0F0', alignItems: 'center', justifyContent: 'center', opacity: cancelling ? 0.6 : 1}}>
             <Text style={{fontSize: 15, fontWeight: '700', color: '#BC3C47'}}>
-              {cancelling ? 'Cancelling...' : 'Cancel order'}
+              {cancelling
+                ? 'Cancelling...'
+                : cancellableGroups.length === order.groups.length
+                ? 'Cancel entire order'
+                : 'Cancel remaining items'}
             </Text>
           </Pressable>
         ) : null}
@@ -1295,8 +1349,20 @@ export function OrderDetailsScreen({navigation, route}) {
             order={order}
             items={items}
             navigation={navigation}
+            onRateItem={(item, value) =>
+              rateLiveOrderItem({
+                orderItemId: item.orderItemId,
+                customerId: auth.customerId,
+                rating: value,
+              })
+            }
+            onCancel={target => {
+              setCancelTarget({ids: [target.realOrderId], name: target.name});
+              setCancelDialog('confirm');
+            }}
           />
         ))}
+        {!order.live || deliveredGroups.length ? (
         <Section>
           <TextInput
             multiline
@@ -1333,10 +1399,37 @@ export function OrderDetailsScreen({navigation, route}) {
           <Text style={[s.muted, {textAlign: 'center'}]}>
             Rate this order now
           </Text>
+          {feedbackError ? (
+            <Text style={[s.muted, {textAlign: 'center', color: '#BC3C47'}]}>
+              {feedbackError}
+            </Text>
+          ) : null}
           <Pressable
             accessibilityRole="button"
-            disabled={!rating && !feedback.trim()}
-            onPress={() => {
+            disabled={!rating}
+            onPress={async () => {
+              setFeedbackError('');
+              if (order.live) {
+                // the rating is stored on each delivered shipment of the order
+                let done = false;
+                try {
+                  done = await rateLiveShipments(
+                    deliveredGroups.map(group => group.realOrderId),
+                    {
+                      customerId: auth.customerId,
+                      rating,
+                      comment: feedback.trim(),
+                    },
+                  );
+                } catch (error) {
+                  done = false;
+                }
+                if (!done) {
+                  setFeedbackError('Could not save your feedback. Please try again.');
+                  return;
+                }
+                refreshOrders();
+              }
               dispatch(
                 saveOrderFeedback({
                   orderId: order.id,
@@ -1346,15 +1439,13 @@ export function OrderDetailsScreen({navigation, route}) {
               );
               setSaved(true);
             }}
-            style={[
-              s.feedbackSave,
-              !rating && !feedback.trim() && {opacity: 0.4},
-            ]}>
+            style={[s.feedbackSave, !rating && {opacity: 0.4}]}>
             <Text style={s.blue}>
               {saved ? 'Feedback saved' : 'Save feedback'}
             </Text>
           </Pressable>
         </Section>
+        ) : null}
         <Section title="Shipping Details">
           <InfoRow
             icon="person-outline"
@@ -1423,20 +1514,28 @@ export function OrderDetailsScreen({navigation, route}) {
         visible={cancelDialog === 'confirm'}
         danger
         icon="highlight-off"
-        title="Cancel order?"
-        message="You can only cancel before the shop accepts it."
-        confirmLabel="Cancel order"
+        title={cancelTarget?.name ? `Cancel ${cancelTarget.name}?` : 'Cancel entire order?'}
+        message={
+          cancelTarget?.name
+            ? 'Only these items are cancelled; the rest of the order continues. You can cancel only before the shop accepts it.'
+            : 'All items in this order will be cancelled. You can cancel only before the shop accepts it.'
+        }
+        confirmLabel="Yes, cancel"
         cancelLabel="Keep order"
         onCancel={() => setCancelDialog(null)}
         onConfirm={async () => {
+          const target = cancelTarget;
           setCancelDialog(null);
           setCancelling(true);
           try {
-            const done = await cancelLiveOrder(
-              order.realOrderIds || order.realOrderId,
-            );
-            if (done) {
-              navigation.goBack();
+            const {cancelled, total} = await cancelLiveOrder(target.ids, {
+              customerId: auth.customerId,
+            });
+            refreshOrders();
+            if (cancelled === total) {
+              setCancelDialog('done');
+            } else if (cancelled > 0) {
+              setCancelDialog('partial');
             } else {
               setCancelDialog('accepted');
             }
@@ -1447,12 +1546,24 @@ export function OrderDetailsScreen({navigation, route}) {
         }}
       />
       <ConfirmDialog
-        visible={cancelDialog === 'accepted' || cancelDialog === 'failed'}
+        visible={['done', 'partial', 'accepted', 'failed'].includes(cancelDialog)}
         hideCancel
-        icon="info-outline"
-        title={cancelDialog === 'accepted' ? 'Cannot cancel' : 'Could not cancel'}
+        icon={cancelDialog === 'done' ? 'check-circle-outline' : 'info-outline'}
+        title={
+          cancelDialog === 'done'
+            ? 'Cancelled'
+            : cancelDialog === 'partial'
+            ? 'Partly cancelled'
+            : cancelDialog === 'accepted'
+            ? 'Cannot cancel'
+            : 'Could not cancel'
+        }
         message={
-          cancelDialog === 'accepted'
+          cancelDialog === 'done'
+            ? 'Your cancellation has been placed.'
+            : cancelDialog === 'partial'
+            ? 'Some items were cancelled. The shop has already accepted the rest.'
+            : cancelDialog === 'accepted'
             ? 'The shop has already accepted this order.'
             : 'Please try again.'
         }

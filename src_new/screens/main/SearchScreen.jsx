@@ -18,6 +18,7 @@ import {moreArtwork} from '../../config/catalog';
 import {colors, Page} from '../../components/main/MainUi';
 import {
   getLiveCategories,
+  getLiveSubcategories,
   liveCatalogEnabled,
   searchAll,
 } from '../../services/catalogService';
@@ -63,6 +64,24 @@ export default function SearchScreen({navigation}) {
       clearTimeout(timeout);
     };
   }, [query, locationId]);
+  // One subcategory from each category, shown under the category grid.
+  const [featuredSubs, setFeaturedSubs] = useState([]);
+  useEffect(() => {
+    if (!liveCatalogEnabled || !locationId || !liveCategories?.length) {
+      return undefined;
+    }
+    let active = true;
+    Promise.all(
+      liveCategories.slice(0, 9).map(category =>
+        getLiveSubcategories({categoryId: category.id, locationId})
+          .then(subs => (subs[0] ? {category, sub: subs[0]} : null))
+          .catch(() => null),
+      ),
+    ).then(list => active && setFeaturedSubs(list.filter(Boolean)));
+    return () => {
+      active = false;
+    };
+  }, [liveCategories, locationId]);
   const liveSearchCategories = [
     ...(liveCategories || []).slice(0, 9),
     {id: 'more', name: 'More', art: moreArtwork},
@@ -223,8 +242,10 @@ export default function SearchScreen({navigation}) {
                     resizeMode="contain"
                   />
                 </View>
-                <View style={{flex: 1}}>
-                  <Text style={styles.resultName}>{result.name}</Text>
+                <View style={styles.resultText}>
+                  <Text style={styles.resultName} numberOfLines={2}>
+                    {result.name}
+                  </Text>
                   <Text style={styles.action}>{result.tagline}</Text>
                 </View>
                 <MaterialIcons
@@ -281,6 +302,44 @@ export default function SearchScreen({navigation}) {
                 ))}
               </View>
             </View>
+            {featuredSubs.length ? (
+              <View style={styles.subSection}>
+                <Text style={styles.title}>Popular Sub Categories</Text>
+                <View style={styles.categoryGrid}>
+                  {featuredSubs.map(({category, sub}) => (
+                    <Pressable
+                      key={`${category.id}-${sub.id}`}
+                      style={styles.categoryCard}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${sub.name} in ${category.name}`}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        remember(sub.name);
+                        navigation.navigate('ProductList', {
+                          categoryId: category.id,
+                          subcategoryId: sub.id,
+                          shopId: sub.shopIds[0],
+                          shopItemsTableName: category.shopItemsTableName,
+                        });
+                      }}>
+                      <View style={styles.categoryIcon}>
+                        <Image
+                          source={sub.art.source}
+                          style={styles.categoryImage}
+                          resizeMode="contain"
+                        />
+                      </View>
+                      <Text
+                        allowFontScaling={false}
+                        numberOfLines={2}
+                        style={styles.categoryName}>
+                        {sub.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            ) : null}
             <View style={styles.recents}>
               <View style={styles.sectionHeading}>
                 <Text style={styles.title}>Recent Searches</Text>
@@ -443,6 +502,7 @@ const makeStyles = s =>
       lineHeight: 14 * s,
       color: '#101010',
     },
+    subSection: {marginHorizontal: 8 * s, marginTop: 12 * s},
     recents: {marginHorizontal: 30 * s, marginTop: 24 * s},
     sectionHeading: {
       minHeight: 26 * s,
@@ -510,9 +570,8 @@ const makeStyles = s =>
       overflow: 'hidden',
     },
     resultImage: {width: 38 * s, height: 38 * s},
+    resultText: {flex: 1, marginLeft: 12 * s, justifyContent: 'center'},
     resultName: {
-      flex: 1,
-      marginLeft: 12 * s,
       fontSize: 14 * s,
       color: '#111B34',
     },

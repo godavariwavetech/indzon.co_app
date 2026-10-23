@@ -1,6 +1,7 @@
 import {Text, TextInput} from '../../components/Typography';
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
+  Animated,
   Keyboard,
   Pressable,
   StyleSheet,
@@ -21,6 +22,28 @@ import {setProfileName} from '../../redux/reducers/commerce';
 import {ENABLE_LIVE_DATA} from '../../config/appMode';
 import authService from '../../services/authService';
 import {sanitizeOtp} from '../../utils/phone';
+
+// Caret shown in the box that takes the next digit (the real input is hidden).
+function BlinkingCursor() {
+  const opacity = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const blink = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {toValue: 0, duration: 500, useNativeDriver: true}),
+        Animated.timing(opacity, {toValue: 1, duration: 500, useNativeDriver: true}),
+      ]),
+    );
+    blink.start();
+    return () => blink.stop();
+  }, [opacity]);
+  return (
+    <Animated.View
+      pointerEvents="none"
+      accessible={false}
+      style={[styles.cursor, {opacity}]}
+    />
+  );
+}
 
 export default function OtpVerificationScreen({navigation, route}) {
   const phoneNumber = route?.params?.phoneNumber || '';
@@ -169,6 +192,9 @@ export default function OtpVerificationScreen({navigation, route}) {
                     error && styles.invalidBox,
                   ]}>
                   <Text style={styles.digit}>{otp[index] || ''}</Text>
+                  {focused && !pending && index === otp.length ? (
+                    <BlinkingCursor />
+                  ) : null}
                 </View>
               ))}
               <TextInput
@@ -285,6 +311,13 @@ const styles = StyleSheet.create({
   activeBox: {borderColor: '#878787'},
   invalidBox: {borderColor: '#C62828'},
   digit: {color: '#080808', fontSize: 20},
+  cursor: {
+    position: 'absolute',
+    width: 2,
+    height: 22,
+    borderRadius: 1,
+    backgroundColor: '#3832FF',
+  },
   hiddenInput: {
     ...StyleSheet.absoluteFillObject,
     opacity: 0.03,
