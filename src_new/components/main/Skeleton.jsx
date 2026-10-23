@@ -82,13 +82,16 @@ export const LoadingImage = forwardRef(function LoadingImage(
 ) {
   const uri = source && typeof source === 'object' ? source.uri : null;
   const [failedUri, setFailedUri] = useState(null);
+  const [loadedUri, setLoadedUri] = useState(null);
   if (uri && failedUri === uri) {
     return <View style={[style, {backgroundColor: '#EFECF8'}]} />;
   }
   return (
     <NativeImage
       {...props}
-      style={style}
+      // a remote picture shows a soft tile until it has loaded instead of a blank hole
+      style={uri && loadedUri !== uri ? [style, {backgroundColor: '#EFECF8'}] : style}
+      onLoad={() => uri && setLoadedUri(uri)}
       source={source}
       resizeMethod={resizeMethod}
       fadeDuration={fadeDuration}
@@ -150,6 +153,24 @@ export function CategoryGridSkeleton({cardWidth, compact = true}) {
   );
 }
 
+// Left-hand category rail on the Categories screen while the list loads.
+export function CategorySidebarSkeleton({size}) {
+  return (
+    <SkeletonGroup style={{alignItems: 'center', paddingTop: 10, gap: 14}}>
+      {Array.from({length: 8}, (_, index) => (
+        <View key={index} style={{alignItems: 'center', gap: 6}}>
+          <SkeletonBlock
+            width={size}
+            height={size}
+            style={{borderRadius: size / 2}}
+          />
+          <SkeletonBlock width={size * 0.7} height={9} />
+        </View>
+      ))}
+    </SkeletonGroup>
+  );
+}
+
 export function HomeBannerSkeleton({width, height}) {
   return (
     <SkeletonGroup style={{marginHorizontal: 16, marginVertical: 12}}>
@@ -193,6 +214,22 @@ export function HomeDealsSkeleton({size}) {
   );
 }
 
+// Product grid on the product list screen (two columns, same card shape as the real cards).
+export function ProductGridSkeleton({width, count = 6}) {
+  return (
+    <SkeletonGroup style={{flexDirection: 'row', flexWrap: 'wrap', gap: 12}}>
+      {Array.from({length: count}, (_, index) => (
+        <View key={index} style={[styles.card, {width}]}>
+          <SkeletonBlock height={width * 0.85} style={{borderRadius: 10}} />
+          <SkeletonBlock width="85%" height={12} style={{marginTop: 10}} />
+          <SkeletonBlock width="55%" height={12} style={{marginTop: 6}} />
+          <SkeletonBlock width="40%" height={14} style={{marginTop: 8}} />
+        </View>
+      ))}
+    </SkeletonGroup>
+  );
+}
+
 export function HomeProductsSkeleton({width}) {
   return (
     <SkeletonGroup style={styles.homeProducts}>
@@ -201,6 +238,29 @@ export function HomeProductsSkeleton({width}) {
           <SkeletonBlock height={width * 0.7} style={{borderRadius: 10}} />
           <SkeletonBlock width="85%" height={12} style={{marginTop: 10}} />
           <SkeletonBlock width="50%" height={12} style={{marginTop: 6}} />
+        </View>
+      ))}
+    </SkeletonGroup>
+  );
+}
+
+// My Orders while the orders load: the order card with its header and two shipments.
+export function OrdersSkeleton() {
+  return (
+    <SkeletonGroup style={{gap: 18}}>
+      {[0, 1].map(index => (
+        <View key={index} style={styles.orderSkeleton}>
+          <SkeletonBlock height={64} style={{borderRadius: 13}} />
+          {[0, 1].map(shipment => (
+            <View key={shipment} style={styles.shipmentSkeleton}>
+              <SkeletonBlock width={90} height={9} />
+              <SkeletonBlock width="55%" height={15} style={{marginTop: 10}} />
+              <View style={styles.shipmentSkeletonFooter}>
+                <SkeletonBlock width={70} height={11} />
+                <SkeletonBlock width={96} height={34} style={{borderRadius: 10}} />
+              </View>
+            </View>
+          ))}
         </View>
       ))}
     </SkeletonGroup>
@@ -252,6 +312,27 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
     paddingHorizontal: 16,
+  },
+  orderSkeleton: {
+    padding: 12,
+    gap: 10,
+    borderRadius: 17,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E6E8F2',
+  },
+  shipmentSkeleton: {
+    padding: 12,
+    borderRadius: 15,
+    backgroundColor: '#F7F8FC',
+    borderWidth: 1,
+    borderColor: '#ECEEF5',
+  },
+  shipmentSkeletonFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 14,
   },
   footer: {
     flexDirection: 'row',

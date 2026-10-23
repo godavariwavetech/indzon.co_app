@@ -7,6 +7,7 @@ import HomeNavigation from '../../src/navigation/RentalNavigation';
 import LocationSetupScreen from '../screens/location/LocationSetupScreen';
 import NamePromptScreen from '../screens/auth/NamePromptScreen';
 import AddAddressScreen from '../screens/location/AddAddressScreen';
+import ServiceAreasScreen from '../screens/location/ServiceAreasScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import OtpVerificationScreen from '../screens/auth/OtpVerificationScreen';
 import AddressListScreen from '../screens/location/AddressListScreen';
@@ -49,6 +50,7 @@ const staticRoutes = [
   {name: 'PrivacyPolicy', component: PrivacyPolicyScreen},
   {name: 'LocationSetup', component: LocationSetupScreen},
   {name: 'NamePrompt', component: NamePromptScreen},
+  {name: 'ServiceAreas', component: ServiceAreasScreen},
   {name: 'AddAddress', component: AddAddressScreen},
   {name: 'AddressList', component: AddressListScreen},
   {name: 'Home', component: MainTabs},

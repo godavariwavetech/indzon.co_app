@@ -13,7 +13,6 @@ import {
 import {Text, TextInput} from '../../components/ReadableText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import LinearGradient from 'react-native-linear-gradient';
 import {useSelector} from 'react-redux';
 import {moreArtwork} from '../../config/catalog';
 import {colors, Page} from '../../components/main/MainUi';
@@ -174,11 +173,6 @@ export default function SearchScreen({navigation}) {
       </View>
 
       <View style={styles.body}>
-      <LinearGradient
-        pointerEvents="none"
-        colors={['#E4E2FF', '#FFFFFF']}
-        style={styles.belowInput}
-      />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
@@ -361,7 +355,7 @@ const makeStyles = s =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12 * s,
-      backgroundColor: '#FFFFFF',
+      // transparent so the page's lilac-to-white gradient runs behind the input
       zIndex: 2,
     },
     back: {width: 24 * s, height: 50 * s, justifyContent: 'center'},
@@ -390,13 +384,6 @@ const makeStyles = s =>
       fontSize: 14 * s,
     },
     body: {flex: 1},
-    belowInput: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      height: 150 * s,
-    },
     scroll: {flex: 1},
     content: {flexGrow: 1, paddingTop: 28 * s, paddingBottom: 28 * s},
     dismissPanel: {...StyleSheet.absoluteFillObject, zIndex: 2},

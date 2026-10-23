@@ -73,6 +73,7 @@ const staticAuthPersistConfig = {
     'locationId',
     'token',
     'customerId',
+    'customerName',
     'isLogged',
     'profileData',
   ],

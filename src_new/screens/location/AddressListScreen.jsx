@@ -1,6 +1,13 @@
 import {Text} from '../../components/Typography';
 import React, {useCallback, useState} from 'react';
-import {FlatList, Pressable, StatusBar, StyleSheet, View} from 'react-native';
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StatusBar,
+  StyleSheet,
+  View,
+} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
@@ -20,6 +27,7 @@ export default function AddressListScreen({navigation}) {
   const {customerId, deliveryAddress} = useSelector(state => state.Auth);
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [pendingDelete, setPendingDelete] = useState(null);
   useFocusEffect(
@@ -51,6 +59,23 @@ export default function AddressListScreen({navigation}) {
       };
     }, [customerId]),
   );
+  // An address picked automatically at login is not stored on the server; keep it in the list.
+  const listed =
+    deliveryAddress?.storage === 'derived' &&
+    !records.some(record => record.id === deliveryAddress.id)
+      ? [deliveryAddress, ...records]
+      : records;
+  const refresh = async () => {
+    setRefreshing(true);
+    try {
+      setRecords(await locationService.getSavedAddresses(customerId));
+      setError('');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const select = async address => {
     dispatch(setDeliveryAddress(address));
     dispatch(updateUserAddress(address));
@@ -123,7 +148,10 @@ export default function AddressListScreen({navigation}) {
         <AddressListSkeleton />
       ) : (
         <FlatList
-          data={records}
+          data={listed}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={refresh} />
+          }
           keyExtractor={item => item.id}
           contentContainerStyle={styles.list}
           ListEmptyComponent={

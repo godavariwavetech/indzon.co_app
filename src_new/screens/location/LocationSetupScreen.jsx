@@ -3,10 +3,8 @@ import React, {useEffect, useRef, useState} from 'react';
 import {
   AccessibilityInfo,
   Animated,
-  ActivityIndicator,
   AppState,
   ImageBackground,
-  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -36,8 +34,6 @@ export default function LocationSetupScreen({navigation}) {
     state => state.Auth,
   );
   const liveCustomer = Boolean(ENABLE_LIVE_DATA && customerId);
-  const [areas, setAreas] = useState([]);
-  const [choosing, setChoosing] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const busy = useRef(false);
@@ -104,31 +100,6 @@ export default function LocationSetupScreen({navigation}) {
     await (STATIC_APP_FLOW ? staticPersistor : persistorStore).flush();
     navigation.reset({index: 0, routes: [{name: 'Home'}]});
   };
-  const loadAreas = async () => {
-    try {
-      setAreas(await locationService.getServiceAreas());
-    } catch {
-      setAreas([]);
-    }
-  };
-  const chooseArea = async area => {
-    if (choosing) {
-      return;
-    }
-    setChoosing(area.id);
-    try {
-      const {address} = await locationService.pickAddressForArea({
-        customer,
-        coordinates: {latitude: area.latitude, longitude: area.longitude},
-        area: {id: area.id, name: area.name},
-        label: area.name,
-      });
-      await select(address);
-    } catch {
-      setChoosing(null);
-      setError('Could not select that area. Please try again.');
-    }
-  };
   const locate = async () => {
     if (busy.current) {
       return;
@@ -164,9 +135,8 @@ export default function LocationSetupScreen({navigation}) {
         }
         if (area === null) {
           setError(
-            "We don't deliver to your current location yet. Choose a serviceable area below or pick a place on the map.",
+            "We don't deliver to your current location yet. Choose one of our service areas or pick a place on the map.",
           );
-          loadAreas();
           return;
         }
       }
@@ -176,9 +146,6 @@ export default function LocationSetupScreen({navigation}) {
         setError(
           err.message || 'Could not get your location. Please try again.',
         );
-        if (liveCustomer) {
-          loadAreas();
-        }
       }
     } finally {
       if (version === attempt.current) {
@@ -239,33 +206,12 @@ export default function LocationSetupScreen({navigation}) {
         </View>
         <View style={styles.spacer} />
         {error ? (
-          <Text
+          <View
             style={styles.error}
             accessibilityRole="alert"
             accessibilityLiveRegion="polite">
-            {error}
-          </Text>
-        ) : null}
-        {areas.length ? (
-          <View style={styles.areas}>
-            <Text style={styles.areasLabel}>Serviceable areas</Text>
-            {areas.map(area => (
-              <Pressable
-                key={area.id}
-                style={styles.area}
-                onPress={() => chooseArea(area)}
-                disabled={Boolean(choosing)}
-                accessibilityRole="button"
-                accessibilityLabel={`Deliver to ${area.name}`}>
-                <MaterialIcons name="location-on" size={21} color="#3832FF" />
-                <Text style={styles.areaName}>{area.name}</Text>
-                {choosing === area.id ? (
-                  <ActivityIndicator color="#3832FF" />
-                ) : (
-                  <MaterialIcons name="chevron-right" size={21} color="#9299AA" />
-                )}
-              </Pressable>
-            ))}
+            <MaterialIcons name="info-outline" size={20} color="#3832FF" />
+            <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
         <View style={styles.actions}>
@@ -275,6 +221,14 @@ export default function LocationSetupScreen({navigation}) {
             loading={loading}
             testID="location-device"
           />
+          {liveCustomer ? (
+            <LocationButton
+              label="Choose Service Area"
+              secondary
+              onPress={() => navigation.navigate('ServiceAreas')}
+              testID="location-areas"
+            />
+          ) : null}
           <LocationButton
             label="Enter Delivery Location Manually"
             secondary
@@ -320,27 +274,18 @@ const styles = StyleSheet.create({
   artwork: {width: '100%', maxWidth: 400},
   spacer: {flexGrow: 1, minHeight: 24},
   actions: {width: '100%', maxWidth: 480, gap: 14},
-  areas: {width: '100%', maxWidth: 480, marginBottom: 16},
-  areasLabel: {fontSize: 12, fontWeight: '700', color: '#6B7280', marginBottom: 8},
-  area: {
+  error: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    minHeight: 50,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    gap: 8,
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: '#EEF0FF',
     borderWidth: 1,
-    borderColor: '#E1E5F0',
-    marginBottom: 8,
-  },
-  areaName: {flex: 1, fontSize: 15, fontWeight: '600', color: '#202427'},
-  error: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: '#C62828',
+    borderColor: '#D6DAFF',
     marginBottom: 16,
     width: '100%',
     maxWidth: 480,
   },
+  errorText: {flex: 1, fontSize: 13, lineHeight: 19, color: '#2A2F6B'},
 });

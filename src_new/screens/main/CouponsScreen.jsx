@@ -15,6 +15,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {Page} from '../../components/main/MainUi';
+import GradientButton from '../../components/main/GradientButton';
 import {LoadingImage as Image} from '../../components/main/Skeleton';
 import {money} from '../../config/catalog';
 import {setCouponCode} from '../../redux/reducers/commerce';
@@ -278,21 +279,18 @@ export default function CouponsScreen({navigation}) {
                   onCopy={copy}
                   style={styles.featuredCode}
                 />
-                <Pressable
-                  accessibilityRole="button"
+                <GradientButton
                   accessibilityLabel={`Apply ${featured.code}`}
                   onPress={() => apply(featured.code)}
-                  style={[
-                    styles.featuredApply,
-                    selected === featured.code && styles.applied,
-                  ]}>
-                  <Text
-                    allowFontScaling={false}
-                    numberOfLines={1}
-                    style={[styles.applyText, styles.featuredApplyText]}>
-                    {selected === featured.code ? 'Applied' : 'Apply Now'}
-                  </Text>
-                </Pressable>
+                  height={44}
+                  colors={
+                    selected === featured.code
+                      ? ['#16845E', '#16845E']
+                      : undefined
+                  }
+                  style={styles.featuredApply}
+                  label={selected === featured.code ? 'Applied' : 'Apply Now'}
+                />
               </View>
               {featuredArt ? (
                 <View pointerEvents="none" style={styles.featuredArt}>
@@ -350,19 +348,14 @@ export default function CouponsScreen({navigation}) {
                   {offer.caption}
                 </Text>
                 <CodeBox code={offer.code} color={theme.ink} onCopy={copy} />
-                <Pressable
-                  accessibilityRole="button"
+                <GradientButton
                   accessibilityLabel={`Apply ${offer.code}`}
-                  accessibilityState={{selected: isApplied}}
                   onPress={() => apply(offer.code)}
-                  style={[
-                    styles.cardApply,
-                    {backgroundColor: isApplied ? '#16845E' : theme.ink},
-                  ]}>
-                  <Text allowFontScaling={false} style={styles.applyText}>
-                    {isApplied ? 'Applied' : 'Apply Now'}
-                  </Text>
-                </Pressable>
+                  height={40}
+                  colors={isApplied ? ['#16845E', '#16845E'] : undefined}
+                  style={styles.cardApply}
+                  label={isApplied ? 'Applied' : 'Apply Now'}
+                />
                 <Text style={styles.cardFoot}>
                   {offer.minBill ? `Min. order ₹${offer.minBill}` : 'No minimum order'}
                 </Text>
@@ -564,14 +557,7 @@ const styles = StyleSheet.create({
   featuredTitle: {fontSize: 21, fontWeight: '800', color: '#101223', maxWidth: 150},
   featuredCaption: {fontSize: 13, color: '#757A8A', marginTop: 4, marginBottom: 10, maxWidth: 150},
   featuredActions: {flexDirection: 'row', alignItems: 'center', gap: 8},
-  featuredApply: {
-    backgroundColor: '#3832FF',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  featuredApply: {minWidth: 96},
   featuredCode: {flex: 1, marginTop: 0, minHeight: 44, borderRadius: 12, paddingHorizontal: 8},
   featuredApplyText: {fontSize: 13},
   featuredArt: {position: 'absolute', right: 6, top: 6},
@@ -639,13 +625,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   codeText: {flexShrink: 1, fontSize: 14, fontWeight: '800', letterSpacing: 0.5},
-  cardApply: {
-    minHeight: 42,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
+  cardApply: {marginTop: 10},
   cardFoot: {fontSize: 12, color: '#707585', textAlign: 'center', marginTop: 8},
   empty: {textAlign: 'center', color: '#707585', marginTop: 24, fontSize: 14},
 });

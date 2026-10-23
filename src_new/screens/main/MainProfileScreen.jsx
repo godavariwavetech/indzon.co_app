@@ -1,17 +1,23 @@
 import {Text} from '../../components/Typography';
-import React, {useState} from 'react';
+import React, {useCallback, useState} from 'react';
+import {useFocusEffect} from '@react-navigation/native';
 import {Pressable, ScrollView, StyleSheet, View} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
-import {actionLogout, deleteAccount} from '../../redux/reducers/auth';
+import {
+  actionLogout,
+  deleteAccount,
+  getCustomerProfile,
+  setCustomerName,
+} from '../../redux/reducers/auth';
 import {
   clearSelectedAddress,
   setUserDetails,
 } from '../../redux/reducers/addressSlice';
 import {ENABLE_LIVE_DATA} from '../../config/appMode';
 import locationService from '../../services/locationService';
-import {resetCommerce} from '../../redux/reducers/commerce';
+import {resetCommerce, setProfileDetails} from '../../redux/reducers/commerce';
 import {staticPersistor} from '../../redux/store';
 import {
   colors,
@@ -98,7 +104,38 @@ export default function MainProfileScreen({navigation}) {
   const auth = useSelector(state => state.Auth);
   const profileName = useSelector(state => state.commerce.profileName);
   const displayName =
-    profileName || auth.deliveryAddress?.customer_name || 'INDZON Member';
+    auth.customerName ||
+    profileName ||
+    auth.deliveryAddress?.customer_name ||
+    'INDZON Member';
+
+  // Load the saved name from the server so it shows here without opening My Account first.
+  useFocusEffect(
+    useCallback(() => {
+      if (!ENABLE_LIVE_DATA || !auth.customerId) {
+        return undefined;
+      }
+      let active = true;
+      dispatch(getCustomerProfile({customer_id: auth.customerId}))
+        .unwrap()
+        .then(data => {
+          const profile = Array.isArray(data?.data) ? data.data[0] : null;
+          if (active && profile?.customer_name) {
+            dispatch(setCustomerName(profile.customer_name));
+            dispatch(
+              setProfileDetails({
+                name: profile.customer_name,
+                email: profile.customer_email || '',
+              }),
+            );
+          }
+        })
+        .catch(() => {});
+      return () => {
+        active = false;
+      };
+    }, [auth.customerId, dispatch]),
+  );
 
   const logout = async () => {
     setSettingsVisible(false);

@@ -2,6 +2,8 @@ import {Text} from '../Typography';
 import React, {
   useEffect,
   useLayoutEffect,
+  memo,
+  useCallback,
   useMemo,
   useRef,
   useState,
@@ -17,7 +19,7 @@ import {
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {freeMaps} from '../../config/freeMaps';
-import {getMapTile} from '../../services/mapTiles';
+import {tileUrl} from '../../services/mapTiles';
 import {
   cameraForGesture,
   panCoordinates,
@@ -29,41 +31,31 @@ import {
   TILE_SIZE,
 } from '../../utils/mapGeometry';
 
-function Tile({tile, retry, onError}) {
-  const [uri, setUri] = useState(null);
-  const errorCallback = useRef(onError);
-  errorCallback.current = onError;
-  useEffect(() => {
-    let mounted = true;
-    getMapTile({x: tile.x, y: tile.y, z: tile.z}).then(
-      value => {
-        if (mounted) {
-          setUri(value);
-        }
-      },
-      () => {
-        if (mounted) {
-          errorCallback.current();
-        }
-      },
-    );
-    return () => {
-      mounted = false;
-    };
-  }, [tile.x, tile.y, tile.z, retry]);
-  return uri ? (
+// Tiles are shown straight from their URL so the native image cache does the loading and decoding
+// off the JS thread (no base64 round trip), and an already-seen tile appears with no blank frame.
+const Tile = memo(function Tile({tile, onError}) {
+  const source = useMemo(
+    () => ({
+      uri: tileUrl(tile),
+      headers: {'User-Agent': freeMaps.userAgent},
+      cache: 'force-cache',
+    }),
+    [tile],
+  );
+  return (
     <Image
-      source={{uri}}
+      source={source}
       resizeMode="stretch"
       fadeDuration={0}
+      onError={onError}
       style={[
         styles.tile,
         {left: tile.left, top: tile.top, width: tile.size, height: tile.size},
       ]}
       accessible={false}
     />
-  ) : null;
-}
+  );
+});
 
 function eventPoints(event, origin) {
   return (event.nativeEvent.touches || [])
@@ -80,6 +72,7 @@ function eventPoints(event, origin) {
     .filter(point => Number.isFinite(point.x) && Number.isFinite(point.y));
 }
 
+const noop = () => {};
 const fingerSignature = points =>
   points
     .map(point => point.id)
@@ -106,6 +99,7 @@ export default function FreeMap({
   const [camera, setCamera] = useState({center, zoom: 17});
   const [failed, setFailed] = useState(false);
   const [retry, setRetry] = useState(0);
+  const markFailed = useCallback(() => setFailed(true), []);
   const cameraRef = useRef(camera);
   const propCenter = useRef(center);
   const latest = useRef({});
@@ -274,6 +268,23 @@ export default function FreeMap({
       ),
     [camera, size.width, size.height, anchor.y, anchorRatio],
   );
+  // A coarser layer (one zoom level up) sits underneath: while the sharp tiles of a new zoom level or
+  // a newly revealed edge load, the blurry parent shows through instead of a blank map.
+  const fallbackTiles = useMemo(() => {
+    const parentZoom = Math.floor(camera.zoom) - 1;
+    if (parentZoom < freeMaps.minimumZoom - 1 || parentZoom < 0) {
+      return [];
+    }
+    return visibleTiles(
+      camera.center,
+      camera.zoom,
+      size.width,
+      size.height,
+      size.height ? anchor.y / size.height : anchorRatio,
+      TILE_SIZE,
+      parentZoom,
+    ).map(tile => ({...tile, key: `parent-${tile.key}`}));
+  }, [camera, size.width, size.height, anchor.y, anchorRatio]);
 
   const responder = useMemo(
     () =>
@@ -475,12 +486,14 @@ export default function FreeMap({
               ],
             },
           ]}>
+          {fallbackTiles.map(tile => (
+            <Tile key={`${tile.key}#${retry}`} tile={tile} onError={noop} />
+          ))}
           {tiles.map(tile => (
             <Tile
-              key={tile.key}
+              key={`${tile.key}#${retry}`}
               tile={tile}
-              retry={retry}
-              onError={() => setFailed(true)}
+              onError={markFailed}
             />
           ))}
         </Animated.View>

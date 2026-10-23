@@ -1,6 +1,5 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {
-  Alert,
   AppState,
   Modal,
   Platform,
@@ -21,6 +20,7 @@ import {
   RESULTS,
 } from 'react-native-permissions';
 import {STATIC_APP_FLOW} from '../../config/appMode';
+import ConfirmDialog from './ConfirmDialog';
 
 const locationPermission =
   Platform.OS === 'ios'
@@ -35,6 +35,8 @@ export default function SettingsModal({visible, onClose, onLogout, onDelete}) {
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
+  const [confirming, setConfirming] = useState(null);
+  const [notice, setNotice] = useState(null);
   const refresh = useCallback(async () => {
     try {
       const [gps, notices, alternate] = await Promise.all([
@@ -89,41 +91,30 @@ export default function SettingsModal({visible, onClose, onLogout, onDelete}) {
       }
       await refresh();
     } catch {
-      Alert.alert(
-        'Settings unavailable',
-        'Please update permissions in your device settings.',
-      );
+      setNotice({
+        title: 'Settings unavailable',
+        message: 'Please update permissions in your device settings.',
+      });
     } finally {
       setBusy(false);
     }
   };
-  const confirmAction = deleting => {
-    Alert.alert(
-      deleting ? 'Delete account?' : 'Log out of INDZON?',
-      deleting
-        ? STATIC_APP_FLOW
-          ? 'This removes your profile, saved addresses, cart and wishlist from this device.'
-          : 'Your account will be deleted. This action cannot be undone.'
-        : 'You can sign in again from the login screen.',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: deleting ? 'Delete account' : 'Log out',
-          style: 'destructive',
-          onPress: async () => {
-            setBusy(true);
-            try {
-              await (deleting ? onDelete() : onLogout());
-            } catch {
-              Alert.alert('Unable to complete action', 'Please try again.');
-            } finally {
-              setBusy(false);
-            }
-          },
-        },
-      ],
-    );
+  const runAction = async () => {
+    const deleting = confirming === 'delete';
+    setConfirming(null);
+    setBusy(true);
+    try {
+      await (deleting ? onDelete() : onLogout());
+    } catch {
+      setNotice({
+        title: 'Unable to complete action',
+        message: 'Please try again.',
+      });
+    } finally {
+      setBusy(false);
+    }
   };
+  const confirmAction = deleting => setConfirming(deleting ? 'delete' : 'logout');
   return (
     <Modal
       visible={visible}
@@ -204,6 +195,31 @@ export default function SettingsModal({visible, onClose, onLogout, onDelete}) {
           </View>
         </View>
       </View>
+      <ConfirmDialog
+        visible={Boolean(confirming)}
+        icon={confirming === 'delete' ? 'delete-outline' : 'logout'}
+        danger
+        title={confirming === 'delete' ? 'Delete account?' : 'Log out of INDZON?'}
+        message={
+          confirming === 'delete'
+            ? STATIC_APP_FLOW
+              ? 'This removes your profile, saved addresses, cart and wishlist from this device.'
+              : 'Your account will be deleted. This action cannot be undone.'
+            : 'You can sign in again from the login screen.'
+        }
+        confirmLabel={confirming === 'delete' ? 'Delete account' : 'Log out'}
+        onConfirm={runAction}
+        onCancel={() => setConfirming(null)}
+      />
+      <ConfirmDialog
+        visible={Boolean(notice)}
+        hideCancel
+        title={notice?.title || ''}
+        message={notice?.message || ''}
+        confirmLabel="OK"
+        onConfirm={() => setNotice(null)}
+        onCancel={() => setNotice(null)}
+      />
     </Modal>
   );
 }

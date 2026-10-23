@@ -1,7 +1,6 @@
 import {Text, TextInput} from '../../components/Typography';
 import React, {useRef, useState} from 'react';
 import {
-  ActivityIndicator,
   Keyboard,
   Pressable,
   StyleSheet,
@@ -9,6 +8,7 @@ import {
 } from 'react-native';
 import {useDispatch} from 'react-redux';
 import ShoppingLoginLayout from '../../components/auth/ShoppingLoginLayout';
+import GradientButton from '../../components/main/GradientButton';
 import Svg, {Path} from 'react-native-svg';
 import {DEFAULT_RESEND_SECONDS, OTP_LENGTH} from '../../config/authFlow';
 import {useCountdown} from '../../hooks/useCountdown';
@@ -226,28 +226,14 @@ export default function OtpVerificationScreen({navigation, route}) {
             </Pressable>
           </>
         ) : null}
-        <Pressable
+        <GradientButton
           onPress={submit}
-          disabled={verified || Boolean(pending)}
-          accessibilityRole="button"
-          accessibilityLabel={verified ? 'Verified' : 'Continue'}
-          accessibilityState={{
-            disabled: verified || Boolean(pending),
-            busy: pending === 'verify',
-          }}
-          style={({pressed}) => [
-            styles.button,
-            (pressed || pending || verified) && styles.dimmed,
-          ]}
-          testID="otp-continue">
-          {pending === 'verify' ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.buttonText}>
-              {verified ? 'Verified' : 'Continue'}
-            </Text>
-          )}
-        </Pressable>
+          disabled={verified}
+          loading={pending === 'verify'}
+          label={verified ? 'Verified' : 'Continue'}
+          style={styles.button}
+          testID="otp-continue"
+        />
       </View>
     </ShoppingLoginLayout>
   );
@@ -315,24 +301,6 @@ const styles = StyleSheet.create({
   resend: {alignSelf: 'center', marginTop: 24, padding: 4},
   resendText: {color: '#3832FF', fontSize: 16, lineHeight: 22},
   muted: {color: '#606060'},
-  button: {
-    width: '76%',
-    minHeight: 48,
-    backgroundColor: '#3832FF',
-    borderWidth: 1,
-    borderColor: '#D5D5DE',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '700',
-  },
+  button: {width: '76%', marginTop: 18},
   dimmed: {opacity: 0.65},
 });
