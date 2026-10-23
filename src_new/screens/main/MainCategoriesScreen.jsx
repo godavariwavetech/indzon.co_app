@@ -1,6 +1,5 @@
 import {Text} from '../../components/Typography';
 import React, {
-  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
@@ -48,6 +47,9 @@ export const matchesFilter = (product, filter) =>
     ? product.price < 500
     : filter === 'toprated'
     ? Number(product.rating) >= 4.5
+    : filter === 'topdiscount'
+    ? product.originalPrice > 0 &&
+      1 - product.price / product.originalPrice >= 0.3
     : true;
 
 function SubcategoryTile({sub, width, count, onPress, shadowsReady}) {
@@ -108,7 +110,6 @@ export default function MainCategoriesScreen({
   const [filterVisible, setFilterVisible] = useState(false);
   const [gridWidth, setGridWidth] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(0);
-  const deferredCategoryId = useDeferredValue(categoryId);
   const sidebar = useRef(null);
   const content = useRef(null);
   const categoryPositions = useRef({});
@@ -117,6 +118,12 @@ export default function MainCategoriesScreen({
   const [subcategories, setSubcategories] = useState([]);
   const [categoryItems, setCategoryItems] = useState([]);
   const [liveBanners, setLiveBanners] = useState([]);
+  // subcategories + item lists already fetched, by area and category, so going
+  // back to a category shows instantly instead of reloading
+  const loaded = useRef({});
+  // which category/area the tiles on screen belong to; until it matches the
+  // selected category the grid shows the skeleton, never the previous category
+  const [shownFor, setShownFor] = useState('');
   const [dataLoading, setDataLoading] = useState(liveCatalogEnabled);
   const [itemsLoading, setItemsLoading] = useState(liveCatalogEnabled);
   const [categoriesDone, setCategoriesDone] = useState(!liveCatalogEnabled);
@@ -160,7 +167,7 @@ export default function MainCategoriesScreen({
     content.current?.scrollTo({y: 0, animated: false});
   }, [categoryId]);
   const selected =
-    categoryList.find(item => item.id === deferredCategoryId) ||
+    categoryList.find(item => item.id === categoryId) ||
     categoryList[0] ||
     null;
   // Subcategories come from the backend; the items of the shops that stock
@@ -169,6 +176,16 @@ export default function MainCategoriesScreen({
   useEffect(() => {
     if (!liveCatalogEnabled || !selected || !locationId) {
       return;
+    }
+    const key = `${locationId}:${selected.id}`;
+    const cached = loaded.current[key];
+    if (cached?.items) {
+      setSubcategories(cached.subs);
+      setCategoryItems(cached.items);
+      setShownFor(key);
+      setDataLoading(false);
+      setItemsLoading(false);
+      return undefined;
     }
     let active = true;
     setDataLoading(true);
@@ -179,6 +196,7 @@ export default function MainCategoriesScreen({
         if (active) {
           setSubcategories(subs);
           setCategoryItems([]);
+          setShownFor(key);
           setDataLoading(false);
         }
         const shopIds = [...new Set(subs.flatMap(sub => sub.shopIds))];
@@ -190,6 +208,7 @@ export default function MainCategoriesScreen({
             }).catch(() => []),
           ),
         );
+        loaded.current[key] = {subs, items: lists.flat()};
         if (active) {
           setCategoryItems(lists.flat());
         }
@@ -198,6 +217,7 @@ export default function MainCategoriesScreen({
         if (active) {
           setSubcategories([]);
           setCategoryItems([]);
+          setShownFor(key);
         }
       })
       .finally(() => {
@@ -222,7 +242,7 @@ export default function MainCategoriesScreen({
     dataLoading ||
     // a filter or search needs the items, not just the tiles
     (itemsLoading && (filter !== 'all' || query.trim() !== '')) ||
-    deferredCategoryId !== categoryId;
+    shownFor !== `${locationId}:${selected?.id}`;
   const categoryBanner = liveBanners.find(
     banner => banner.categoryId === selected?.id,
   );
@@ -443,6 +463,7 @@ export default function MainCategoriesScreen({
               ['all', 'All products'],
               ['under500', 'Under ₹500'],
               ['toprated', 'Rating 4.5 and above'],
+              ['topdiscount', 'Top discounts (30% off or more)'],
             ].map(([id, label]) => (
               <Pressable
                 key={id}

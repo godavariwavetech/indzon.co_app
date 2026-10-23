@@ -20,6 +20,8 @@ export const mediaUrl = url =>
     ? url.replace(LOCAL_MEDIA, baseURL)
     : url;
 
+// Every catalog picture (categories, subcategories, products, banners, shops) is served
+// by the backend; the app bundles none of them.
 const categoryArt = url => ({
   source: {uri: mediaUrl(url)},
   background: require('../assets/main/references/category-background.png'),
@@ -32,6 +34,26 @@ const photoArt = url => ({
   resizeMode: 'contain',
   aspectRatio: 1,
 });
+
+// A product saved with variants (size, colour, storage...) is several rows sharing a
+// unique_code. Lists show it once, as its cheapest variant; the details screen
+// offers the rest.
+export function groupVariants(items) {
+  const best = new Map();
+  const order = [];
+  items.forEach(item => {
+    const key = item.uniqueCode
+      ? `${item.shopItemsTableName}:${item.uniqueCode}`
+      : item.id;
+    if (!best.has(key)) {
+      best.set(key, item);
+      order.push(key);
+    } else if (item.price < best.get(key).price) {
+      best.set(key, item);
+    }
+  });
+  return order.map(key => best.get(key));
+}
 
 export async function getLiveCategories() {
   const response = await api.post(endpoints.DADDY_GET_CATEGORIES, {});
@@ -150,7 +172,7 @@ export async function getSuggestedProducts({limit = 12, locationId} = {}) {
     location_id: Number(locationId) || 0,
   });
   const rows = Array.isArray(response.data?.data) ? response.data.data : [];
-  return rows.map(row => mapLiveItem(row, row.shop_items_tb_nm));
+  return groupVariants(rows.map(row => mapLiveItem(row, row.shop_items_tb_nm)));
 }
 
 // Delivery, packing, platform fee, donation and gst for a cart, from the dashboard's settings.
@@ -202,8 +224,8 @@ export async function getHomeSections({locationId} = {}) {
       name: row.category_name,
       art: categoryArt(row.category_image),
     })),
-    topDeals: items(data.top_deals),
-    suggested: items(data.suggested),
+    topDeals: groupVariants(items(data.top_deals)),
+    suggested: groupVariants(items(data.suggested)),
   };
 }
 
@@ -462,8 +484,13 @@ export function evaluateLiveCoupon(code, offers, items) {
       error: `Add ₹${(offer.minBill - amount).toFixed(0)} more to use this coupon.`,
     };
   }
+  // a percentage coupon is capped; a flat coupon (no percentage) takes its flat amount off
   const pctAmount = (amount * offer.percent) / 100;
-  const discount = offer.cap > 0 ? Math.min(pctAmount, offer.cap) : pctAmount;
+  const discount = offer.percent
+    ? offer.cap > 0
+      ? Math.min(pctAmount, offer.cap)
+      : pctAmount
+    : Math.min(offer.cap, amount);
   return {discount: Math.round(discount * 100) / 100, error: null, code: offer.code};
 }
 
@@ -572,6 +599,10 @@ export async function getLiveOrders({customerId}) {
       originalPrice,
       productIds: [],
       shopId: String(row.shop_id),
+      // what this shipment (one order row) charged on top of its items, and its coupon share,
+      // so a cancelled shipment can be left out of the bill
+      charges: addCharges(emptyCharges(), row),
+      coupon: Number(row.coupon_amount) || 0,
       // the customer's rating of this delivered shipment (0 = not rated yet)
       rating: Number(row.order_rating_status) || 0,
       ratingComment: row.rating_comment || '',
@@ -686,6 +717,7 @@ export async function getLiveOrderItems(realOrderId) {
     orderRowId: realOrderId,
     itemId: row.item_id,
     orderItemId: row.id,
+    gstPercent: Number(row.item_gst) || 0,
     myRating: Number(row.my_rating) || 0,
     myComment: row.my_comment || '',
     name: row.item_name,

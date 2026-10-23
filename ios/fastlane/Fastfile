@@ -28,7 +28,7 @@ platform :ios do
       clean: true,
       export_method: 'app-store',
       output_directory: '../build/ios',
-      output_name: 'Amaraa.ipa',
+      output_name: 'Indzon.ipa',
       xcargs: "DEVELOPMENT_TEAM=#{team_id} PRODUCT_BUNDLE_IDENTIFIER=#{bundle_id}",
       export_options: {
         signingStyle: 'manual',
@@ -38,7 +38,7 @@ platform :ios do
 
     upload_to_testflight(
       api_key: api_key,
-      ipa: '../build/ios/Amaraa.ipa',
+      ipa: '../build/ios/Indzon.ipa',
       skip_waiting_for_build_processing: true
     )
   end

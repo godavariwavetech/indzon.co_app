@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {responsiveHeight} from 'react-native-responsive-dimensions';
+import {SUPPORT_EMAIL} from '../../../src_new/config/contact';
 
 const PrivacyPolicyScreen = () => {
   const navigation = useNavigation();
@@ -88,9 +89,9 @@ const PrivacyPolicyScreen = () => {
         <Text style={[styles.content, {marginBottom: responsiveHeight(10)}]}>
           For questions about this policy:{'\n'}
           <TouchableOpacity
-            onPress={() => Linking.openURL('mailto:amaraasupport@gmail.com')}>
+            onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)}>
             <Text style={[styles.bold, styles.link]}>
-              Email: amaraasupport@gmail.com
+              Email: {SUPPORT_EMAIL}
             </Text>
           </TouchableOpacity>
           {'\n'}

@@ -323,9 +323,10 @@ export default function SearchScreen({navigation}) {
                         });
                       }}>
                       <View style={styles.categoryIcon}>
-                        <Image
-                          source={sub.art.source}
-                          style={styles.categoryImage}
+                        <ReferenceArtwork
+                          art={sub.art}
+                          width={styles.categoryImage.width}
+                          height={styles.categoryImage.height}
                           resizeMode="contain"
                         />
                       </View>

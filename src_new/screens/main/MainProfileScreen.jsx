@@ -168,26 +168,28 @@ export default function MainProfileScreen({navigation}) {
           style={[styles.profileCard, pageReady && styles.profileCardShadow]}>
           <View pointerEvents="none" style={styles.glowOne} />
           <View pointerEvents="none" style={styles.glowTwo} />
-          <View style={styles.avatar}>
-            <Text style={styles.initials}>{getInitials(displayName)}</Text>
+          <View style={styles.profileCardInner}>
+            <View style={styles.avatar}>
+              <Text style={styles.initials}>{getInitials(displayName)}</Text>
+            </View>
+            <View style={styles.profileCopy}>
+              <Text style={styles.welcome}>YOUR INDZON ACCOUNT</Text>
+              <Text numberOfLines={1} style={styles.name}>
+                {displayName}
+              </Text>
+              <Text numberOfLines={1} style={styles.phone}>
+                {displayPhone(auth.mobileNumber)}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => navigation.navigate('MyAccount')}
+              accessibilityRole="button"
+              accessibilityLabel="Edit account details"
+              style={styles.editButton}>
+              <MaterialIcons name="edit" size={16} color={colors.primary} />
+              <Text style={styles.editLabel}>Edit</Text>
+            </Pressable>
           </View>
-          <View style={styles.profileCopy}>
-            <Text style={styles.welcome}>YOUR INDZON ACCOUNT</Text>
-            <Text numberOfLines={1} style={styles.name}>
-              {displayName}
-            </Text>
-            <Text numberOfLines={1} style={styles.phone}>
-              {displayPhone(auth.mobileNumber)}
-            </Text>
-          </View>
-          <Pressable
-            onPress={() => navigation.navigate('MyAccount')}
-            accessibilityRole="button"
-            accessibilityLabel="Edit account details"
-            style={styles.editButton}>
-            <MaterialIcons name="edit" size={16} color={colors.primary} />
-            <Text style={styles.editLabel}>Edit</Text>
-          </Pressable>
         </LinearGradient>
 
         <Text style={styles.sectionLabel}>YOUR ACCOUNT</Text>
@@ -262,15 +264,19 @@ export default function MainProfileScreen({navigation}) {
 
 const styles = StyleSheet.create({
   content: {flexGrow: 1, paddingHorizontal: 16, paddingBottom: 18},
+  // iOS draws a LinearGradient inside its own padding box, so padding and row
+  // layout live on the inner view instead of the gradient.
   profileCard: {
+    borderRadius: 20,
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  profileCardInner: {
     minHeight: 116,
     alignItems: 'center',
     flexDirection: 'row',
     gap: 11,
     padding: 15,
-    borderRadius: 20,
-    marginBottom: 20,
-    overflow: 'hidden',
   },
   glowOne: {
     position: 'absolute',
