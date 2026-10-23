@@ -1,7 +1,14 @@
 name: iOS TestFlight
 
 on:
+  push:
+    branches:
+      - ios-testflight-deploy
   workflow_dispatch:
+
+concurrency:
+  group: ios-testflight-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
