@@ -108,6 +108,7 @@ export function visibleTiles(
   height,
   anchorRatio = 0.5,
   padding = 0,
+  tileZoomOverride = null,
 ) {
   if (!width || !height) {
     return [];
@@ -115,7 +116,8 @@ export function visibleTiles(
   const point = project(center, zoom);
   const left = point.x - width / 2;
   const top = point.y - height * anchorRatio;
-  const tileZoom = Math.floor(zoom);
+  const tileZoom =
+    tileZoomOverride === null ? Math.floor(zoom) : tileZoomOverride;
   const tileSize = TILE_SIZE * 2 ** (zoom - tileZoom);
   const count = 2 ** tileZoom;
   const tiles = [];

@@ -1,6 +1,7 @@
 import {Text} from '../Typography';
 import React from 'react';
 import {ActivityIndicator, Pressable, StyleSheet} from 'react-native';
+import GradientButton from '../main/GradientButton';
 
 export default function LocationButton({
   label,
@@ -11,6 +12,17 @@ export default function LocationButton({
   testID,
 }) {
   const unavailable = loading || disabled;
+  if (!secondary) {
+    return (
+      <GradientButton
+        label={label}
+        onPress={onPress}
+        loading={loading}
+        disabled={disabled}
+        testID={testID}
+      />
+    );
+  }
   return (
     <Pressable
       testID={testID}

@@ -1,13 +1,24 @@
 import {Text, TextInput} from '../../components/Typography';
-import React, {useState} from 'react';
-import {KeyboardAvoidingView, Platform, StatusBar, StyleSheet, View} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  View,
+} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
-import AuthButton from '../../components/auth/AuthButton';
+import LinearGradient from 'react-native-linear-gradient';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {
+  getCustomerProfile,
   setCustomerName,
   updateCustomerProfile,
 } from '../../redux/reducers/auth';
+import {staticPersistor} from '../../redux/store';
 import {setProfileName} from '../../redux/reducers/commerce';
 
 // Shown once after login when the account has no name yet; continues to the location screen.
@@ -18,6 +29,33 @@ export default function NamePromptScreen({navigation}) {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  // The account may already have a name on the server (this device just forgot it): use it
+  // instead of asking again.
+  useEffect(() => {
+    let active = true;
+    dispatch(getCustomerProfile({customer_id: customerId}))
+      .unwrap()
+      .then(async data => {
+        const profile = Array.isArray(data?.data) ? data.data[0] : null;
+        const known = String(profile?.customer_name || '').trim();
+        if (active && known) {
+          dispatch(setCustomerName(known));
+          dispatch(setProfileName(known));
+          await staticPersistor.flush();
+          navigation.reset({index: 0, routes: [{name: 'LocationSetup'}]});
+          return;
+        }
+        if (active) {
+          setChecking(false);
+        }
+      })
+      .catch(() => active && setChecking(false));
+    return () => {
+      active = false;
+    };
+  }, [customerId, dispatch, navigation]);
 
   const save = async () => {
     const trimmed = name.trim();
@@ -40,6 +78,8 @@ export default function NamePromptScreen({navigation}) {
       ).unwrap();
       dispatch(setCustomerName(trimmed));
       dispatch(setProfileName(trimmed));
+      // keep the name through an app restart
+      await staticPersistor.flush();
       navigation.reset({index: 0, routes: [{name: 'LocationSetup'}]});
     } catch (err) {
       setError(
@@ -51,6 +91,13 @@ export default function NamePromptScreen({navigation}) {
     }
   };
 
+  if (checking) {
+    return (
+      <View style={[styles.screen, styles.checking]}>
+        <ActivityIndicator color="#3832FF" />
+      </View>
+    );
+  }
   return (
     <KeyboardAvoidingView
       style={[
@@ -87,23 +134,42 @@ export default function NamePromptScreen({navigation}) {
           testID="setup-name"
         />
         {error ? (
-          <Text style={styles.error} accessibilityRole="alert">
-            {error}
-          </Text>
+          <View style={styles.notice} accessibilityRole="alert">
+            <MaterialIcons name="info-outline" size={20} color="#3832FF" />
+            <Text style={styles.noticeText}>{error}</Text>
+          </View>
         ) : null}
       </View>
-      <AuthButton
-        label="Continue"
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Continue"
+        accessibilityState={{disabled: saving, busy: saving}}
+        disabled={saving}
         onPress={save}
-        loading={saving}
-        testID="setup-name-continue"
-      />
+        style={({pressed}) => [
+          styles.button,
+          (pressed || saving) && styles.dimmed,
+        ]}
+        testID="setup-name-continue">
+        <LinearGradient
+          colors={['#4B43FF', '#173CFF']}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 0}}
+          style={styles.gradient}>
+          {saving ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.buttonText}>Continue</Text>
+          )}
+        </LinearGradient>
+      </Pressable>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {flex: 1, backgroundColor: '#FFFFFF', paddingHorizontal: 20},
+  checking: {alignItems: 'center', justifyContent: 'center'},
   body: {flex: 1},
   title: {fontSize: 26, lineHeight: 32, fontWeight: '700', color: '#0B0B0B'},
   subtitle: {fontSize: 15, lineHeight: 22, color: '#6B7280', marginTop: 8},
@@ -118,5 +184,25 @@ const styles = StyleSheet.create({
     color: '#202427',
     backgroundColor: '#F9F9F9',
   },
-  error: {marginTop: 10, fontSize: 13, color: '#C62828'},
+  notice: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: '#EEF0FF',
+    borderWidth: 1,
+    borderColor: '#D6DAFF',
+  },
+  noticeText: {flex: 1, fontSize: 13, lineHeight: 18, color: '#2A2F6B'},
+  button: {borderRadius: 11, overflow: 'hidden'},
+  gradient: {
+    minHeight: 46,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {fontSize: 14, fontWeight: '600', color: '#FFFFFF'},
+  dimmed: {opacity: 0.65},
 });

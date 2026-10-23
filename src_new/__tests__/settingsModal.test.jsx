@@ -1,7 +1,6 @@
 /* eslint-env jest */
 import React from 'react';
 import {act, create} from 'react-test-renderer';
-import {Alert} from 'react-native';
 import {
   check,
   checkNotifications,
@@ -10,6 +9,7 @@ import {
   RESULTS,
 } from 'react-native-permissions';
 import SettingsModal from '../components/main/SettingsModal';
+import ConfirmDialog from '../components/main/ConfirmDialog';
 
 jest.mock('react-native-vector-icons/MaterialIcons', () => 'Icon');
 let renderer;
@@ -24,7 +24,6 @@ beforeEach(() => {
   check.mockResolvedValue(RESULTS.GRANTED);
   checkNotifications.mockResolvedValue({status: RESULTS.DENIED});
   openSettings.mockResolvedValue();
-  jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 });
 afterEach(() => {
   if (renderer) {
@@ -75,10 +74,12 @@ test('requires explicit confirmation before calling account deletion', async () 
       .props.onPress(),
   );
   expect(callbacks.onDelete).not.toHaveBeenCalled();
-  const buttons = Alert.alert.mock.calls[0][2];
-  expect(buttons[0].style).toBe('cancel');
+  const dialog = renderer.root
+    .findAllByType(ConfirmDialog)
+    .find(item => item.props.visible && item.props.danger);
+  expect(dialog.props.title).toBe('Delete account?');
   await act(async () => {
-    await buttons[1].onPress();
+    await dialog.props.onConfirm();
   });
   expect(callbacks.onDelete).toHaveBeenCalledTimes(1);
 });

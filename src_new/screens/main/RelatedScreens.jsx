@@ -18,6 +18,7 @@ import {
 } from '../../redux/reducers/commerce';
 import {
   getCustomerProfile,
+  setCustomerName,
   updateCustomerProfile,
 } from '../../redux/reducers/auth';
 import {ENABLE_LIVE_DATA} from '../../config/appMode';
@@ -30,6 +31,9 @@ import {
   usePageReady,
   ui,
 } from '../../components/main/MainUi';
+import GradientButton, {
+  gradientButtonLabel,
+} from '../../components/main/GradientButton';
 import ReferenceArtwork from '../../components/main/ReferenceArtwork';
 import ProductCard from '../../components/main/ProductCard';
 import CartPill from '../../components/main/CartPill';
@@ -83,7 +87,8 @@ export function MyAccountScreen({navigation}) {
   const savedName = useSelector(state => state.commerce.profileName);
   const savedEmail = useSelector(state => state.commerce.profileEmail);
   const auth = useSelector(state => state.Auth);
-  const initialName = savedName || auth.deliveryAddress?.customer_name || '';
+  const initialName =
+    auth.customerName || savedName || auth.deliveryAddress?.customer_name || '';
   const [name, setName] = useState(initialName);
   const [email, setEmail] = useState(savedEmail || '');
   const [error, setError] = useState('');
@@ -98,6 +103,9 @@ export function MyAccountScreen({navigation}) {
         const profile = Array.isArray(data?.data) ? data.data[0] : null;
         if (profile?.customer_name) {
           setName(profile.customer_name);
+          // keep the Profile screen and the rest of the app on the same name
+          dispatch(setCustomerName(profile.customer_name));
+          dispatch(setProfileDetails({name: profile.customer_name, email: profile.customer_email || ''}));
         }
         if (profile?.customer_email) {
           setEmail(profile.customer_email);
@@ -148,6 +156,7 @@ export function MyAccountScreen({navigation}) {
       setSaving(false);
     }
     dispatch(setProfileDetails({name, email}));
+    dispatch(setCustomerName(name.trim()));
     navigation.goBack();
   };
   return (
@@ -297,16 +306,16 @@ export function MyAccountScreen({navigation}) {
         </View>
       </ScrollView>
       <Footer style={styles.accountFooter}>
-        <Pressable
-          style={[ui.action, styles.accountSaveButton, saving && {opacity: 0.6}]}
-          accessibilityRole="button"
+        <GradientButton
+          style={styles.accountSaveButton}
           disabled={saving}
-          onPress={saveName}>
+          onPress={saveName}
+          label={saving ? 'Saving…' : 'Save changes'}>
           <MaterialIcons name="check" size={19} color="#FFFFFF" />
-          <Text style={ui.actionText}>
+          <Text style={gradientButtonLabel}>
             {saving ? 'Saving…' : 'Save changes'}
           </Text>
-        </Pressable>
+        </GradientButton>
       </Footer>
     </Page>
   );
@@ -352,9 +361,9 @@ export function HelpSupportScreen({navigation}) {
             {notice}
           </Text>
         ) : null}
-        <Pressable
-          style={[ui.action, {marginTop: 16}]}
-          accessibilityRole="button"
+        <GradientButton
+          style={{marginTop: 16}}
+          label="Save Message"
           onPress={() => {
             if (!message.trim()) {
               setError('Enter your message.');
@@ -365,9 +374,8 @@ export function HelpSupportScreen({navigation}) {
             setNotice(
               'Draft saved for this session. It has not been sent to support.',
             );
-          }}>
-          <Text style={ui.actionText}>Save Message</Text>
-        </Pressable>
+          }}
+        />
       </ScrollView>
     </Page>
   );
@@ -838,7 +846,7 @@ const styles = StyleSheet.create({
     marginTop: 9,
   },
   accountFooter: {backgroundColor: '#FFFFFF'},
-  accountSaveButton: {flex: 1, flexDirection: 'row', gap: 8},
+  accountSaveButton: {flex: 1},
   label: {fontSize: 14, color: colors.ink, marginBottom: 8, marginTop: 20},
   input: {
     borderWidth: 1,

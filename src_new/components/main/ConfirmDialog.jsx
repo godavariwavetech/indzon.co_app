@@ -9,6 +9,9 @@ export default function ConfirmDialog({
   title,
   message,
   confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  icon,
+  hideCancel = false,
   danger = false,
   onConfirm,
   onCancel,
@@ -34,7 +37,7 @@ export default function ConfirmDialog({
           accessibilityLiveRegion="polite">
           <View style={[styles.icon, danger && styles.dangerIcon]}>
             <MaterialIcons
-              name={danger ? 'delete-outline' : 'info-outline'}
+              name={icon || (danger ? 'delete-outline' : 'info-outline')}
               size={24}
               color={actionColor}
             />
@@ -42,12 +45,14 @@ export default function ConfirmDialog({
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
           <View style={styles.actions}>
-            <Pressable
-              onPress={onCancel}
-              style={styles.cancelButton}
-              accessibilityRole="button">
-              <Text style={styles.cancelText}>Cancel</Text>
-            </Pressable>
+            {hideCancel ? null : (
+              <Pressable
+                onPress={onCancel}
+                style={styles.cancelButton}
+                accessibilityRole="button">
+                <Text style={styles.cancelText}>{cancelLabel}</Text>
+              </Pressable>
+            )}
             <Pressable
               onPress={onConfirm}
               style={[styles.confirmButton, {backgroundColor: actionColor}]}

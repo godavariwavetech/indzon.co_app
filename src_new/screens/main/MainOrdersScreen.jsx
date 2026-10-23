@@ -1,9 +1,9 @@
 import {Text, TextInput} from '../../components/Typography';
 import React, {useState} from 'react';
-import {Pressable, ScrollView, StyleSheet, View} from 'react-native';
+import {Pressable, RefreshControl, ScrollView, StyleSheet, View} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {money} from '../../config/catalog';
-import {useAllOrders} from '../../services/catalogService';
+import {useOrders} from '../../services/catalogService';
 import {
   colors,
   Heading,
@@ -11,6 +11,23 @@ import {
   usePageReady,
 } from '../../components/main/MainUi';
 import {shipmentStatus} from '../../components/main/OrderShipment';
+import {OrdersSkeleton} from '../../components/main/Skeleton';
+import LinearGradient from 'react-native-linear-gradient';
+
+// Status chip colours: blue while in progress, green when delivered, red when cancelled.
+const statusTone = status => {
+  const value = String(status || '').toLowerCase();
+  if (value === 'delivered') {
+    return {background: '#E4F6EC', color: '#12805C'};
+  }
+  if (value === 'cancelled') {
+    return {background: '#FDECEE', color: '#C4323F'};
+  }
+  if (value === 'out for delivery') {
+    return {background: '#FFF2E0', color: '#B25E00'};
+  }
+  return {background: '#EEF0FF', color: '#3832FF'};
+};
 
 export function DeliveryAddress({address, phoneNumber}) {
   const rows = [
@@ -41,7 +58,7 @@ export function DeliveryAddress({address, phoneNumber}) {
 }
 export default function MainOrdersScreen({navigation}) {
   const pageReady = usePageReady();
-  const allOrders = useAllOrders();
+  const {orders: allOrders, refreshing, refresh, loading} = useOrders();
   const [search, setSearch] = useState('');
   const query = search.trim().toLowerCase().replace(/^#/, '');
   const filteredOrders = allOrders.filter(order => {
@@ -83,9 +100,18 @@ export default function MainOrdersScreen({navigation}) {
       <ScrollView
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}>
-        {filteredOrders.length === 0 && (
+        {loading && !allOrders.length ? <OrdersSkeleton /> : null}
+        {filteredOrders.length === 0 && !loading && (
           <View style={styles.emptySearch}>
             <MaterialIcons name="search-off" size={32} color="#8A829D" />
             <Text style={styles.emptyTitle}>No orders found</Text>
@@ -96,7 +122,11 @@ export default function MainOrdersScreen({navigation}) {
           <View
             key={order.id}
             style={[styles.order, pageReady && styles.orderShadow]}>
-            <View style={styles.orderHeader}>
+            <LinearGradient
+              colors={['#4B43FF', '#2F3BFF']}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 0}}
+              style={styles.orderHeader}>
               <View style={{flex: 1, minWidth: 0}}>
                 <Text style={styles.headerLabel}>ORDER ID</Text>
                 <Text style={styles.headerId}>
@@ -108,7 +138,7 @@ export default function MainOrdersScreen({navigation}) {
                 <Text style={styles.headerLabel}>TOTAL AMOUNT</Text>
                 <Text style={styles.headerAmount}>{money(order.price)}</Text>
               </View>
-            </View>
+            </LinearGradient>
             {order.groups.map((group, index) => {
               const status = shipmentStatus(group, order);
               return (
@@ -118,8 +148,18 @@ export default function MainOrdersScreen({navigation}) {
                   </Text>
                   <View style={styles.shipmentHeading}>
                     <Text style={styles.categoryTitle}>{group.name}</Text>
-                    <View style={styles.statusBadge}>
-                      <Text style={styles.statusText}>{status}</Text>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        {backgroundColor: statusTone(status).background},
+                      ]}>
+                      <Text
+                        style={[
+                          styles.statusText,
+                          {color: statusTone(status).color},
+                        ]}>
+                        {status}
+                      </Text>
                     </View>
                   </View>
                   <View style={styles.shipmentFooter}>
@@ -181,9 +221,9 @@ const styles = StyleSheet.create({
     paddingRight: 4,
     minHeight: 46,
     borderWidth: 1,
-    borderColor: '#D9D5ED',
+    borderColor: '#E1E5F0',
     borderRadius: 12,
-    backgroundColor: '#FAF9FF',
+    backgroundColor: '#F7F8FC',
   },
   searchInput: {flex: 1, minWidth: 0, fontSize: 15, color: '#242637', paddingVertical: 10},
   clearSearch: {minWidth: 40, minHeight: 40, alignItems: 'center', justifyContent: 'center'},
@@ -196,8 +236,8 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 14,
     borderRadius: 13,
-    backgroundColor: '#3832FF',
     marginBottom: 10,
+    overflow: 'hidden',
   },
   headerLabel: {
     fontSize: 9.9,
@@ -229,11 +269,11 @@ const styles = StyleSheet.create({
 
   shipmentCard: {
     borderWidth: 1,
-    borderColor: '#E3E1EF',
+    borderColor: '#ECEEF5',
     borderRadius: 15,
     padding: 12,
     marginBottom: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F7F8FC',
   },
   shipmentHeading: {
     flexDirection: 'row',
@@ -246,11 +286,11 @@ const styles = StyleSheet.create({
     fontSize: 9.9,
     letterSpacing: 0.8,
     fontWeight: '700',
-    color: '#8A829D',
+    color: '#8A92A8',
   },
   categoryTitle: {flex: 1, fontSize: 17.1, fontWeight: '700', color: '#242637'},
   statusBadge: {
-    backgroundColor: '#EEECFF',
+    backgroundColor: '#EEF0FF',
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: 20,
@@ -283,7 +323,7 @@ const styles = StyleSheet.create({
   trackAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F0FF',
+    backgroundColor: '#EEF0FF',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -303,9 +343,9 @@ const styles = StyleSheet.create({
   order: {
     borderRadius: 17,
     padding: 12,
-    backgroundColor: '#EEEDF7',
-    borderWidth: 1.5,
-    borderColor: '#CCC8E3',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E6E8F2',
   },
   orderShadow: {
     elevation: 3,

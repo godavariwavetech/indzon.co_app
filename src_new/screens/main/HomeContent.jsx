@@ -2,6 +2,7 @@ import {Text} from '../../components/Typography';
 import React, {useEffect, useState} from 'react';
 import {
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   View,
@@ -16,8 +17,7 @@ import {moreArtwork} from '../../config/catalog';
 import {
   getLiveBanners,
   getLiveCategories,
-  getLiveItems,
-  getLiveShops,
+  getHomeSections,
   liveCatalogEnabled,
   resolveServiceLocation,
   searchAll,
@@ -75,6 +75,13 @@ export default function HomeContent({navigation}) {
   const [liveCategories, setLiveCategories] = useState(null);
   const [liveBanners, setLiveBanners] = useState([]);
   const [bannerIndex, setBannerIndex] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = () => {
+    setRefreshing(true);
+    setRefreshKey(key => key + 1);
+    setTimeout(() => setRefreshing(false), 1200);
+  };
   const [bannersDone, setBannersDone] = useState(false);
   const [categoriesDone, setCategoriesDone] = useState(false);
   const [featuredDone, setFeaturedDone] = useState(false);
@@ -90,7 +97,7 @@ export default function HomeContent({navigation}) {
     return () => {
       active = false;
     };
-  }, [locationId]);
+  }, [locationId, refreshKey]);
   useEffect(() => {
     if (!liveCatalogEnabled) {
       return;
@@ -107,40 +114,26 @@ export default function HomeContent({navigation}) {
     return () => {
       active = false;
     };
-  }, []);
-  // Featured items for "Top picks"/"Suggested" — real items from the first
-  // live category's first shop, instead of catalog.js's hand-picked deals.
-  const [liveFeaturedItems, setLiveFeaturedItems] = useState([]);
+  }, [refreshKey]);
+  // "Top Deals" and "Suggested for you" come from one backend call.
+  const [homeSections, setHomeSections] = useState({
+    highlightedCategories: [],
+    topDeals: [],
+    suggested: [],
+  });
   useEffect(() => {
-    if (!liveCatalogEnabled || !liveCategories?.length || !locationId) {
+    if (!liveCatalogEnabled) {
       return;
     }
     let active = true;
-    getLiveShops({
-      categoryId: liveCategories[0].id,
-      locationId,
-      coordinates: deliveryLocation,
-    })
-      .then(shops => {
-        if (!active || !shops.length) {
-          return null;
-        }
-        return getLiveItems({
-          shopItemsTableName: shops[0].shopItemsTableName,
-          shopId: shops[0].id,
-        });
-      })
-      .then(items => {
-        if (active && items) {
-          setLiveFeaturedItems(items);
-        }
-      })
+    getHomeSections({locationId})
+      .then(sections => active && setHomeSections(sections))
       .catch(() => {})
       .finally(() => active && setFeaturedDone(true));
     return () => {
       active = false;
     };
-  }, [liveCategories, deliveryLocation, locationId]);
+  }, [refreshKey, locationId]);
   const [liveSearchResults, setLiveSearchResults] = useState(null);
   useEffect(() => {
     if (!liveCatalogEnabled) {
@@ -172,17 +165,18 @@ export default function HomeContent({navigation}) {
   const bannerAspectRatio = 546 / 162;
   const productWidth = (contentWidth - 20) / 3;
   const iconWidth = Math.min((contentWidth - 32) / 5, 72);
-  const suggested = (liveSearchResults ?? liveFeaturedItems).slice(
+  const highlighted = homeSections.highlightedCategories;
+  const suggested = (liveSearchResults ?? homeSections.suggested).slice(
     0,
-    query ? 18 : 6,
+    query ? 18 : 12,
   );
   const loadingBanners = liveCatalogEnabled && !bannersDone && !outOfArea;
   const loadingCategories = liveCatalogEnabled && !categoriesDone;
-  const loadingFeatured =
-    liveCatalogEnabled &&
-    !featuredDone &&
-    !outOfArea &&
-    !(categoriesDone && !liveCategories?.length);
+  const loadingFeatured = liveCatalogEnabled && !featuredDone;
+  // Banner slots by dashboard type: header on top, offers in the middle, home banner at the end.
+  const headerBanners = liveBanners.filter(banner => banner.type === 2);
+  const offerBanners = liveBanners.filter(banner => banner.type === 1);
+  const homeBanners = liveBanners.filter(banner => banner.type === 0);
   const openCategory = id =>
     navigation.navigate('CategoryDetails', {
       categoryId: id,
@@ -192,17 +186,26 @@ export default function HomeContent({navigation}) {
     ...(liveCategories || []).slice(0, 9),
     {id: 'more', name: 'More', art: moreArtwork},
   ];
-  const deals = liveFeaturedItems.slice(0, 10).map(item => ({
-    title: item.name,
-    caption:
-      item.originalPrice > item.price
-        ? `Save ${Math.round((1 - item.price / item.originalPrice) * 100)}%`
-        : item.unit,
-    art: item.art,
-    categoryId: item.categoryId,
-    productId: item.id,
-    liveItem: item,
-  }));
+  // Top Deals: categories flagged "highlight" on the dashboard; without any, the best-discount products.
+  const deals = highlighted.length
+    ? highlighted.map(category => ({
+        title: category.name,
+        caption: 'Deals for you!',
+        art: category.art,
+        categoryId: category.id,
+      }))
+    : homeSections.topDeals.map(item => ({
+        title: item.name,
+        caption: `From ₹${item.price}`,
+        badge:
+          item.originalPrice > item.price
+            ? `Flat ${Math.round((1 - item.price / item.originalPrice) * 100)}%`
+            : null,
+        art: item.art,
+        categoryId: item.categoryId,
+        productId: item.id,
+        liveItem: item,
+      }));
   return (
     <Page style={{paddingTop: 0}}>
       {outOfArea ? (
@@ -217,6 +220,9 @@ export default function HomeContent({navigation}) {
         stickyHeaderIndices={[1]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         contentContainerStyle={{
           paddingTop: 12,
           paddingBottom: 78,
@@ -261,7 +267,7 @@ export default function HomeContent({navigation}) {
             height={contentWidth / bannerAspectRatio}
           />
         ) : null}
-        {liveBanners.length > 0 && (
+        {headerBanners.length > 0 && (
           <View style={styles.mainBanner}>
             <ScrollView
               horizontal
@@ -272,7 +278,7 @@ export default function HomeContent({navigation}) {
                   Math.round(e.nativeEvent.contentOffset.x / contentWidth),
                 )
               }>
-              {liveBanners.map(banner => (
+              {headerBanners.map(banner => (
                 <Pressable
                   key={banner.id}
                   disabled={!banner.categoryId}
@@ -291,9 +297,9 @@ export default function HomeContent({navigation}) {
                 </Pressable>
               ))}
             </ScrollView>
-            {liveBanners.length > 1 && (
+            {headerBanners.length > 1 && (
               <View style={styles.bannerDots}>
-                {liveBanners.map((banner, index) => (
+                {headerBanners.map((banner, index) => (
                   <View
                     key={banner.id}
                     style={[
@@ -335,6 +341,30 @@ export default function HomeContent({navigation}) {
           ))}
         </View>
         )}
+        {offerBanners.length > 0 && (
+          <View style={styles.offerRow}>
+            {offerBanners.slice(0, 2).map(banner => (
+              <Pressable
+                key={banner.id}
+                style={{flex: 1}}
+                disabled={!banner.categoryId}
+                onPress={() => openCategory(banner.categoryId)}
+                accessibilityRole="button"
+                accessibilityLabel={banner.title || 'Offer'}>
+                <Image
+                  source={{uri: banner.uri}}
+                  resizeMode="cover"
+                  style={{
+                    width: '100%',
+                    aspectRatio: 2.15,
+                    borderRadius: 14,
+                  }}
+                />
+              </Pressable>
+            ))}
+          </View>
+        )}
+        {loadingCategories || loadingFeatured || deals.length > 0 ? (
         <LinearGradient colors={['#F2EAFE', '#C39DFA']} style={styles.deals}>
           <Text style={[ui.sectionTitle, styles.dealsTitle]}>
             Top Deals for you!
@@ -343,7 +373,7 @@ export default function HomeContent({navigation}) {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{gap: 9}}>
-            {loadingFeatured ? (
+            {loadingCategories || (loadingFeatured && !highlighted.length) ? (
               <HomeDealsSkeleton size={contentWidth * 0.28} />
             ) : null}
             {deals.map(deal => (
@@ -366,6 +396,11 @@ export default function HomeContent({navigation}) {
                   height={contentWidth * 0.28 - 10}
                   style={{borderRadius: 10}}
                 />
+                {deal.badge ? (
+                  <View style={styles.dealBadge}>
+                    <Text style={styles.dealBadgeText}>{deal.badge}</Text>
+                  </View>
+                ) : null}
                 <Text numberOfLines={1} style={styles.dealName}>
                   {deal.title}
                 </Text>
@@ -376,10 +411,11 @@ export default function HomeContent({navigation}) {
             ))}
           </ScrollView>
         </LinearGradient>
-        {liveBanners.length > 0 && (
+        ) : null}
+        {homeBanners.length > 0 && (
           <OfferCarousel
             navigation={navigation}
-            offers={liveBanners.map(banner => ({
+            offers={homeBanners.map(banner => ({
               id: banner.id,
               categoryId: banner.categoryId,
               title: banner.title,
@@ -442,6 +478,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   search: {marginHorizontal: 16},
+  offerRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginHorizontal: 16,
+    marginBottom: 14,
+  },
   mainBanner: {
     marginHorizontal: 16,
     marginTop: 12,
@@ -537,6 +579,16 @@ const styles = StyleSheet.create({
   },
   dealsTitle: {fontSize: 16, marginBottom: 8},
   deal: {padding: 5, backgroundColor: '#FFFFFF', borderRadius: 15},
+  dealBadge: {
+    position: 'absolute',
+    top: 9,
+    left: 9,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
+  },
+  dealBadgeText: {fontSize: 10, fontWeight: '700', color: '#E53935'},
   dealName: {fontSize: 10, color: '#777777', marginTop: 6},
   dealCaption: {
     fontSize: 11,

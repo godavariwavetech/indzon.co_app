@@ -6,7 +6,6 @@ import SuccessCelebration from '../../components/main/SuccessCelebration';
 import {Text, TextInput} from '../../components/Typography';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
-  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -38,8 +37,14 @@ import {
   usePageReady,
   ui,
 } from '../../components/main/MainUi';
+import ConfirmDialog from '../../components/main/ConfirmDialog';
+import GradientButton from '../../components/main/GradientButton';
 import ReferenceArtwork from '../../components/main/ReferenceArtwork';
-import {LoadingImage as Image} from '../../components/main/Skeleton';
+import {
+  CategorySidebarSkeleton,
+  LoadingImage as Image,
+  ProductGridSkeleton,
+} from '../../components/main/Skeleton';
 import ProductCard from '../../components/main/ProductCard';
 import CartPill from '../../components/main/CartPill';
 import {matchesFilter} from './MainCategoriesScreen';
@@ -52,6 +57,7 @@ import {
   cancelLiveOrder,
   getLiveItems,
   getLiveSubcategories,
+  getOrderCharges,
   liveCatalogEnabled,
   useAllOrders,
   useLiveItemsByIds,
@@ -394,7 +400,13 @@ export function ProductListScreen({navigation, route, embedded = false}) {
       ) : null}
       <View style={{flex: 1, flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#EEEAF7'}}>
         <ScrollView style={{width: sidebarWidth, flexGrow: 0, backgroundColor: '#FFFFFF', borderRightWidth: 1, borderRightColor: '#EEEAF7'}} contentContainerStyle={{paddingVertical: 8, paddingBottom: 90}} showsVerticalScrollIndicator={false}>
-          {[{id: undefined, name: 'All', art: category?.art}, ...subcategories].map(sub => (
+          {liveItemsLoading && !subcategories.length ? (
+            <CategorySidebarSkeleton size={56} />
+          ) : null}
+          {(liveItemsLoading && !subcategories.length
+            ? []
+            : [{id: undefined, name: 'All', art: category?.art}, ...subcategories]
+          ).map(sub => (
             <Pressable
               key={sub.id || 'all'}
               accessibilityRole="button"
@@ -420,11 +432,14 @@ export function ProductListScreen({navigation, route, embedded = false}) {
         <View style={{flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 14}}>
           <Text style={{flex: 1, fontSize: 16, lineHeight: 21, fontWeight: '700', color: colors.ink}}>{subcategory?.name || 'All products'}</Text>
           <View style={{backgroundColor: '#EAE5FF', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 4}}>
-            <Text style={{fontSize: 12, fontWeight: '700', color: '#6250B5'}}>{visible.length}</Text>
+            <Text style={{fontSize: 12, fontWeight: '700', color: '#6250B5'}}>{liveItemsLoading ? '' : visible.length}</Text>
           </View>
         </View>
+        {liveItemsLoading ? (
+          <ProductGridSkeleton width={productWidth} />
+        ) : null}
         <View style={[s.grid, {rowGap: 12}]}>
-          {visible.map(item => (
+          {(liveItemsLoading ? [] : visible).map(item => (
             <ProductCard
               key={item.id}
               product={item}
@@ -594,7 +609,36 @@ export function CartScreen({navigation}) {
         items.map(item => ({...item, quantity: cart[item.id]})),
       ).discount
     : 0;
-  const total = amount - discount;
+  // Delivery, packing, platform fee, donation and gst from the dashboard's settings.
+  const [charges, setCharges] = useState(null);
+  const chargeKey = items
+    .map(item => `${item.shopId}:${item.price * cart[item.id]}`)
+    .join(',');
+  useEffect(() => {
+    if (!liveCatalogEnabled || !items.length || !locationId) {
+      setCharges(null);
+      return undefined;
+    }
+    let active = true;
+    getOrderCharges({
+      locationId: address?.location_id || locationId,
+      coordinates: {
+        latitude: address?.customer_latitude,
+        longitude: address?.customer_longitude,
+      },
+      items: items.map(item => ({
+        shopId: item.shopId,
+        total: item.price * cart[item.id],
+      })),
+    })
+      .then(result => active && setCharges(result))
+      .catch(() => active && setCharges(null));
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chargeKey, locationId, address?.customer_latitude, address?.customer_longitude]);
+  const total = amount - discount + (charges?.total || 0);
   const [liveRecommendations, setLiveRecommendations] = useState([]);
   useEffect(() => {
     if (!liveCatalogEnabled || !firstCartItem?.shopItemsTableName) {
@@ -617,6 +661,7 @@ export function CartScreen({navigation}) {
   }, [firstCartItem?.shopItemsTableName, firstCartItem?.shopId]);
   const recommendations = liveRecommendations;
   const [placingLive, setPlacingLive] = useState(false);
+  const [orderError, setOrderError] = useState(null);
   const checkout = async () => {
     if (!address) {
       navigation.navigate('AddressList', {isFromCart: true});
@@ -709,13 +754,14 @@ export function CartScreen({navigation}) {
           coupon_amount: discount,
           coupon_id: liveCoupon?.id,
           coupon_type: 0,
-          delivery_charges: 0,
+          // the server recomputes these from the dashboard settings when the order is saved
+          delivery_charges: charges?.delivery || 0,
           delivery_charges_gst: 0,
-          handling_charges: 0,
-          packing_charges: 0,
+          handling_charges: charges?.platform || 0,
+          packing_charges: charges?.packing || 0,
           packing_charges_gst: 0,
-          donation_charges: 0,
-          surcharges: 0,
+          donation_charges: charges?.donation || 0,
+          surcharges: charges?.surcharges || 0,
           gstonplatform_fee: 0,
           total_item_gst_amount: subOrderArray.reduce((sum, i) => sum + i.item_gst_amount, 0),
           grand_total: total,
@@ -742,6 +788,7 @@ export function CartScreen({navigation}) {
             ...order,
             id: response.data.order_id || order.id,
             realOrderId: response.data.id,
+            realOrderIds: response.data.ids || [response.data.id],
           }),
         );
         navigation.replace('OrderConfirmation', {
@@ -750,7 +797,7 @@ export function CartScreen({navigation}) {
       } catch (err) {
         placing.current = false;
         setPlacingLive(false);
-        Alert.alert('Order failed', err.message || 'Please try again.');
+        setOrderError(err.message || 'Please try again.');
       }
       return;
     }
@@ -982,9 +1029,32 @@ export function CartScreen({navigation}) {
                 value={`−${money(discount)}`}
               />
               <View style={s.divider}>
-                <BillRow label="Subtotal" value={money(total)} />
-                <BillRow label="GST" value="Included" />
-                <BillRow label="Delivery Charge" value="FREE" blue />
+                <BillRow label="Subtotal" value={money(amount - discount)} />
+                <BillRow
+                  label="Delivery Charge"
+                  value={charges?.delivery > 0 ? money(charges.delivery) : 'FREE'}
+                  blue={!(charges?.delivery > 0)}
+                />
+                {charges?.packing > 0 ? (
+                  <BillRow label="Packing Charge" value={money(charges.packing)} />
+                ) : null}
+                {charges?.platform > 0 ? (
+                  <BillRow label="Platform Fee" value={money(charges.platform)} />
+                ) : null}
+                {charges?.donation > 0 ? (
+                  <BillRow label="Donation" value={money(charges.donation)} />
+                ) : null}
+                {charges?.surcharges > 0 ? (
+                  <BillRow label="Surcharge" value={money(charges.surcharges)} />
+                ) : null}
+                <BillRow
+                  label={
+                    charges?.gst > 0
+                      ? `GST on charges (${charges.gstPercent}%)`
+                      : 'GST'
+                  }
+                  value={charges?.gst > 0 ? money(charges.gst) : 'Included'}
+                />
               </View>
               <View style={s.divider}>
                 <BillRow label="TOTAL" value={money(total)} strong />
@@ -1000,29 +1070,37 @@ export function CartScreen({navigation}) {
               <Text style={s.total}>{money(total)}</Text>
               <Text style={s.green}>Saved {money(original - total)}</Text>
             </View>
-            <Pressable
-              style={[ui.action, placingLive && {opacity: 0.6}]}
-              accessibilityRole="button"
+            <GradientButton
+              style={{minWidth: 150}}
               disabled={placingLive}
-              onPress={checkout}>
-              <Text style={ui.actionText}>
-                {placingLive
+              onPress={checkout}
+              label={
+                placingLive
                   ? 'Placing order…'
                   : address
                   ? 'Place order'
-                  : 'Choose address'}
-              </Text>
-            </Pressable>
+                  : 'Choose address'
+              }
+            />
           </>
         ) : (
-          <Pressable
-            style={[ui.action, {flex: 1}]}
-            accessibilityRole="button"
-            onPress={() => navigation.navigate('Home', {screen: 'HomeTab'})}>
-            <Text style={ui.actionText}>Continue shopping</Text>
-          </Pressable>
+          <GradientButton
+            style={{flex: 1}}
+            onPress={() => navigation.navigate('Home', {screen: 'HomeTab'})}
+            label="Continue shopping"
+          />
         )}
       </Footer>
+      <ConfirmDialog
+        visible={Boolean(orderError)}
+        hideCancel
+        icon="error-outline"
+        title="Order failed"
+        message={orderError || ''}
+        confirmLabel="OK"
+        onConfirm={() => setOrderError(null)}
+        onCancel={() => setOrderError(null)}
+      />
     </Page>
   );
 }
@@ -1119,7 +1197,10 @@ export function OrderDetailsScreen({navigation, route}) {
           items: liveOrderItems,
           groups: foundOrder.groups.map(group => ({
             ...group,
-            productIds: liveOrderItems.map(item => item.id),
+            // only this category's items go under its shipment
+            productIds: liveOrderItems
+              .filter(item => String(item.orderRowId) === String(group.realOrderId))
+              .map(item => item.id),
           })),
         }
       : foundOrder;
@@ -1127,6 +1208,7 @@ export function OrderDetailsScreen({navigation, route}) {
   const [feedback, setFeedback] = useState(savedFeedback?.text || '');
   const [saved, setSaved] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [cancelDialog, setCancelDialog] = useState(null);
   const dispatch = useDispatch();
   if (!order) {
     return (
@@ -1153,6 +1235,15 @@ export function OrderDetailsScreen({navigation, route}) {
     0,
   );
   const discount = route.params?.groupName ? 0 : order.couponDiscount || 0;
+  const billCharges = route.params?.groupName ? null : order.charges;
+  const chargeSum = billCharges
+    ? billCharges.delivery +
+      billCharges.packing +
+      billCharges.platform +
+      billCharges.donation +
+      billCharges.surcharges +
+      billCharges.gst
+    : 0;
   return (
     <Page>
       <Heading title="Orders Details" navigation={navigation} back />
@@ -1190,29 +1281,7 @@ export function OrderDetailsScreen({navigation, route}) {
             accessibilityRole="button"
             accessibilityLabel="Cancel this order"
             disabled={cancelling}
-            onPress={() =>
-              Alert.alert('Cancel order?', 'You can only cancel before the shop accepts it.', [
-                {text: 'Keep order', style: 'cancel'},
-                {
-                  text: 'Cancel order',
-                  style: 'destructive',
-                  onPress: async () => {
-                    setCancelling(true);
-                    try {
-                      const done = await cancelLiveOrder(order.realOrderId);
-                      if (done) {
-                        navigation.goBack();
-                      } else {
-                        Alert.alert('Cannot cancel', 'The shop has already accepted this order.');
-                      }
-                    } catch (err) {
-                      Alert.alert('Could not cancel', 'Please try again.');
-                    }
-                    setCancelling(false);
-                  },
-                },
-              ])
-            }
+            onPress={() => setCancelDialog('confirm')}
             style={{marginHorizontal: 16, marginBottom: 12, minHeight: 46, borderRadius: 12, borderWidth: 1, borderColor: '#E5B3B8', backgroundColor: '#FFF0F0', alignItems: 'center', justifyContent: 'center', opacity: cancelling ? 0.6 : 1}}>
             <Text style={{fontSize: 15, fontWeight: '700', color: '#BC3C47'}}>
               {cancelling ? 'Cancelling...' : 'Cancel order'}
@@ -1290,7 +1359,7 @@ export function OrderDetailsScreen({navigation, route}) {
           <InfoRow
             icon="person-outline"
             label="NAME"
-            value={address?.customer_name || 'Nitin'}
+            value={address?.customer_name || auth.customerName || ''}
           />
           <InfoRow
             icon="phone"
@@ -1319,13 +1388,78 @@ export function OrderDetailsScreen({navigation, route}) {
             blue
           />
           <BillRow label="Coupon discount" value={`−${money(discount)}`} blue />
-          <BillRow label="Delivery charge" value="FREE" />
-          <BillRow label="GST" value="Included" />
+          <BillRow
+            label="Delivery charge"
+            value={billCharges?.delivery > 0 ? money(billCharges.delivery) : 'FREE'}
+          />
+          {billCharges?.packing > 0 ? (
+            <BillRow label="Packing charge" value={money(billCharges.packing)} />
+          ) : null}
+          {billCharges?.platform > 0 ? (
+            <BillRow label="Platform fee" value={money(billCharges.platform)} />
+          ) : null}
+          {billCharges?.donation > 0 ? (
+            <BillRow label="Donation" value={money(billCharges.donation)} />
+          ) : null}
+          {billCharges?.surcharges > 0 ? (
+            <BillRow label="Surcharge" value={money(billCharges.surcharges)} />
+          ) : null}
+          <BillRow
+            label="GST"
+            value={billCharges?.gst > 0 ? money(billCharges.gst) : 'Included'}
+          />
           <View style={s.divider}>
-            <BillRow label="TOTAL" value={money(amount - discount)} strong />
+            <BillRow
+              label="TOTAL"
+              value={money(
+                amount - discount + chargeSum,
+              )}
+              strong
+            />
           </View>
         </Section>
       </ScrollView>
+      <ConfirmDialog
+        visible={cancelDialog === 'confirm'}
+        danger
+        icon="highlight-off"
+        title="Cancel order?"
+        message="You can only cancel before the shop accepts it."
+        confirmLabel="Cancel order"
+        cancelLabel="Keep order"
+        onCancel={() => setCancelDialog(null)}
+        onConfirm={async () => {
+          setCancelDialog(null);
+          setCancelling(true);
+          try {
+            const done = await cancelLiveOrder(
+              order.realOrderIds || order.realOrderId,
+            );
+            if (done) {
+              navigation.goBack();
+            } else {
+              setCancelDialog('accepted');
+            }
+          } catch (err) {
+            setCancelDialog('failed');
+          }
+          setCancelling(false);
+        }}
+      />
+      <ConfirmDialog
+        visible={cancelDialog === 'accepted' || cancelDialog === 'failed'}
+        hideCancel
+        icon="info-outline"
+        title={cancelDialog === 'accepted' ? 'Cannot cancel' : 'Could not cancel'}
+        message={
+          cancelDialog === 'accepted'
+            ? 'The shop has already accepted this order.'
+            : 'Please try again.'
+        }
+        confirmLabel="OK"
+        onConfirm={() => setCancelDialog(null)}
+        onCancel={() => setCancelDialog(null)}
+      />
     </Page>
   );
 }

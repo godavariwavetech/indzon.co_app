@@ -9,7 +9,9 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import {Text} from '../../components/ReadableText';
+import {Text} from '../../components/Typography';
+import GradientButton from '../../components/main/GradientButton';
+import LinearGradient from 'react-native-linear-gradient';
 import {useDispatch, useSelector} from 'react-redux';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -24,8 +26,8 @@ import {Page, EmptyState, Heading} from '../../components/main/MainUi';
 
 const blue = '#3832FF';
 const green = '#00AD49';
-// This reference uses full-size system typography, independent of the app's
-// shared 75% font scale. Dimensions below follow the 393 pt source design.
+// Uses the app's shared typography scale so text sizes match the other screens.
+// Dimensions below follow the 393 pt source design.
 function Label({style, ...props}) {
   return (
     <Text {...props} allowFontScaling={false} style={[styles.text, style]} />
@@ -35,7 +37,11 @@ function Label({style, ...props}) {
 function Quantity({product, quantity, scale}) {
   const dispatch = useDispatch();
   return (
-    <View style={[styles.quantity, {height: 40 * scale}]}>
+    <LinearGradient
+      colors={['#4B43FF', '#173CFF']}
+      start={{x: 0, y: 0}}
+      end={{x: 1, y: 0}}
+      style={[styles.quantity, {height: 40 * scale}]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Remove one ${product.name}`}
@@ -51,7 +57,7 @@ function Quantity({product, quantity, scale}) {
         style={styles.quantityButton}>
         <Label style={styles.quantityText}>+</Label>
       </Pressable>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -519,22 +525,12 @@ function Details({product, navigation}) {
             </Pressable>
           </View>
         ) : (
-          <Pressable
-            accessibilityRole="button"
+          <GradientButton
+            label="Add to cart"
             onPress={() => dispatch(addItem(product.id))}
-            style={[
-              styles.addToCart,
-              {width: 132 * scale, height: 40 * scale},
-            ]}>
-            <Label
-              style={{
-                color: '#FFFFFF',
-                fontSize: 16 * scale,
-                fontWeight: '700',
-              }}>
-              Add to cart
-            </Label>
-          </Pressable>
+            height={40 * scale}
+            style={{width: 132 * scale}}
+          />
         )}
       </View>
     </Page>
@@ -704,8 +700,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   quantity: {
-    backgroundColor: blue,
-    borderRadius: 9,
+    borderRadius: 11,
+    overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

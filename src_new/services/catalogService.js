@@ -43,6 +43,8 @@ export async function getLiveCategories() {
     art: categoryArt(row.category_image),
     icon: 'shopping-basket',
     shopItemsTableName: row.shop_items_tb_nm,
+    // category_tbl.highlight: set on the dashboard to feature a category under "Top Deals".
+    highlight: Number(row.highlight) === 1,
     subcategories: [],
   }));
 }
@@ -61,6 +63,8 @@ export async function getLiveBanners({locationId}) {
       cardUri: mediaUrl(row.banner_image2) || mediaUrl(row.banner_image),
       title: row.banner_offer_title,
       categoryId: row.category_id ? String(row.category_id) : null,
+      // banner_type: 0 = home banner, 1 = offer banner, 2 = header banner.
+      type: Number(row.banner_type) || 0,
     }));
 }
 
@@ -128,7 +132,75 @@ export async function getLiveItems({shopItemsTableName, shopId}) {
     shop_id: Number(shopId),
   });
   const rows = Array.isArray(response.data?.data) ? response.data.data : [];
-  return rows.map(row => ({
+  return rows.map(row => mapLiveItem(row, shopItemsTableName));
+}
+
+// Best-value products across all categories for the home "Suggested for you" row.
+export async function getSuggestedProducts({limit = 12, locationId} = {}) {
+  const response = await api.post(endpoints.GET_SUGGESTED_PRODUCTS, {
+    limit,
+    location_id: Number(locationId) || 0,
+  });
+  const rows = Array.isArray(response.data?.data) ? response.data.data : [];
+  return rows.map(row => mapLiveItem(row, row.shop_items_tb_nm));
+}
+
+// Delivery, packing, platform fee, donation and gst for a cart, from the dashboard's settings.
+// items: [{shopId, total}] (total = price x quantity).
+export async function getOrderCharges({locationId, coordinates, items}) {
+  const response = await api.post(endpoints.GET_ORDER_CHARGES, {
+    location_id: Number(locationId) || 0,
+    latitude: coordinates?.latitude,
+    longitude: coordinates?.longitude,
+    items: items.map(item => ({
+      shop_id: item.shopId,
+      item_total_amount: item.total,
+    })),
+  });
+  const data = response.data?.data;
+  if (response.data?.status !== 200 || !data) {
+    throw new Error('Could not calculate charges.');
+  }
+  return {
+    delivery: data.totals.delivery_charges,
+    packing: data.totals.packing_charges,
+    platform: data.totals.handling_charges,
+    donation: data.totals.donation_charges,
+    surcharges: data.totals.surcharges,
+    gst: data.totals.gst,
+    gstPercent: data.gst_percentage,
+    total: data.totals.total_charges,
+    perShop: data.shops,
+    raw: data,
+  };
+}
+
+// "Top Deals" and "Suggested for you" for the home screen, from one call.
+export async function getHomeSections({locationId} = {}) {
+  const response = await api.post(endpoints.GET_HOME_SECTIONS, {
+    location_id: Number(locationId) || 0,
+  });
+  const data = response.data?.data || {};
+  const items = rows =>
+    (Array.isArray(rows) ? rows : []).map(row =>
+      mapLiveItem(row, row.shop_items_tb_nm),
+    );
+  return {
+    highlightedCategories: (Array.isArray(data.highlighted_categories)
+      ? data.highlighted_categories
+      : []
+    ).map(row => ({
+      id: String(row.id),
+      name: row.category_name,
+      art: categoryArt(row.category_image),
+    })),
+    topDeals: items(data.top_deals),
+    suggested: items(data.suggested),
+  };
+}
+
+function mapLiveItem(row, shopItemsTableName) {
+  return {
     // Each shop_items_tb_nm table has its own independent auto-increment id,
     // so a bare numeric id can collide across shops/categories once used as
     // a cart/wishlist key — keep it globally unique.
@@ -147,14 +219,14 @@ export async function getLiveItems({shopItemsTableName, shopId}) {
     unit: row.quantity_varient || '1 item',
     gstPercent: Number(row.item_gst) || 0,
     art: photoArt(row.item_image),
-  }));
+  };
 }
 
 // Resolves a single live item back to its full row — needed because cart/
 // wishlist only ever store an id, and there's no per-shop list endpoint that
 // takes an id alone. GET_RESULT_FULL_DATA (searchitemsfull) is a generic
 // "SELECT * FROM <table> WHERE id = ?" the backend already exposes for this.
-export async function getLiveItemById(compoundId) {
+export async function getLiveItemById(compoundId, locationId) {
   const [shopItemsTableName, itemId] = String(compoundId).split(':');
   if (!shopItemsTableName || !itemId) {
     return null;
@@ -162,6 +234,7 @@ export async function getLiveItemById(compoundId) {
   const response = await api.post(endpoints.GET_RESULT_FULL_DATA, {
     table_name: shopItemsTableName,
     id: itemId,
+    location_id: Number(locationId) || 0,
   });
   const row = Array.isArray(response.data?.data) ? response.data.data[0] : null;
   if (!row) {
@@ -242,8 +315,11 @@ const isLiveId = id => typeof id === 'string' && id.includes(':');
 const itemCache = new Map();
 export function useLiveItemsByIds(ids) {
   const [, forceRender] = useState(0);
+  const locationId = useSelector(state => state.Auth.locationId);
   const liveIds = ENABLE_LIVE_DATA ? ids.filter(isLiveId) : [];
-  const missing = liveIds.filter(id => !itemCache.has(id));
+  // an item's shop depends on the delivery area, so the cache is per area
+  const cacheKey = id => `${locationId || 0}|${id}`;
+  const missing = liveIds.filter(id => !itemCache.has(cacheKey(id)));
   useEffect(() => {
     if (!missing.length) {
       return;
@@ -251,9 +327,9 @@ export function useLiveItemsByIds(ids) {
     let active = true;
     Promise.all(
       missing.map(id =>
-        getLiveItemById(id)
-          .then(item => itemCache.set(id, item))
-          .catch(() => itemCache.set(id, null)),
+        getLiveItemById(id, locationId)
+          .then(item => itemCache.set(cacheKey(id), item))
+          .catch(() => itemCache.set(cacheKey(id), null)),
       ),
     ).then(() => {
       if (active) {
@@ -264,10 +340,10 @@ export function useLiveItemsByIds(ids) {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [missing.join(',')]);
+  }, [missing.join(','), locationId]);
   const itemsById = {};
   liveIds.forEach(id => {
-    const item = itemCache.get(id);
+    const item = itemCache.get(cacheKey(id));
     if (item) {
       itemsById[id] = item;
     }
@@ -397,61 +473,106 @@ const ORDER_STATUS = {
   5: 'Cancelled',
 };
 
+const emptyCharges = () => ({
+  delivery: 0,
+  packing: 0,
+  platform: 0,
+  donation: 0,
+  surcharges: 0,
+  gst: 0,
+});
+// What an order row (one per category) charged on top of its items.
+function addCharges(charges, row) {
+  charges.delivery += Number(row.delivery_charges) || 0;
+  charges.packing += Number(row.packing_charges) || 0;
+  charges.platform += Number(row.handling_charges) || 0;
+  charges.donation += Number(row.donation_charges) || 0;
+  charges.surcharges += Number(row.surcharges) || 0;
+  charges.gst +=
+    (Number(row.delivery_charges_gst) || 0) +
+    (Number(row.packing_charges_gst) || 0) +
+    (Number(row.gstonplatform_fee) || 0);
+  return charges;
+}
+
 export async function getLiveOrders({customerId}) {
   const response = await api.post(endpoints.GET_ORDERS, {
     customer_id: customerId,
     order_id: 0,
   });
   const rows = Array.isArray(response.data?.data) ? response.data.data : [];
-  return rows.map(row => {
+  // An order is stored as one row per category (same order_id, own row id); show it as one order
+  // with a shipment per category.
+  const orders = new Map();
+  rows.forEach(row => {
     const status = ORDER_STATUS[row.order_status] || 'Confirmed';
     const price = Number(row.grand_total) || 0;
     const originalPrice = Number(row.actual_total_amount) || price;
-    return {
+    const count = Number(row.item_count) || 0;
+    const group = {
+      id: `shipment-${row.id}`,
+      realOrderId: row.id,
+      categoryId: String(row.category_id),
+      status,
+      tracking: [
+        {status: 'Placed', at: row.order_date_time},
+        row.accept_order_date_time && {
+          status: 'Confirmed',
+          at: row.accept_order_date_time,
+        },
+        row.order_deliverd_date_time && {
+          status: 'Delivered',
+          at: row.order_deliverd_date_time,
+        },
+      ].filter(Boolean),
+      // the customer sees the category, never the shop behind it
+      name: row.category_name || 'Order',
+      count,
+      price,
+      originalPrice,
+      productIds: [],
+    };
+    const existing = orders.get(String(row.order_id));
+    if (existing) {
+      existing.realOrderIds.push(row.id);
+      existing.count += count;
+      existing.price += price;
+      existing.originalPrice += originalPrice;
+      existing.couponDiscount += Number(row.coupon_amount) || 0;
+      existing.savings += Number(row.total_saving_amount) || 0;
+      addCharges(existing.charges, row);
+      existing.groups.push(group);
+      return;
+    }
+    orders.set(String(row.order_id), {
       id: String(row.order_id),
       realOrderId: row.id,
+      realOrderIds: [row.id],
       live: true,
       placed: row.order_date_time || row.order_date,
       status,
       cancelReason: row.order_cancel_msg || null,
       address: {full_address: row.delivery_address},
-      count: Number(row.item_count) || 0,
+      count,
       price,
       originalPrice,
       couponDiscount: Number(row.coupon_amount) || 0,
       savings: Number(row.total_saving_amount) || 0,
-      groups: [
-        {
-          id: `shipment-${row.order_id}`,
-          categoryId: String(row.category_id),
-          status,
-          tracking: [
-            {status: 'Placed', at: row.order_date_time},
-            row.accept_order_date_time && {
-              status: 'Confirmed',
-              at: row.accept_order_date_time,
-            },
-            row.order_deliverd_date_time && {
-              status: 'Delivered',
-              at: row.order_deliverd_date_time,
-            },
-          ].filter(Boolean),
-          name: row.shop_name,
-          count: Number(row.item_count) || 0,
-          price,
-          originalPrice,
-          productIds: [],
-        },
-      ],
-    };
+      charges: addCharges(emptyCharges(), row),
+      groups: [group],
+    });
   });
+  return Array.from(orders.values());
 }
 
 // Only an order that is still "Placed" can be cancelled; the backend answers
 // status 300 once the shop has accepted it.
-export async function cancelLiveOrder(realOrderId) {
-  const response = await api.post(endpoints.CANCEL_ORDER, {order_id: realOrderId});
-  return response.data?.status === 200;
+export async function cancelLiveOrder(realOrderIds) {
+  const ids = [].concat(realOrderIds);
+  const results = await Promise.all(
+    ids.map(id => api.post(endpoints.CANCEL_ORDER, {order_id: id})),
+  );
+  return results.every(response => response.data?.status === 200);
 }
 
 export async function getLiveOrderItems(realOrderId) {
@@ -461,6 +582,8 @@ export async function getLiveOrderItems(realOrderId) {
   const rows = Array.isArray(response.data?.data) ? response.data.data : [];
   return rows.map(row => ({
     id: `order-item:${row.id}`,
+    // the order_lst_t row (one per category) this item belongs to
+    orderRowId: realOrderId,
     itemId: row.item_id,
     name: row.item_name,
     unit: row.quantity_varient || '1 item',
@@ -474,10 +597,13 @@ export async function getLiveOrderItems(realOrderId) {
 // Orders from the backend (the source of truth) plus any placed in this
 // session that the server has not returned yet. Refetched whenever the
 // screen regains focus, so a fresh order shows up after checkout.
-export function useAllOrders() {
+export function useOrders() {
   const customerId = useSelector(state => state.Auth.customerId);
   const localOrders = useSelector(state => state.commerce.orders);
   const [liveOrders, setLiveOrders] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [loading, setLoading] = useState(Boolean(ENABLE_LIVE_DATA && customerId));
   useFocusEffect(
     useCallback(() => {
       if (!ENABLE_LIVE_DATA || !customerId) {
@@ -486,33 +612,55 @@ export function useAllOrders() {
       let active = true;
       getLiveOrders({customerId})
         .then(rows => active && setLiveOrders(rows))
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => {
+          if (active) {
+            setRefreshing(false);
+            setLoading(false);
+          }
+        });
       return () => {
         active = false;
       };
-    }, [customerId]),
+    // refreshKey re-runs the fetch on pull-to-refresh
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [customerId, refreshKey]),
   );
   const liveIds = new Set(liveOrders.map(order => order.id));
-  return [
-    ...liveOrders,
-    ...localOrders.filter(order => !liveIds.has(order.id)),
-  ];
+  return {
+    orders: [
+      ...liveOrders,
+      ...localOrders.filter(order => !liveIds.has(order.id)),
+    ],
+    refreshing,
+    loading,
+    refresh: () => {
+      setRefreshing(true);
+      setRefreshKey(key => key + 1);
+    },
+  };
+}
+
+export function useAllOrders() {
+  return useOrders().orders;
 }
 
 export function useLiveOrderItems(order) {
   const [items, setItems] = useState(null);
-  const realOrderId = order?.live ? order.realOrderId : null;
+  const realOrderKey = order?.live
+    ? (order.realOrderIds || [order.realOrderId]).join(',')
+    : '';
   useEffect(() => {
-    if (!realOrderId) {
+    if (!realOrderKey) {
       return undefined;
     }
     let active = true;
-    getLiveOrderItems(realOrderId)
-      .then(rows => active && setItems(rows))
+    Promise.all(realOrderKey.split(',').map(getLiveOrderItems))
+      .then(lists => active && setItems(lists.flat()))
       .catch(() => active && setItems([]));
     return () => {
       active = false;
     };
-  }, [realOrderId]);
+  }, [realOrderKey]);
   return items;
 }

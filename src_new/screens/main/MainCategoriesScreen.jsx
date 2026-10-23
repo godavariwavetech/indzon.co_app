@@ -36,7 +36,12 @@ import {
   ui,
 } from '../../components/main/MainUi';
 import ReferenceArtwork from '../../components/main/ReferenceArtwork';
-import {CategoryGridSkeleton} from '../../components/main/Skeleton';
+import {
+  CategoryGridSkeleton,
+  CategorySidebarSkeleton,
+  SkeletonBlock,
+  SkeletonGroup,
+} from '../../components/main/Skeleton';
 
 export const matchesFilter = (product, filter) =>
   filter === 'under500'
@@ -51,7 +56,7 @@ function SubcategoryTile({sub, width, count, onPress, shadowsReady}) {
   const footer = (
     <View style={styles.cardBottom}>
       <NativeText style={styles.count} numberOfLines={1}>
-        {count}
+        {count === null ? '' : count}
       </NativeText>
       <View style={styles.arrow}>
         <MaterialIcons name="chevron-right" size={16} color={colors.primary} />
@@ -62,9 +67,11 @@ function SubcategoryTile({sub, width, count, onPress, shadowsReady}) {
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Browse ${sub.name}, ${count} ${
-        count === 1 ? 'item' : 'items'
-      }`}
+      accessibilityLabel={
+        count === null
+          ? `Browse ${sub.name}`
+          : `Browse ${sub.name}, ${count} ${count === 1 ? 'item' : 'items'}`
+      }
       style={[
         styles.card,
         {width, backgroundColor: sub.color},
@@ -111,6 +118,9 @@ export default function MainCategoriesScreen({
   const [categoryItems, setCategoryItems] = useState([]);
   const [liveBanners, setLiveBanners] = useState([]);
   const [dataLoading, setDataLoading] = useState(liveCatalogEnabled);
+  const [itemsLoading, setItemsLoading] = useState(liveCatalogEnabled);
+  const [categoriesDone, setCategoriesDone] = useState(!liveCatalogEnabled);
+  const [bannersDone, setBannersDone] = useState(!liveCatalogEnabled);
   const categoryList = useMemo(() => liveCategories || [], [liveCategories]);
   useEffect(() => {
     if (!liveCatalogEnabled) {
@@ -123,7 +133,8 @@ export default function MainCategoriesScreen({
           setCategoryId(current => current || rows[0].id);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setCategoriesDone(true));
   }, []);
   useEffect(() => {
     if (!liveCatalogEnabled || !locationId) {
@@ -131,7 +142,8 @@ export default function MainCategoriesScreen({
     }
     getLiveBanners({locationId})
       .then(setLiveBanners)
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setBannersDone(true));
   }, [locationId]);
   useEffect(() => {
     if (categoryList.some(item => item.id === route.params?.categoryId)) {
@@ -160,8 +172,15 @@ export default function MainCategoriesScreen({
     }
     let active = true;
     setDataLoading(true);
+    setItemsLoading(true);
     getLiveSubcategories({categoryId: selected.id, locationId})
       .then(async subs => {
+        // show the tiles as soon as they arrive; the item counts fill in after
+        if (active) {
+          setSubcategories(subs);
+          setCategoryItems([]);
+          setDataLoading(false);
+        }
         const shopIds = [...new Set(subs.flatMap(sub => sub.shopIds))];
         const lists = await Promise.all(
           shopIds.map(shopId =>
@@ -172,7 +191,6 @@ export default function MainCategoriesScreen({
           ),
         );
         if (active) {
-          setSubcategories(subs);
           setCategoryItems(lists.flat());
         }
       })
@@ -185,6 +203,7 @@ export default function MainCategoriesScreen({
       .finally(() => {
         if (active) {
           setDataLoading(false);
+          setItemsLoading(false);
         }
       });
     return () => {
@@ -199,7 +218,11 @@ export default function MainCategoriesScreen({
   const bannerWidth = Math.max(0, (viewportWidth || width - sidebarWidth) - 25);
   const bannerHeight = bannerWidth / (546 / 162);
   const loading =
-    !gridWidth || dataLoading || deferredCategoryId !== categoryId;
+    !gridWidth ||
+    dataLoading ||
+    // a filter or search needs the items, not just the tiles
+    (itemsLoading && (filter !== 'all' || query.trim() !== '')) ||
+    deferredCategoryId !== categoryId;
   const categoryBanner = liveBanners.find(
     banner => banner.categoryId === selected?.id,
   );
@@ -272,6 +295,9 @@ export default function MainCategoriesScreen({
             style={{width: sidebarWidth, flexGrow: 0}}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.sidebar}>
+            {!categoriesDone ? (
+              <CategorySidebarSkeleton size={sidebarWidth - 26} />
+            ) : null}
             {categoryList.map(item => (
               <Pressable
                 key={item.id}
@@ -331,6 +357,15 @@ export default function MainCategoriesScreen({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.contentPadding}>
+          {standalone && liveCatalogEnabled && !bannersDone ? (
+            <SkeletonGroup style={{marginBottom: 12}}>
+              <SkeletonBlock
+                width={bannerWidth}
+                height={bannerHeight}
+                style={{borderRadius: 13}}
+              />
+            </SkeletonGroup>
+          ) : null}
           {standalone && selected ? (
             categoryBanner ? (
               <Image
@@ -361,7 +396,7 @@ export default function MainCategoriesScreen({
                   key={sub.id}
                   sub={sub}
                   width={cardWidth}
-                  count={subcategoryCounts[sub.id] || 0}
+                  count={itemsLoading ? null : subcategoryCounts[sub.id] || 0}
                   shadowsReady={pageReady && !loading}
                   onPress={() => {
                     const stocked = categoryItems.find(
