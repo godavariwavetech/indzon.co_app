@@ -1,5 +1,3 @@
-import {baseURL} from './config';
-
 // Shared display helpers. All catalog data (categories, shops, items, banners,
 // coupons, orders) comes from the backend via services/catalogService.js.
 const categoryIcon = (source, resizeMode = 'contain') => ({
@@ -8,9 +6,11 @@ const categoryIcon = (source, resizeMode = 'contain') => ({
   resizeMode,
 });
 
-// The "More" tile on the home/search category grids; its picture is served by the
-// backend like every other catalog image.
-export const moreArtwork = categoryIcon({uri: `${baseURL}images/ui/more.png`});
+// The "More" tile on the home/search category grids uses a bundled picture (not a
+// backend image), so it always renders.
+export const moreArtwork = categoryIcon(
+  require('../assets/main/references/more.png'),
+);
 
 // Whole rupees print plain; anything with paise always shows two decimals (₹8.10, not ₹8.1).
 export const money = amount => {

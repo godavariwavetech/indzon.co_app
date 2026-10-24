@@ -834,9 +834,7 @@ export function CartScreen({navigation}) {
             realOrderIds: response.data.ids || [response.data.id],
           }),
         );
-        navigation.replace('OrderConfirmation', {
-          orderId: response.data.order_id || order.id,
-        });
+        resetToConfirmation(navigation, response.data.order_id || order.id);
       } catch (err) {
         placing.current = false;
         setPlacingLive(false);
@@ -846,7 +844,7 @@ export function CartScreen({navigation}) {
     }
 
     dispatch(placePreviewOrder(order));
-    navigation.replace('OrderConfirmation', {orderId: order.id});
+    resetToConfirmation(navigation, order.id);
   };
   return (
     <Page style={{backgroundColor: '#F8F8FB'}}>
@@ -1151,6 +1149,17 @@ export function CartScreen({navigation}) {
     </Page>
   );
 }
+
+// Once an order is placed, drop Cart/Checkout/product screens from the stack so
+// Back from the confirmation (or order details) lands on Home.
+const resetToConfirmation = (navigation, orderId) =>
+  navigation.reset({
+    index: 1,
+    routes: [
+      {name: 'Home', params: {screen: 'HomeTab'}},
+      {name: 'OrderConfirmation', params: {orderId}},
+    ],
+  });
 
 export function OrderConfirmationScreen({navigation, route}) {
   const order = useSelector(state =>
