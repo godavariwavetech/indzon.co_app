@@ -690,41 +690,8 @@ function Details({product: base, navigation}) {
           </Label>
         </View>
         {quantity ? (
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8 * scale,
-            }}>
-            <View style={{width: 96 * scale}}>
-              <Quantity product={product} quantity={quantity} scale={scale} />
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="View cart"
-              onPress={() => navigation.navigate('Cart')}
-              style={{
-                width: 108 * scale,
-                height: 40 * scale,
-                borderRadius: 11,
-                borderWidth: 1.5,
-                borderColor: blue,
-                backgroundColor: '#EEF0FF',
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 5,
-              }}>
-              <MaterialIcons
-                name="shopping-cart"
-                size={17 * scale}
-                color={blue}
-              />
-              <Label
-                style={{fontSize: 14 * scale, fontWeight: '700', color: blue}}>
-                View cart
-              </Label>
-            </Pressable>
+          <View style={{width: 132 * scale}}>
+            <Quantity product={product} quantity={quantity} scale={scale} />
           </View>
         ) : (
           <GradientButton
