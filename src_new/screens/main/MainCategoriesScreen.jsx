@@ -234,7 +234,7 @@ export default function MainCategoriesScreen({
   // Measure inside the divider and padding: calculating from window width
   // made two cards exceed the row by one pixel and wrap into a single column.
   const availableWidth = gridWidth || width - sidebarWidth - 25;
-  const cardWidth = Math.floor((availableWidth - 10) / 2);
+  const cardWidth = Math.floor((availableWidth - 12 - 2) / 2);
   const bannerWidth = Math.max(0, (viewportWidth || width - sidebarWidth) - 25);
   const bannerHeight = bannerWidth / (546 / 162);
   const loading =
@@ -342,7 +342,7 @@ export default function MainCategoriesScreen({
                 <LinearGradient
                   colors={
                     item.id === categoryId
-                      ? ['#DED9FF', '#C8C4FF']
+                      ? ['#2A30D6', '#9794FF']
                       : ['#FAFAFA', '#E1E1E1']
                   }
                   start={{x: 0.5, y: 0}}
@@ -567,7 +567,8 @@ const styles = StyleSheet.create({
   filterButton: {
     borderWidth: 1,
     borderColor: '#C5CBD9',
-    borderRadius: 9,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
@@ -586,17 +587,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  selectedArt: {
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    backgroundColor: '#C8C4FF',
-  },
+  selectedArt: {borderColor: 'transparent'},
   categoryName: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 17,
     textAlign: 'center',
-    fontWeight: '600',
-    color: '#363636',
+    fontWeight: '500',
+    color: '#2B2B2B',
     marginTop: 5,
   },
   selectedName: {color: colors.ink, fontWeight: '700'},
@@ -610,31 +607,41 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 12,
     alignItems: 'stretch',
+    paddingBottom: 6,
   },
+  // Soft pastel card with a gentle drop shadow (iOS needs the shadow* props,
+  // Android uses elevation). No overflow clipping, or iOS would cut the shadow.
   card: {
-    borderRadius: 14,
-    minHeight: 82,
-    padding: 7,
-    overflow: 'hidden',
+    borderRadius: 16,
+    minHeight: 92,
+    padding: 10,
     borderWidth: 1,
-    borderColor: '#E4DFDC',
+    borderColor: 'rgba(255,255,255,0.7)',
   },
-  cardShadow: {elevation: 1},
+  cardShadow: {
+    elevation: 3,
+    shadowColor: '#7A6A8A',
+    shadowOpacity: 0.22,
+    shadowRadius: 6,
+    shadowOffset: {width: 0, height: 3},
+  },
   wideCard: {
     flex: 1,
     flexDirection: 'row',
     gap: 4,
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginRight: -7,
+    marginRight: -10,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   wideCopy: {flex: 1, minWidth: 0, justifyContent: 'center'},
   tilePicture: {overflow: 'hidden', alignSelf: 'center', flexShrink: 0},
   subcategoryName: {
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: 14,
+    lineHeight: 18,
     fontFamily: 'Lato-Bold',
     color: '#111111',
   },
@@ -646,8 +653,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   count: {
-    fontSize: 11,
-    fontFamily: 'Lato-Bold',
+    fontSize: 12,
+    fontFamily: 'Lato-Medium',
     color: colors.ink,
     flexShrink: 1,
   },
@@ -656,7 +663,9 @@ const styles = StyleSheet.create({
     height: 22,
     flexShrink: 0,
     backgroundColor: '#FFFFFF',
-    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
   },

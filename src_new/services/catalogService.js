@@ -110,7 +110,16 @@ export async function resolveServiceLocation({latitude, longitude}) {
   return match ? {id: match.id, name: match.location_name} : null;
 }
 
-const SUBCATEGORY_COLORS = ['#F5DFCF', '#FCE8EF', '#FFE9D6', '#E9F3D6'];
+const SUBCATEGORY_COLORS = [
+  '#F5DFCF',
+  '#FCE8EF',
+  '#FDE9DA',
+  '#EFE7CB',
+  '#FBDDE3',
+  '#E5F1D6',
+  '#E4E5FA',
+  '#F1E4F8',
+];
 
 // Subcategories of a category in a service area. Each row also carries the ids
 // of the shops that stock it (shop_id is a GROUP_CONCAT), which the product
