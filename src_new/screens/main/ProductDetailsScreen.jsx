@@ -27,6 +27,7 @@ import {
   toggleWishlist,
 } from '../../redux/reducers/commerce';
 import {Page, EmptyState, Heading} from '../../components/main/MainUi';
+import {showToast} from '../../components/main/Toast';
 
 const blue = '#3832FF';
 const green = '#00AD49';
@@ -92,7 +93,13 @@ function RelatedProduct({product, navigation, scale}) {
           accessibilityRole="button"
           accessibilityLabel={`${wished ? 'Remove from' : 'Add to'} wishlist`}
           accessibilityState={{selected: wished}}
-          onPress={() => dispatch(toggleWishlist(product.id))}
+          onPress={() => {
+            dispatch(toggleWishlist(product.id));
+            showToast(
+              wished ? 'Removed from wishlist' : 'Added to wishlist',
+              wished ? 'favorite-border' : 'favorite',
+            );
+          }}
           style={styles.relatedHeart}
           hitSlop={6}>
           <MaterialIcons
@@ -422,7 +429,13 @@ function Details({product: base, navigation}) {
                   wished ? 'Remove from wishlist' : 'Add to wishlist'
                 }
                 accessibilityState={{selected: wished}}
-                onPress={() => dispatch(toggleWishlist(product.id))}
+                onPress={() => {
+            dispatch(toggleWishlist(product.id));
+            showToast(
+              wished ? 'Removed from wishlist' : 'Added to wishlist',
+              wished ? 'favorite-border' : 'favorite',
+            );
+          }}
                 style={[styles.heart, {width: 32 * scale, height: 32 * scale}]}>
                 <MaterialIcons
                   name={wished ? 'favorite' : 'favorite-border'}

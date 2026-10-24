@@ -11,6 +11,7 @@ import {
 } from '../../redux/reducers/commerce';
 import {money} from '../../config/catalog';
 import {colors} from './MainUi';
+import {showToast} from './Toast';
 import {toggleLiveWishlist} from '../../services/catalogService';
 
 function ProductCard({product, width, navigation, variant = 'compact'}) {
@@ -84,6 +85,10 @@ function ProductCard({product, width, navigation, variant = 'compact'}) {
         <Pressable
           onPress={() => {
             dispatch(toggleWishlist(product.id));
+            showToast(
+              wished ? 'Removed from wishlist' : 'Added to wishlist',
+              wished ? 'favorite-border' : 'favorite',
+            );
             if (customerId) {
               toggleLiveWishlist({
                 customerId,

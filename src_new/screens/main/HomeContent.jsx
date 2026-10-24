@@ -165,6 +165,9 @@ export default function HomeContent({navigation}) {
   const bannerAspectRatio = 546 / 162;
   const productWidth = (contentWidth - 20) / 3;
   const iconWidth = Math.min((contentWidth - 32) / 5, 72);
+  // Whole-pixel tile width (minus 1dp slack): five `20%` tiles summed to exactly
+  // the row width and wrapped to 4 per row on some densities (e.g. iQOO Z3).
+  const categoryTileWidth = Math.floor((width - 20) / 5) - 1;
   const suggested = (liveSearchResults ?? homeSections.suggested).slice(
     0,
     query ? 18 : 12,
@@ -306,7 +309,7 @@ export default function HomeContent({navigation}) {
           {homeCategories.map(item => (
             <Pressable
               key={item.id}
-              style={styles.category}
+              style={[styles.category, {width: categoryTileWidth}]}
               onPress={() =>
                 item.id === 'more'
                   ? navigation.navigate('CategoriesTab')
@@ -496,7 +499,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.55)',
   },
   bannerDotActive: {backgroundColor: '#FFFFFF'},
-  categoryGrid: {paddingHorizontal: 10, flexDirection: 'row', flexWrap: 'wrap'},
+  categoryGrid: {
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+  },
   category: {width: '20%', alignItems: 'center', marginBottom: 8},
   categoryName: {
     fontSize: 10,
