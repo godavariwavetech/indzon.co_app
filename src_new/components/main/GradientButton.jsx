@@ -1,5 +1,5 @@
 import React from 'react';
-import {ActivityIndicator, Pressable, StyleSheet} from 'react-native';
+import {ActivityIndicator, Pressable, StyleSheet, View} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {Text} from '../Typography';
 
@@ -34,17 +34,21 @@ export default function GradientButton({
         style,
         (pressed || unavailable) && styles.dimmed,
       ]}>
+      {/* Gradient is its own rounded layer behind the content: iOS ignores the
+          parent's overflow clipping for it, which left square corners. */}
       <LinearGradient
         colors={colors}
         start={{x: 0, y: 0}}
         end={{x: 1, y: 0}}
-        style={[styles.gradient, {minHeight: height}]}>
+        style={styles.fill}
+      />
+      <View style={[styles.gradient, {minHeight: height}]}>
         {loading ? (
           <ActivityIndicator color="#FFFFFF" />
         ) : (
           children || <Text style={styles.label}>{label}</Text>
         )}
-      </LinearGradient>
+      </View>
     </Pressable>
   );
 }
@@ -57,6 +61,7 @@ export const gradientButtonLabel = {
 
 const styles = StyleSheet.create({
   button: {borderRadius: 11, overflow: 'hidden'},
+  fill: {...StyleSheet.absoluteFillObject, borderRadius: 11},
   gradient: {
     paddingHorizontal: 16,
     flexDirection: 'row',

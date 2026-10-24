@@ -104,7 +104,9 @@ export default function LoginScreen({navigation, route}) {
           colors={['#4B43FF', '#173CFF']}
           start={{x: 0, y: 0}}
           end={{x: 1, y: 0}}
-          style={styles.gradient}>
+          style={styles.fill}
+        />
+        <View style={styles.gradient}>
           {loading ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
@@ -122,7 +124,7 @@ export default function LoginScreen({navigation, route}) {
               </Svg>
             </>
           )}
-        </LinearGradient>
+        </View>
       </Pressable>
     </ShoppingLoginLayout>
   );
@@ -168,6 +170,7 @@ const styles = StyleSheet.create({
   invalid: {borderColor: '#C62828'},
   error: {color: '#C62828', fontSize: 12, lineHeight: 18, marginTop: 8},
   button: {marginTop: 20, borderRadius: 11, overflow: 'hidden'},
+  fill: {...StyleSheet.absoluteFillObject, borderRadius: 11},
   gradient: {
     minHeight: 46,
     paddingHorizontal: 16,
