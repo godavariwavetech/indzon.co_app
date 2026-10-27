@@ -40,6 +40,24 @@ test('server rejection is shown as an error even when the HTTP request succeeds'
   );
 });
 
+test('an OTP server failure shows a retry message without exposing server details', async () => {
+  api.post.mockRejectedValue({
+    message: 'Request failed with status code 500',
+    response: {status: 500, data: '<html>TypeError: internal server detail</html>'},
+  });
+  await expect(authService.requestOtp('9876543210')).rejects.toThrow(
+    'The OTP service is temporarily unavailable. Please try again later.',
+  );
+});
+
+test('OTP validation errors from the server remain available to the screen', async () => {
+  const error = {
+    response: {status: 400, data: {message: 'Invalid mobile number'}},
+  };
+  api.post.mockRejectedValue(error);
+  await expect(authService.requestOtp('9876543210')).rejects.toBe(error);
+});
+
 test('invalid OTP input does not call the server', async () => {
   await expect(authService.verifyOtp('9876543210', '12ab')).rejects.toThrow(
     'verification code',

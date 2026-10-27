@@ -8,6 +8,7 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   View,
@@ -23,6 +24,7 @@ import {
   removeItem,
   deleteItem,
   clearCart,
+  setCouponCode,
   toggleWishlist,
   placePreviewOrder,
   saveOrderFeedback,
@@ -50,6 +52,7 @@ import CartPill from '../../components/main/CartPill';
 import {matchesFilter} from './MainCategoriesScreen';
 import api from '../../utils/api';
 import {endpoints} from '../../config/config';
+import {verifyCartPrices} from '../../services/cartPrices';
 import {
   evaluateLiveCoupon,
   getLiveCategories,
@@ -65,6 +68,7 @@ import {
   useAllOrders,
   useOrders,
   useLiveItemsByIds,
+  refreshLiveItems,
   useLiveOrderItems,
 } from '../../services/catalogService';
 
@@ -713,6 +717,38 @@ export function CartScreen({navigation}) {
       return;
     }
     placing.current = true;
+    if (liveCatalogEnabled) {
+      setPlacingLive(true);
+      setOrderError(null);
+      try {
+        await verifyCartPrices({ids: cartIds, previous: liveCartItemsById,
+          locationId, refresh: refreshLiveItems});
+        if (coupon) {
+          const currentOffers = await getLiveCoupons({
+            locationId: address.location_id || locationId,
+            categoryId: firstCartItem?.categoryId || 0,
+            shopId: firstCartItem?.shopId || 0,
+          });
+          setLiveOffers(currentOffers);
+          const currentCoupon = evaluateLiveCoupon(coupon, currentOffers,
+            items.map(item => ({...item, quantity: cart[item.id]})));
+          if (currentCoupon.error) {
+            dispatch(setCouponCode(null));
+            throw new Error('This coupon is no longer available or eligible. The discount has been removed. Please review your updated total before placing the order.');
+          }
+          const offerId = offers => offers.find(offer =>
+            offer.code.toUpperCase() === String(coupon).trim().toUpperCase())?.id;
+          if (currentCoupon.discount !== discount || offerId(currentOffers) !== offerId(liveOffers)) {
+            throw new Error('This coupon has changed. Please review your updated total before placing the order.');
+          }
+        }
+      } catch (error) {
+        placing.current = false;
+        setPlacingLive(false);
+        setOrderError(error.message || 'Could not verify current prices. Please try again.');
+        return;
+      }
+    }
     const now = new Date();
     const order = {
       id: `preview-${now.getTime()}`,
@@ -1252,7 +1288,7 @@ export function OrderConfirmationScreen({navigation, route}) {
 }
 
 export function OrderDetailsScreen({navigation, route}) {
-  const {orders: allOrders, refresh: refreshOrders} = useOrders();
+  const {orders: allOrders, refresh: refreshOrders, refreshing} = useOrders({pollInterval: 5000});
   const auth = useSelector(state => state.Auth);
   const savedFeedback = useSelector(
     state => state.commerce.feedback[route.params?.orderId],
@@ -1374,6 +1410,10 @@ export function OrderDetailsScreen({navigation, route}) {
       <Heading title="Orders Details" navigation={navigation} back />
       <ScrollView
         contentContainerStyle={s.content}
+        alwaysBounceVertical
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={refreshOrders} />
+        }
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <Section style={{marginTop: 0}}>
