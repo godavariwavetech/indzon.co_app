@@ -127,16 +127,18 @@ export default function MainOrdersScreen({navigation}) {
               start={{x: 0, y: 0}}
               end={{x: 1, y: 0}}
               style={styles.orderHeader}>
-              <View style={{flex: 1, minWidth: 0}}>
-                <Text style={styles.headerLabel}>ORDER ID</Text>
-                <Text style={styles.headerId}>
-                  #{order.id.replace('preview-', '')}
-                </Text>
-                <Text style={styles.headerDate}>{order.placed}</Text>
-              </View>
-              <View style={styles.headerTotal}>
-                <Text style={styles.headerLabel}>TOTAL AMOUNT</Text>
-                <Text style={styles.headerAmount}>{money(order.price)}</Text>
+              <View style={styles.orderHeaderInner}>
+                <View style={{flex: 1, minWidth: 0}}>
+                  <Text style={styles.headerLabel}>ORDER ID</Text>
+                  <Text style={styles.headerId}>
+                    #{order.id.replace('preview-', '')}
+                  </Text>
+                  <Text style={styles.headerDate}>{order.placed}</Text>
+                </View>
+                <View style={styles.headerTotal}>
+                  <Text style={styles.headerLabel}>TOTAL AMOUNT</Text>
+                  <Text style={styles.headerAmount}>{money(order.price)}</Text>
+                </View>
               </View>
             </LinearGradient>
             {order.groups.map((group, index) => {
@@ -230,14 +232,12 @@ const styles = StyleSheet.create({
   emptySearch: {alignItems: 'center', paddingVertical: 36, gap: 10},
   emptyTitle: {fontSize: 17, fontWeight: '700', color: '#242637'},
   emptyCaption: {fontSize: 14, color: '#737B8C', textAlign: 'center'},
-  orderHeader: {
+  orderHeader: {borderRadius: 13, marginBottom: 10, overflow: 'hidden'},
+  orderHeaderInner: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
     padding: 14,
-    borderRadius: 13,
-    marginBottom: 10,
-    overflow: 'hidden',
   },
   headerLabel: {
     fontSize: 9.9,

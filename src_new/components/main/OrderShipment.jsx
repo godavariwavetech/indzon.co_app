@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Pressable, StyleSheet, View} from 'react-native';
+import {Linking, Pressable, StyleSheet, View} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {Text} from '../Typography';
 import ReferenceArtwork from './ReferenceArtwork';
@@ -15,8 +15,47 @@ const stages = [
 export const shipmentStatus = (group, order) =>
   group.status || order.status || 'Confirmed';
 
-export default function OrderShipment({group, order, items, navigation}) {
+// Star row to rate one delivered item; tapping a star saves it straight away.
+function ItemRating({item, value, onRate, error}) {
+  return (
+    <View style={styles.itemRating}>
+      <Text style={styles.ratingLabel}>
+        {value ? 'Your rating' : 'Rate this item'}
+      </Text>
+      <View style={styles.ratingStars}>
+        {[1, 2, 3, 4, 5].map(star => (
+          <Pressable
+            key={star}
+            hitSlop={4}
+            accessibilityRole="button"
+            accessibilityLabel={`Rate ${item.name} ${star} out of 5`}
+            accessibilityState={{selected: value === star}}
+            onPress={() => onRate(item, star)}>
+            <MaterialIcons
+              name={star <= value ? 'star' : 'star-border'}
+              size={26}
+              color={star <= value ? '#F7BD00' : '#B9BEC8'}
+            />
+          </Pressable>
+        ))}
+      </View>
+      {error ? <Text style={styles.ratingError}>{error}</Text> : null}
+    </View>
+  );
+}
+
+export default function OrderShipment({
+  group,
+  order,
+  items,
+  navigation,
+  onCancel,
+  onRateItem,
+}) {
   const [expanded, setExpanded] = useState(true);
+  // stars chosen in this session, by item id (the saved ones come with the item)
+  const [ratings, setRatings] = useState({});
+  const [ratingErrors, setRatingErrors] = useState({});
   const status = shipmentStatus(group, order);
   const current = stages.findIndex(
     stage => stage.toLowerCase() === status.toLowerCase(),
@@ -25,6 +64,26 @@ export default function OrderShipment({group, order, items, navigation}) {
   const shipmentItems = items.filter(item =>
     group.productIds.includes(item.id),
   );
+  // items can be rated once their shipment has been delivered
+  const canRate = Boolean(onRateItem) && order.live && status === 'Delivered';
+  const rateItem = async (item, value) => {
+    const previous = ratings[item.id];
+    setRatings(current => ({...current, [item.id]: value}));
+    setRatingErrors(current => ({...current, [item.id]: ''}));
+    let saved = false;
+    try {
+      saved = await onRateItem(item, value);
+    } catch (error) {
+      saved = false;
+    }
+    if (!saved) {
+      setRatings(current => ({...current, [item.id]: previous}));
+      setRatingErrors(current => ({
+        ...current,
+        [item.id]: 'Could not save your rating. Please try again.',
+      }));
+    }
+  };
   return (
     <View style={styles.card}>
       <View style={styles.row}>
@@ -47,8 +106,8 @@ export default function OrderShipment({group, order, items, navigation}) {
         Shipment {group.id || `${order.id}-${group.name}`}
       </Text>
       {shipmentItems.map(item => (
+        <React.Fragment key={item.id}>
         <Pressable
-          key={item.id}
           accessibilityRole="button"
           accessibilityLabel={`View ${item.name}`}
           onPress={() =>
@@ -66,7 +125,36 @@ export default function OrderShipment({group, order, items, navigation}) {
             {money(item.price * item.quantity)}
           </Text>
         </Pressable>
+        {canRate ? (
+          <ItemRating
+            item={item}
+            value={ratings[item.id] ?? item.myRating ?? 0}
+            onRate={rateItem}
+            error={ratingErrors[item.id]}
+          />
+        ) : null}
+        </React.Fragment>
       ))}
+      {onRateItem && order.live && !canRate && !cancelled ? (
+        <Text style={[styles.caption, {marginTop: 8}]}>
+          You can rate these items once they are delivered.
+        </Text>
+      ) : null}
+      {onCancel && order.live && status === 'Placed' ? (
+        <Pressable
+          style={styles.cancelButton}
+          onPress={() => onCancel(group)}
+          accessibilityRole="button"
+          accessibilityLabel={`Cancel ${group.name} items`}>
+          <MaterialIcons name="highlight-off" size={19} color="#BC3C47" />
+          <Text style={styles.cancelButtonText}>Cancel {group.name} items</Text>
+        </Pressable>
+      ) : null}
+      {cancelled && group.cancelReason ? (
+        <Text style={[styles.caption, {color: '#BC3C47'}]}>
+          {group.cancelReason}
+        </Text>
+      ) : null}
       <Pressable
         style={styles.trackButton}
         onPress={() => setExpanded(value => !value)}
@@ -134,7 +222,21 @@ export default function OrderShipment({group, order, items, navigation}) {
                   : 'Partner details will appear when assigned.')}
             </Text>
             {group.deliveryPartner?.phone ? (
-              <Text style={styles.caption}>{group.deliveryPartner.phone}</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Call ${group.deliveryPartner.name}`}
+                onPress={() =>
+                  Linking.openURL(`tel:${group.deliveryPartner.phone}`)
+                }>
+                <Text style={[styles.caption, {color: '#3832FF'}]}>
+                  Call {group.deliveryPartner.phone}
+                </Text>
+              </Pressable>
+            ) : null}
+            {group.deliveryPartner?.rating ? (
+              <Text style={styles.caption}>
+                Rating: {group.deliveryPartner.rating} ★
+              </Text>
             ) : null}
             {group.trackingNumber ? (
               <Text style={styles.caption}>
@@ -205,6 +307,27 @@ const styles = StyleSheet.create({
   line: {width: 2, flex: 1, backgroundColor: '#E6E8EF', marginVertical: 4},
   completeLine: {backgroundColor: '#3832FF'},
   pending: {color: '#8B92A0'},
+  itemRating: {
+    marginLeft: 54,
+    marginTop: -4,
+    marginBottom: 6,
+  },
+  ratingLabel: {fontSize: 13, color: '#687384'},
+  ratingStars: {flexDirection: 'row', gap: 4, marginTop: 4},
+  ratingError: {fontSize: 12, color: '#BC3C47', marginTop: 4},
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 42,
+    marginTop: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E5B3B8',
+    backgroundColor: '#FFF0F0',
+  },
+  cancelButtonText: {fontSize: 14, fontWeight: '700', color: '#BC3C47'},
   partner: {
     backgroundColor: '#F7F7FB',
     borderRadius: 12,

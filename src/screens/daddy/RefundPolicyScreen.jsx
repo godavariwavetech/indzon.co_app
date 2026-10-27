@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import commonStyles from '../../commonstyles/CommonStyles';
+import {SUPPORT_EMAIL} from '../../../src_new/config/contact';
 
 const RefundPolicyScreen = () => {
   const navigation = useNavigation();
@@ -60,8 +61,8 @@ const RefundPolicyScreen = () => {
         <Text style={styles.sectionTitle}>5. Contact Us</Text>
         <Text style={[styles.content,{marginBottom:responsiveHeight(10)}]}>
           For refund-related queries:{"\n"}
-          <TouchableOpacity onPress={() => Linking.openURL('mailto:amaraasupport@gmail.com')}>
-            <Text style={[styles.link, styles.bold]}>Email: amaraasupport@gmail.com</Text>
+          <TouchableOpacity onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)}>
+            <Text style={[styles.link, styles.bold]}>Email: {SUPPORT_EMAIL}</Text>
           </TouchableOpacity>{"\n"}
           <TouchableOpacity onPress={() => Linking.openURL('tel:8688104157')}>
             <Text style={[styles.link, styles.bold]}>Phone: 8688104157</Text>

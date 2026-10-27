@@ -16,13 +16,18 @@ import {useDispatch, useSelector} from 'react-redux';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {money} from '../../config/catalog';
-import {getLiveItems} from '../../services/catalogService';
+import {
+  getLiveItems,
+  getSuggestedProducts,
+  groupVariants,
+} from '../../services/catalogService';
 import {
   addItem,
   removeItem,
   toggleWishlist,
 } from '../../redux/reducers/commerce';
 import {Page, EmptyState, Heading} from '../../components/main/MainUi';
+import {showToast} from '../../components/main/Toast';
 
 const blue = '#3832FF';
 const green = '#00AD49';
@@ -77,7 +82,10 @@ function RelatedProduct({product, navigation, scale}) {
           accessibilityRole="button"
           accessibilityLabel={`View ${product.name}`}
           onPress={() =>
-            navigation.push('ProductDetails', {productId: product.id})
+            navigation.push('ProductDetails', {
+              productId: product.id,
+              liveProduct: product,
+            })
           }>
           <ReferenceArtwork art={product.art} width={130 * scale} height={132 * scale} resizeMode="contain" />
         </Pressable>
@@ -85,7 +93,13 @@ function RelatedProduct({product, navigation, scale}) {
           accessibilityRole="button"
           accessibilityLabel={`${wished ? 'Remove from' : 'Add to'} wishlist`}
           accessibilityState={{selected: wished}}
-          onPress={() => dispatch(toggleWishlist(product.id))}
+          onPress={() => {
+            dispatch(toggleWishlist(product.id));
+            showToast(
+              wished ? 'Removed from wishlist' : 'Added to wishlist',
+              wished ? 'favorite-border' : 'favorite',
+            );
+          }}
           style={styles.relatedHeart}
           hitSlop={6}>
           <MaterialIcons
@@ -94,21 +108,45 @@ function RelatedProduct({product, navigation, scale}) {
             color={wished ? '#ED4242' : '#65717B'}
           />
         </Pressable>
-        <View style={styles.relatedRating}>
-          <MaterialIcons name="star" size={18 * scale} color="#009A62" />
-          <Label style={{fontSize: 14 * scale, fontWeight: '700'}}>
-            {product.rating}
-          </Label>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Add ${product.name} to cart`}
-          onPress={() => dispatch(addItem(product.id))}
-          style={styles.relatedAdd}>
-          <Label style={{color: blue, fontSize: 12 * scale, fontWeight: '700'}}>
-            {quantity ? `${quantity} +` : 'ADD'}
-          </Label>
-        </Pressable>
+        {product.rating ? (
+          <View style={styles.relatedRating}>
+            <MaterialIcons name="star" size={18 * scale} color="#009A62" />
+            <Label style={{fontSize: 14 * scale, fontWeight: '700'}}>
+              {product.rating}
+            </Label>
+          </View>
+        ) : null}
+        {quantity ? (
+          <View style={styles.relatedStepper}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Remove one ${product.name}`}
+              hitSlop={6}
+              onPress={() => dispatch(removeItem(product.id))}
+              style={styles.relatedStepperButton}>
+              <Label style={styles.relatedStepperText}>−</Label>
+            </Pressable>
+            <Label style={styles.relatedStepperCount}>{quantity}</Label>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Add one ${product.name}`}
+              hitSlop={6}
+              onPress={() => dispatch(addItem(product.id))}
+              style={styles.relatedStepperButton}>
+              <Label style={styles.relatedStepperText}>+</Label>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Add ${product.name} to cart`}
+            onPress={() => dispatch(addItem(product.id))}
+            style={styles.relatedAdd}>
+            <Label style={{color: blue, fontSize: 12 * scale, fontWeight: '700'}}>
+              ADD
+            </Label>
+          </Pressable>
+        )}
       </View>
       <Label
         numberOfLines={1}
@@ -136,18 +174,71 @@ function RelatedProduct({product, navigation, scale}) {
   );
 }
 
-function Details({product, navigation}) {
+const optionLabel = key =>
+  key.replace(/_/g, ' ').replace(/^./, letter => letter.toUpperCase());
+
+function Details({product: base, navigation}) {
   const {width} = useWindowDimensions();
   const scale = Math.min(width / 393, 1.4);
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
+  // Every row of the shop's list; rows sharing a unique_code are the variants
+  // (colour, size, storage...) of one product the dashboard saved.
+  const [rows, setRows] = useState([]);
+  const [selectedId, setSelectedId] = useState(base.id);
+  const product = rows.find(row => row.id === selectedId) || base;
+  const siblings = product.uniqueCode
+    ? rows.filter(row => row.uniqueCode === product.uniqueCode)
+    : [];
   const quantity = useSelector(state => state.commerce.cart[product.id] || 0);
+  const cartCount = useSelector(state =>
+    Object.values(state.commerce.cart).reduce((sum, count) => sum + count, 0),
+  );
   const wished = useSelector(state =>
     state.commerce.wishlist.includes(product.id),
   );
   const [expanded, setExpanded] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
   const gallery = useRef(null);
+  useEffect(() => {
+    setImageIndex(0);
+    gallery.current?.scrollTo({x: 0, animated: false});
+  }, [product.id]);
+  // Picking a value switches to the sibling row that has it, keeping the other
+  // options where that row allows.
+  const pickOption = (key, value) => {
+    const wanted = Object.fromEntries(product.variantOptions);
+    wanted[key] = value;
+    const matches = siblings.filter(row =>
+      row.variantOptions.some(([k, v]) => k === key && v === value),
+    );
+    const best = matches.reduce(
+      (found, row) => {
+        const score = row.variantOptions.filter(
+          ([k, v]) => wanted[k] === v,
+        ).length;
+        return score > found.score ? {row, score} : found;
+      },
+      {row: null, score: -1},
+    ).row;
+    if (best) {
+      setSelectedId(best.id);
+    }
+  };
+  const optionGroups = siblings.length > 1
+    ? product.variantOptions
+        .map(([key]) => [
+          key,
+          [
+            ...new Set(
+              siblings.flatMap(row =>
+                row.variantOptions.filter(([k]) => k === key).map(([, v]) => v),
+              ),
+            ),
+          ],
+        ])
+        .filter(([, values]) => values.length > 1)
+    : [];
   const images = product.images?.length
     ? product.images.map(source => ({source, zoom: 1, label: 'Product image'}))
     : [
@@ -169,37 +260,106 @@ function Details({product, navigation}) {
       )}%)`,
     ],
     ...(product.vegetarian ? [['Dietary preference', 'Vegetarian']] : []),
+    ...(product.variantOptions || [])
+      .filter(([key]) => key !== 'measurement')
+      .map(([key, value]) => [optionLabel(key), String(value)]),
+    ...(product.attributes || []).map(([key, value]) => [
+      optionLabel(key),
+      String(value),
+    ]),
   ].filter(([, value]) => Boolean(value));
-  const [similar, setSimilar] = useState([]);
   useEffect(() => {
-    if (!product.shopItemsTableName) {
+    if (!base.shopItemsTableName) {
       return undefined;
     }
     let active = true;
     getLiveItems({
-      shopItemsTableName: product.shopItemsTableName,
-      shopId: product.shopId,
+      shopItemsTableName: base.shopItemsTableName,
+      shopId: base.shopId,
     })
-      .then(rows => {
-        if (!active) {
-          return;
-        }
-        setSimilar(
-          rows
-            .filter(item => item.id !== product.id)
-            .sort(
-              (a, b) =>
-                Number(b.subcategoryId === product.subcategoryId) -
-                Number(a.subcategoryId === product.subcategoryId),
-            )
-            .slice(0, 6),
-        );
-      })
+      .then(list => active && setRows(list))
       .catch(() => {});
     return () => {
       active = false;
     };
-  }, [product.id, product.shopId, product.shopItemsTableName, product.subcategoryId]);
+  }, [base.id, base.shopId, base.shopItemsTableName]);
+  // Similar Products: the rest of this shop's range, same subcategory first, one card per
+  // product (variants are chosen above).
+  const similar = groupVariants(
+    rows.filter(
+      item =>
+        item.id !== product.id &&
+        (!product.uniqueCode || item.uniqueCode !== product.uniqueCode),
+    ),
+  )
+    .sort(
+      (a, b) =>
+        Number(b.subcategoryId === product.subcategoryId) -
+        Number(a.subcategoryId === product.subcategoryId),
+    )
+    .slice(0, 12);
+  // You may also like: best-value products from every category in the delivery area.
+  const locationId = useSelector(state => state.Auth.locationId);
+  const [explore, setExplore] = useState([]);
+  useEffect(() => {
+    let active = true;
+    getSuggestedProducts({limit: 24, locationId})
+      .then(list => active && setExplore(list))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [locationId]);
+  const shown = new Set(similar.map(item => item.uniqueCode || item.id));
+  const alsoLike = explore
+    .filter(item => {
+      const key = item.uniqueCode || item.id;
+      return (
+        item.id !== product.id &&
+        (!product.uniqueCode || item.uniqueCode !== product.uniqueCode) &&
+        !shown.has(key)
+      );
+    })
+    .slice(0, 12);
+  const productRow = (title, list) =>
+    list.length ? (
+      <View
+        style={[
+          styles.similar,
+          {
+            marginHorizontal: 8 * scale,
+            marginTop: 16 * scale,
+            paddingVertical: 12 * scale,
+          },
+        ]}>
+        <Label
+          style={{
+            fontSize: 16 * scale,
+            fontWeight: '700',
+            marginHorizontal: 12 * scale,
+            marginBottom: 13 * scale,
+          }}>
+          {title}
+        </Label>
+        <ScrollView
+          key={`${title}-${product.id}`}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingHorizontal: 12 * scale,
+            gap: 12 * scale,
+          }}>
+          {list.map(item => (
+            <RelatedProduct
+              key={item.id}
+              product={item}
+              navigation={navigation}
+              scale={scale}
+            />
+          ))}
+        </ScrollView>
+      </View>
+    ) : null;
   const weight = product.unit.match(/^([\d.]+)\s*(kg|g)$/i);
   const per100 = weight
     ? product.price /
@@ -262,20 +422,48 @@ function Details({product, navigation}) {
                 color="#0D0D0D"
               />
             </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={
-                wished ? 'Remove from wishlist' : 'Add to wishlist'
-              }
-              accessibilityState={{selected: wished}}
-              onPress={() => dispatch(toggleWishlist(product.id))}
-              style={[styles.heart, {width: 32 * scale, height: 32 * scale}]}>
-              <MaterialIcons
-                name={wished ? 'favorite' : 'favorite-border'}
-                size={23 * scale}
-                color={wished ? '#ED4242' : '#4E4E4E'}
-              />
-            </Pressable>
+            <View style={styles.headerActions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={
+                  wished ? 'Remove from wishlist' : 'Add to wishlist'
+                }
+                accessibilityState={{selected: wished}}
+                onPress={() => {
+            dispatch(toggleWishlist(product.id));
+            showToast(
+              wished ? 'Removed from wishlist' : 'Added to wishlist',
+              wished ? 'favorite-border' : 'favorite',
+            );
+          }}
+                style={[styles.heart, {width: 32 * scale, height: 32 * scale}]}>
+                <MaterialIcons
+                  name={wished ? 'favorite' : 'favorite-border'}
+                  size={23 * scale}
+                  color={wished ? '#ED4242' : '#4E4E4E'}
+                />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Open cart, ${cartCount} ${
+                  cartCount === 1 ? 'item' : 'items'
+                }`}
+                onPress={() => navigation.navigate('Cart')}
+                style={[styles.heart, {width: 32 * scale, height: 32 * scale}]}>
+                <MaterialIcons
+                  name="shopping-cart"
+                  size={22 * scale}
+                  color="#4E4E4E"
+                />
+                {cartCount > 0 ? (
+                  <View style={styles.cartBadge}>
+                    <Label style={styles.cartBadgeText}>
+                      {cartCount > 99 ? '99+' : cartCount}
+                    </Label>
+                  </View>
+                ) : null}
+              </Pressable>
+            </View>
           </View>
           <View
             pointerEvents="none"
@@ -313,38 +501,40 @@ function Details({product, navigation}) {
               />
             ))}
           </View>
-          <View
-            style={[
-              styles.rating,
-              {
-                right: 8 * scale,
-                height: 28 * scale,
-                paddingHorizontal: 7 * scale,
-              },
-            ]}
-            accessibilityLabel={`${product.rating} stars${
-              product.reviewCount ? `, ${product.reviewCount} reviews` : ''
-            }`}>
-            {[0, 1, 2, 3, 4].map(index => (
-              <MaterialIcons
-                key={index}
-                name={
-                  Number(product.rating) >= index + 1
-                    ? 'star'
-                    : Number(product.rating) > index
-                    ? 'star-half'
-                    : 'star-border'
-                }
-                size={12 * scale}
-                color="#F2BC00"
-              />
-            ))}
-            <Label style={{fontSize: 10 * scale, marginLeft: 4 * scale}}>
-              {product.reviewCount
-                ? `(${product.reviewCount.toLocaleString('en-IN')})`
-                : product.rating}
-            </Label>
-          </View>
+          {product.rating ? (
+            <View
+              style={[
+                styles.rating,
+                {
+                  right: 8 * scale,
+                  height: 28 * scale,
+                  paddingHorizontal: 7 * scale,
+                },
+              ]}
+              accessibilityLabel={`${product.rating} stars${
+                product.reviewCount ? `, ${product.reviewCount} reviews` : ''
+              }`}>
+              {[0, 1, 2, 3, 4].map(index => (
+                <MaterialIcons
+                  key={index}
+                  name={
+                    Number(product.rating) >= index + 1
+                      ? 'star'
+                      : Number(product.rating) > index
+                      ? 'star-half'
+                      : 'star-border'
+                  }
+                  size={12 * scale}
+                  color="#F2BC00"
+                />
+              ))}
+              <Label style={{fontSize: 10 * scale, marginLeft: 4 * scale}}>
+                {product.reviewCount
+                  ? `(${product.reviewCount.toLocaleString('en-IN')})`
+                  : product.rating}
+              </Label>
+            </View>
+          ) : null}
         </View>
         <View
           style={[
@@ -385,6 +575,41 @@ function Details({product, navigation}) {
             ]}>
             {product.unit}
           </Label>
+          {optionGroups.map(([key, values]) => (
+            <View key={key} style={{marginTop: 10 * scale}}>
+              <Label style={{fontSize: 13 * scale, fontWeight: '700'}}>
+                {optionLabel(key)}:{' '}
+                <Label style={{fontWeight: '400', fontSize: 13 * scale}}>
+                  {product.variantOptions.find(([k]) => k === key)?.[1]}
+                </Label>
+              </Label>
+              <View style={styles.optionRow}>
+                {values.map(value => {
+                  const selected = product.variantOptions.some(
+                    ([k, v]) => k === key && v === value,
+                  );
+                  return (
+                    <Pressable
+                      key={value}
+                      accessibilityRole="button"
+                      accessibilityState={{selected}}
+                      accessibilityLabel={`${optionLabel(key)} ${value}`}
+                      onPress={() => pickOption(key, value)}
+                      style={[styles.optionChip, selected && styles.optionChipOn]}>
+                      <Label
+                        style={{
+                          fontSize: 13 * scale,
+                          fontWeight: selected ? '700' : '500',
+                          color: selected ? blue : '#202427',
+                        }}>
+                        {value}
+                      </Label>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
           <View style={[styles.priceRow, {marginTop: 7 * scale}]}>
             <Label style={{fontSize: 16 * scale, fontWeight: '700'}}>
               {money(product.price)}
@@ -444,44 +669,8 @@ function Details({product, navigation}) {
             </View>
           ) : null}
         </View>
-        {similar.length ? (
-          <View
-            style={[
-              styles.similar,
-              {
-                marginHorizontal: 8 * scale,
-                marginTop: 16 * scale,
-                paddingVertical: 12 * scale,
-              },
-            ]}>
-            <Label
-              style={{
-                fontSize: 16 * scale,
-                fontWeight: '700',
-                marginHorizontal: 12 * scale,
-                marginBottom: 13 * scale,
-              }}>
-              Similar Products
-            </Label>
-            <ScrollView
-              key={product.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{
-                paddingHorizontal: 12 * scale,
-                gap: 12 * scale,
-              }}>
-              {similar.map(item => (
-                <RelatedProduct
-                  key={item.id}
-                  product={item}
-                  navigation={navigation}
-                  scale={scale}
-                />
-              ))}
-            </ScrollView>
-          </View>
-        ) : null}
+        {productRow('Similar Products', similar)}
+        {productRow('You may also like', alsoLike)}
       </ScrollView>
       <View
         style={[
@@ -516,13 +705,6 @@ function Details({product, navigation}) {
         {quantity ? (
           <View style={{width: 132 * scale}}>
             <Quantity product={product} quantity={quantity} scale={scale} />
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => navigation.navigate('Cart')}>
-              <Label style={{textAlign: 'center', color: blue, marginTop: 5}}>
-                View cart
-              </Label>
-            </Pressable>
           </View>
         ) : (
           <GradientButton
@@ -554,6 +736,18 @@ export default function ProductDetailsScreen({navigation, route}) {
 }
 
 const styles = StyleSheet.create({
+  optionRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 7},
+  optionChip: {
+    minWidth: 44,
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#C9CFD8',
+    backgroundColor: '#FFFFFF',
+  },
+  optionChipOn: {borderColor: blue, backgroundColor: '#EEF0FF'},
   expandedDetails: {paddingTop: 14},
   detailsHeading: {
     fontSize: 14,
@@ -597,6 +791,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   back: {height: 32, justifyContent: 'center'},
+  headerActions: {flexDirection: 'row', alignItems: 'center', gap: 10},
+  cartBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    backgroundColor: blue,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cartBadgeText: {fontSize: 10, lineHeight: 13, fontWeight: '800', color: '#FFFFFF'},
   heart: {
     borderRadius: 30,
     backgroundColor: '#EDEDED',
@@ -670,6 +880,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 3,
     backgroundColor: '#FFFFFFDD',
+  },
+  relatedStepper: {
+    position: 'absolute',
+    right: 6,
+    bottom: 6,
+    height: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: blue,
+    overflow: 'hidden',
+  },
+  relatedStepperButton: {
+    width: 20,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  relatedStepperText: {color: '#FFFFFF', fontSize: 14, lineHeight: 18, fontWeight: '700'},
+  relatedStepperCount: {
+    minWidth: 14,
+    textAlign: 'center',
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
   relatedAdd: {
     position: 'absolute',

@@ -7,7 +7,8 @@
 // iOS simulator / same machine: http://localhost:2406/
 // Physical device on same Wi-Fi: http://<this machine's LAN IP>:2406/
 // Live: https://api.indzon.godavariwave.com/
-export const baseURL = "http://192.168.0.129:2406/";
+export const baseURL = "https://api.indzon.godavariwave.com/";
+// export const baseURL = "http://192.168.0.125:2406/";
 
 
 export const endpoints = {
@@ -43,6 +44,7 @@ export const endpoints = {
   GIVE_APP_FEEDBACK: 'public_app/postapprating',
   CANCEL_ORDER: 'public_app/cancleorder',
   GIVE_ORDER_RATING: "public_app/postorderrating",
+  GIVE_ITEM_RATING: 'public_app/postitemrating',
   GENERATE_ORDER_ID: 'public_app/generateorderid',
   UPDATE_ORDER_STATUS: 'public_app/updatepaymetdetails',
   GET_RESULT_FULL_DATA: 'public_app/searchitemsfull',

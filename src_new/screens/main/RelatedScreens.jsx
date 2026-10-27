@@ -174,17 +174,19 @@ export function MyAccountScreen({navigation}) {
           style={styles.accountHero}>
           <View pointerEvents="none" style={styles.accountGlow} />
           <View pointerEvents="none" style={styles.accountGlowTwo} />
-          <View style={styles.accountAvatar}>
-            <Text style={styles.accountInitials}>{initials || 'A'}</Text>
-          </View>
-          <View style={styles.accountHeroCopy}>
-            <Text style={styles.accountEyebrow}>YOUR INDZON ACCOUNT</Text>
-            <Text numberOfLines={1} style={styles.accountHeroName}>
-              {name.trim() || 'INDZON Member'}
-            </Text>
-            <Text numberOfLines={1} style={styles.accountHeroPhone}>
-              {displayPhone}
-            </Text>
+          <View style={styles.accountHeroInner}>
+            <View style={styles.accountAvatar}>
+              <Text style={styles.accountInitials}>{initials || 'A'}</Text>
+            </View>
+            <View style={styles.accountHeroCopy}>
+              <Text style={styles.accountEyebrow}>YOUR INDZON ACCOUNT</Text>
+              <Text numberOfLines={1} style={styles.accountHeroName}>
+                {name.trim() || 'INDZON Member'}
+              </Text>
+              <Text numberOfLines={1} style={styles.accountHeroPhone}>
+                {displayPhone}
+              </Text>
+            </View>
           </View>
         </LinearGradient>
 
@@ -394,18 +396,20 @@ export function AboutUsScreen({navigation}) {
           end={{x: 1, y: 1}}
           style={styles.aboutHero}>
           <View pointerEvents="none" style={styles.aboutOrb} />
-          <View style={styles.aboutBrandIcon}>
-            <MaterialIcons name="shopping-bag" size={32} color="#FFFFFF" />
+          <View style={styles.aboutHeroInner}>
+            <View style={styles.aboutBrandIcon}>
+              <MaterialIcons name="shopping-bag" size={32} color="#FFFFFF" />
+            </View>
+            <Text style={styles.aboutEyebrow}>MEET YOUR EVERYDAY STORE</Text>
+            <Text style={styles.aboutBrand}>INDZON</Text>
+            <Text style={styles.aboutTagline}>
+              A little of everything.{'\n'}All in one place.
+            </Text>
+            <Text style={styles.aboutHeroBody}>
+              Discover everyday essentials and new favourites, wherever your day
+              takes you.
+            </Text>
           </View>
-          <Text style={styles.aboutEyebrow}>MEET YOUR EVERYDAY STORE</Text>
-          <Text style={styles.aboutBrand}>INDZON</Text>
-          <Text style={styles.aboutTagline}>
-            A little of everything.{'\n'}All in one place.
-          </Text>
-          <Text style={styles.aboutHeroBody}>
-            Discover everyday essentials and new favourites, wherever your day
-            takes you.
-          </Text>
         </LinearGradient>
 
         <View style={styles.aboutSection}>
@@ -485,7 +489,8 @@ export function AboutUsScreen({navigation}) {
 
 const styles = StyleSheet.create({
   aboutContent: {paddingHorizontal: 20, paddingTop: 6, paddingBottom: 44},
-  aboutHero: {padding: 26, borderRadius: 24, overflow: 'hidden'},
+  aboutHero: {borderRadius: 24, overflow: 'hidden'},
+  aboutHeroInner: {padding: 26},
   aboutOrb: {
     position: 'absolute',
     width: 240,
@@ -694,14 +699,13 @@ const styles = StyleSheet.create({
   },
   accountPage: {flex: 1},
   accountContent: {paddingHorizontal: 16, paddingTop: 6, paddingBottom: 20},
-  accountHero: {
+  accountHero: {borderRadius: 20, overflow: 'hidden'},
+  accountHeroInner: {
     minHeight: 116,
     alignItems: 'center',
     flexDirection: 'row',
     gap: 11,
     padding: 15,
-    borderRadius: 20,
-    overflow: 'hidden',
   },
   accountGlow: {
     position: 'absolute',

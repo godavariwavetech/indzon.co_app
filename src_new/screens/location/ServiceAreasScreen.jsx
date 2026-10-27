@@ -3,7 +3,13 @@ import React, {useEffect, useState} from 'react';
 import {Pressable, ScrollView, StatusBar, StyleSheet, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import {useDispatch, useSelector} from 'react-redux';
 import locationService from '../../services/locationService';
+import {setDeliveryAddress} from '../../redux/reducers/auth';
+import {updateUserAddress} from '../../redux/reducers/daddy';
+import {setSelectedAddress} from '../../redux/reducers/addressSlice';
+import {STATIC_APP_FLOW} from '../../config/appMode';
+import {persistorStore, staticPersistor} from '../../redux/store';
 import {SkeletonBlock, SkeletonGroup} from '../../components/main/Skeleton';
 import GradientButton from '../../components/main/GradientButton';
 
@@ -14,6 +20,9 @@ export default function ServiceAreasScreen({navigation}) {
   const [areas, setAreas] = useState(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
+  const [choosing, setChoosing] = useState(false);
+  const dispatch = useDispatch();
+  const customerId = useSelector(state => state.Auth.customerId);
 
   useEffect(() => {
     let active = true;
@@ -31,11 +40,40 @@ export default function ServiceAreasScreen({navigation}) {
     };
   }, [attempt]);
 
-  const choose = area =>
-    navigation.navigate('AddAddress', {
-      coordinates: {latitude: area.latitude, longitude: area.longitude},
-      onboarding: true,
-    });
+  const choose = async area => {
+    if (choosing) {
+      return;
+    }
+    setChoosing(true);
+    try {
+      // An address already saved in this area is used as is: no form, straight to Home.
+      let saved = [];
+      try {
+        saved = customerId
+          ? await locationService.getSavedAddresses(customerId)
+          : [];
+      } catch {
+        saved = [];
+      }
+      const address = saved.find(
+        record => Number(record.location_id) === area.id,
+      );
+      if (address) {
+        dispatch(setDeliveryAddress(address));
+        dispatch(updateUserAddress(address));
+        dispatch(setSelectedAddress(address));
+        await (STATIC_APP_FLOW ? staticPersistor : persistorStore).flush();
+        navigation.reset({index: 0, routes: [{name: 'Home'}]});
+        return;
+      }
+      navigation.navigate('AddAddress', {
+        coordinates: {latitude: area.latitude, longitude: area.longitude},
+        onboarding: true,
+      });
+    } finally {
+      setChoosing(false);
+    }
+  };
 
   return (
     <View
@@ -100,7 +138,8 @@ export default function ServiceAreasScreen({navigation}) {
         {(areas || []).map(area => (
           <Pressable
             key={area.id}
-            style={styles.area}
+            style={[styles.area, choosing && {opacity: 0.6}]}
+            disabled={choosing}
             onPress={() => choose(area)}
             accessibilityRole="button"
             accessibilityLabel={`Deliver to ${area.name}`}>

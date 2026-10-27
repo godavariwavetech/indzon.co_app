@@ -59,10 +59,10 @@ function CodeBox({code, color, onCopy, style}) {
   );
 }
 
-function Illustration({uri, size, icon, color}) {
-  return uri ? (
+function Illustration({source, size, icon, color}) {
+  return source ? (
     <Image
-      source={{uri}}
+      source={source}
       resizeMode="contain"
       style={{width: size, height: size}}
     />
@@ -187,7 +187,7 @@ export default function CouponsScreen({navigation}) {
     return offer.label === 'ONE-TIME' ? 'ONE-TIME' : 'ALL ORDERS';
   };
   const cardWidth = Math.floor((width - 32 - 12) / 2);
-  const featuredArt = featured && categoryById[featured.categoryId]?.art.source.uri;
+  const featuredArt = featured && categoryById[featured.categoryId]?.art.source;
   return (
     <Page>
       <View style={styles.header}>
@@ -243,7 +243,7 @@ export default function CouponsScreen({navigation}) {
           <View style={styles.featured}>
             <View style={styles.featuredLeft}>
               <Text allowFontScaling={false} style={styles.featuredFlat}>
-                {featured.percent ? 'FLAT' : 'SAVE'}
+                {featured.percent ? 'SAVE' : 'FLAT'}
               </Text>
               <Text
                 allowFontScaling={false}
@@ -264,11 +264,16 @@ export default function CouponsScreen({navigation}) {
                   BEST DEAL
                 </Text>
               </View>
-              <Text style={styles.featuredTitle} numberOfLines={1}>
-                Get {discountTitle(featured)}
+              <Text
+                style={styles.featuredTitle}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}>
+                {featured.percent ? 'Get ' : ''}
+                {discountTitle(featured)}
               </Text>
               <Text style={styles.featuredCaption} numberOfLines={2}>
-                {featured.cap
+                {featured.percent && featured.cap
                   ? `Up to ₹${featured.cap} on your order`
                   : featured.caption}
               </Text>
@@ -294,7 +299,7 @@ export default function CouponsScreen({navigation}) {
               </View>
               {featuredArt ? (
                 <View pointerEvents="none" style={styles.featuredArt}>
-                  <Illustration uri={featuredArt} size={74} />
+                  <Illustration source={featuredArt} size={74} />
                 </View>
               ) : null}
             </View>
@@ -313,7 +318,7 @@ export default function CouponsScreen({navigation}) {
         <View style={styles.grid}>
           {others.map((offer, index) => {
             const theme = THEMES[index % THEMES.length];
-            const art = categoryById[offer.categoryId]?.art.source.uri;
+            const art = categoryById[offer.categoryId]?.art.source;
             const isApplied = selected === offer.code;
             return (
               <View
@@ -327,7 +332,7 @@ export default function CouponsScreen({navigation}) {
                   style={[styles.cardCircle, {backgroundColor: theme.circle}]}
                 />
                 <View style={styles.cardArt} pointerEvents="none">
-                  <Illustration uri={art} size={56} icon="local-offer" color={theme.ink} />
+                  <Illustration source={art} size={56} icon="local-offer" color={theme.ink} />
                 </View>
                 <View
                   style={[
@@ -341,7 +346,11 @@ export default function CouponsScreen({navigation}) {
                     {tagFor(offer)}
                   </Text>
                 </View>
-                <Text style={styles.cardTitle} numberOfLines={1}>
+                <Text
+                  style={styles.cardTitle}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}>
                   {discountTitle(offer)}
                 </Text>
                 <Text style={styles.cardCaption} numberOfLines={2}>
@@ -554,7 +563,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   bestDealText: {fontSize: 11, fontWeight: '800', letterSpacing: 1.5, color: '#FFFFFF'},
-  featuredTitle: {fontSize: 21, fontWeight: '800', color: '#101223', maxWidth: 150},
+  featuredTitle: {fontSize: 21, fontWeight: '800', color: '#101223', maxWidth: 160},
   featuredCaption: {fontSize: 13, color: '#757A8A', marginTop: 4, marginBottom: 10, maxWidth: 150},
   featuredActions: {flexDirection: 'row', alignItems: 'center', gap: 8},
   featuredApply: {minWidth: 96},

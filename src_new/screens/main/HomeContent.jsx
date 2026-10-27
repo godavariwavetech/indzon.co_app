@@ -35,10 +35,10 @@ import {
   HomeCategoriesSkeleton,
   HomeDealsSkeleton,
   HomeProductsSkeleton,
-  LoadingImage as Image,
 } from '../../components/main/Skeleton';
 import ProductCard from '../../components/main/ProductCard';
 import CartPill from '../../components/main/CartPill';
+import BannerImage from '../../components/main/BannerImage';
 import OfferCarousel from '../../components/main/OfferCarousel';
 
 export default function HomeContent({navigation}) {
@@ -165,7 +165,9 @@ export default function HomeContent({navigation}) {
   const bannerAspectRatio = 546 / 162;
   const productWidth = (contentWidth - 20) / 3;
   const iconWidth = Math.min((contentWidth - 32) / 5, 72);
-  const highlighted = homeSections.highlightedCategories;
+  // Whole-pixel tile width (minus 1dp slack): five `20%` tiles summed to exactly
+  // the row width and wrapped to 4 per row on some densities (e.g. iQOO Z3).
+  const categoryTileWidth = Math.floor((width - 20) / 5) - 1;
   const suggested = (liveSearchResults ?? homeSections.suggested).slice(
     0,
     query ? 18 : 12,
@@ -186,26 +188,15 @@ export default function HomeContent({navigation}) {
     ...(liveCategories || []).slice(0, 9),
     {id: 'more', name: 'More', art: moreArtwork},
   ];
-  // Top Deals: categories flagged "highlight" on the dashboard; without any, the best-discount products.
-  const deals = highlighted.length
-    ? highlighted.map(category => ({
-        title: category.name,
-        caption: 'Deals for you!',
-        art: category.art,
-        categoryId: category.id,
-      }))
-    : homeSections.topDeals.map(item => ({
-        title: item.name,
-        caption: `From ₹${item.price}`,
-        badge:
-          item.originalPrice > item.price
-            ? `Flat ${Math.round((1 - item.price / item.originalPrice) * 100)}%`
-            : null,
-        art: item.art,
-        categoryId: item.categoryId,
-        productId: item.id,
-        liveItem: item,
-      }));
+  // Top Deals: active categories with "highlight" switched on in the dashboard.
+  const deals = (liveCategories || [])
+    .filter(category => category.highlight)
+    .map(category => ({
+      title: category.name,
+      caption: 'Deals for you!',
+      art: category.art,
+      categoryId: category.id,
+    }));
   return (
     <Page style={{paddingTop: 0}}>
       {outOfArea ? (
@@ -285,9 +276,8 @@ export default function HomeContent({navigation}) {
                   onPress={() => openCategory(banner.categoryId)}
                   accessibilityRole="button"
                   accessibilityLabel={banner.title || 'Offer banner'}>
-                  <Image
-                    source={{uri: banner.uri}}
-                    resizeMode="cover"
+                  <BannerImage
+                    source={banner.source || {uri: banner.uri}}
                     style={{
                       width: contentWidth,
                       height: contentWidth / bannerAspectRatio,
@@ -319,7 +309,7 @@ export default function HomeContent({navigation}) {
           {homeCategories.map(item => (
             <Pressable
               key={item.id}
-              style={styles.category}
+              style={[styles.category, {width: categoryTileWidth}]}
               onPress={() =>
                 item.id === 'more'
                   ? navigation.navigate('CategoriesTab')
@@ -346,14 +336,15 @@ export default function HomeContent({navigation}) {
             {offerBanners.slice(0, 2).map(banner => (
               <Pressable
                 key={banner.id}
-                style={{flex: 1}}
+                // minWidth 0 lets the card shrink to its half of the row; without it a
+                // full-size banner image forces the card to the image's own width
+                style={{flex: 1, minWidth: 0}}
                 disabled={!banner.categoryId}
                 onPress={() => openCategory(banner.categoryId)}
                 accessibilityRole="button"
                 accessibilityLabel={banner.title || 'Offer'}>
-                <Image
-                  source={{uri: banner.uri}}
-                  resizeMode="cover"
+                <BannerImage
+                  source={banner.source || {uri: banner.uri}}
                   style={{
                     width: '100%',
                     aspectRatio: 2.15,
@@ -364,52 +355,54 @@ export default function HomeContent({navigation}) {
             ))}
           </View>
         )}
-        {loadingCategories || loadingFeatured || deals.length > 0 ? (
+        {loadingCategories || deals.length > 0 ? (
         <LinearGradient colors={['#F2EAFE', '#C39DFA']} style={styles.deals}>
-          <Text style={[ui.sectionTitle, styles.dealsTitle]}>
-            Top Deals for you!
-          </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{gap: 9}}>
-            {loadingCategories || (loadingFeatured && !highlighted.length) ? (
-              <HomeDealsSkeleton size={contentWidth * 0.28} />
-            ) : null}
-            {deals.map(deal => (
-              <Pressable
-                key={deal.title}
-                onPress={() =>
-                  deal.productId
-                    ? navigation.navigate('ProductDetails', {
-                        productId: deal.productId,
-                        liveProduct: deal.liveItem,
-                      })
-                    : openCategory(deal.categoryId)
-                }
-                style={[styles.deal, {width: contentWidth * 0.28}]}
-                accessibilityRole="button"
-                accessibilityLabel={deal.title}>
-                <ReferenceArtwork
-                  art={deal.art}
-                  width={contentWidth * 0.28 - 10}
-                  height={contentWidth * 0.28 - 10}
-                  style={{borderRadius: 10}}
-                />
-                {deal.badge ? (
-                  <View style={styles.dealBadge}>
-                    <Text style={styles.dealBadgeText}>{deal.badge}</Text>
-                  </View>
-                ) : null}
-                <Text numberOfLines={1} style={styles.dealName}>
-                  {deal.title}
-                </Text>
-                <Text numberOfLines={2} style={styles.dealCaption}>
-                  {deal.caption}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
+          <View style={styles.dealsInner}>
+            <Text style={[ui.sectionTitle, styles.dealsTitle]}>
+              Top Deals for you!
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{gap: 9}}>
+              {loadingCategories ? (
+                <HomeDealsSkeleton size={contentWidth * 0.28} />
+              ) : null}
+              {deals.map(deal => (
+                <Pressable
+                  key={deal.title}
+                  onPress={() =>
+                    deal.productId
+                      ? navigation.navigate('ProductDetails', {
+                          productId: deal.productId,
+                          liveProduct: deal.liveItem,
+                        })
+                      : openCategory(deal.categoryId)
+                  }
+                  style={[styles.deal, {width: contentWidth * 0.28}]}
+                  accessibilityRole="button"
+                  accessibilityLabel={deal.title}>
+                  <ReferenceArtwork
+                    art={deal.art}
+                    width={contentWidth * 0.28 - 10}
+                    height={contentWidth * 0.28 - 10}
+                    style={{borderRadius: 10}}
+                  />
+                  {deal.badge ? (
+                    <View style={styles.dealBadge}>
+                      <Text style={styles.dealBadgeText}>{deal.badge}</Text>
+                    </View>
+                  ) : null}
+                  <Text numberOfLines={1} style={styles.dealName}>
+                    {deal.title}
+                  </Text>
+                  <Text numberOfLines={2} style={styles.dealCaption}>
+                    {deal.caption}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
         </LinearGradient>
         ) : null}
         {homeBanners.length > 0 && (
@@ -419,7 +412,7 @@ export default function HomeContent({navigation}) {
               id: banner.id,
               categoryId: banner.categoryId,
               title: banner.title,
-              source: {uri: banner.cardUri},
+              source: banner.cardSource || {uri: banner.cardUri},
               background: '#EAF1FC',
               imageOnly: true,
             }))}
@@ -506,7 +499,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.55)',
   },
   bannerDotActive: {backgroundColor: '#FFFFFF'},
-  categoryGrid: {paddingHorizontal: 10, flexDirection: 'row', flexWrap: 'wrap'},
+  categoryGrid: {
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+  },
   category: {width: '20%', alignItems: 'center', marginBottom: 8},
   categoryName: {
     fontSize: 10,
@@ -572,11 +570,10 @@ const styles = StyleSheet.create({
   promoActionText: {fontSize: 9, lineHeight: 12, fontWeight: '700'},
   deals: {
     marginHorizontal: 16,
-    padding: 10,
-    paddingBottom: 11,
     borderRadius: 22,
     marginBottom: 14,
   },
+  dealsInner: {padding: 10, paddingBottom: 11},
   dealsTitle: {fontSize: 16, marginBottom: 8},
   deal: {padding: 5, backgroundColor: '#FFFFFF', borderRadius: 15},
   dealBadge: {

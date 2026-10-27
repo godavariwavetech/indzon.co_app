@@ -14,6 +14,7 @@ import {
   staticStore,
   store,
 } from './redux/store';
+import {ToastHost} from './components/main/Toast';
 import {STATIC_APP_FLOW} from './config/appMode';
 
 export default function NewFlowApp() {
@@ -34,9 +35,12 @@ export default function NewFlowApp() {
             persistor={STATIC_APP_FLOW ? staticPersistor : persistorStore}>
             {bootstrapped =>
               bootstrapped && splashFinished ? (
-                <NavigationContainer>
-                  <AppNavigation />
-                </NavigationContainer>
+                <>
+                  <NavigationContainer>
+                    <AppNavigation />
+                  </NavigationContainer>
+                  <ToastHost />
+                </>
               ) : (
                 <SplashScreen onLogoReady={onLogoReady} />
               )

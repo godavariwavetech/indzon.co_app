@@ -89,13 +89,13 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.indzon.co"
+    namespace "com.indzon"
     defaultConfig {
-        applicationId "com.indzon.co"
+        applicationId "com.indzon"
         manifestPlaceholders = [googleMapsApiKey: googleMapsApiKey ?: ""]
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        versionCode 3
         versionName "1.0.0"
     }
     signingConfigs {

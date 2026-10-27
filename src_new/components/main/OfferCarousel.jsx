@@ -12,6 +12,7 @@ import {
 import {Text} from '../ReadableText';
 import {useIsFocused} from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
+import BannerImage from './BannerImage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export default function OfferCarousel({navigation, offers}) {
@@ -241,11 +242,15 @@ export default function OfferCarousel({navigation, offers}) {
                     selectionRequest: Date.now(),
                   })
                 }>
-                <Image
-                  source={item.source}
-                  style={styles.photo}
-                  resizeMode="cover"
-                />
+                {item.imageOnly ? (
+                  <BannerImage source={item.source} style={styles.photo} />
+                ) : (
+                  <Image
+                    source={item.source}
+                    style={styles.photo}
+                    resizeMode="cover"
+                  />
+                )}
                 {!item.imageOnly && (
                 <LinearGradient
                   colors={[

@@ -17,7 +17,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
-import {money} from '../../config/catalog';
+import {includedGst, money} from '../../config/catalog';
 import {
   addItem,
   removeItem,
@@ -55,11 +55,15 @@ import {
   getLiveCategories,
   getLiveCoupons,
   cancelLiveOrder,
+  rateLiveOrderItem,
+  rateLiveShipments,
   getLiveItems,
   getLiveSubcategories,
   getOrderCharges,
+  groupVariants,
   liveCatalogEnabled,
   useAllOrders,
+  useOrders,
   useLiveItemsByIds,
   useLiveOrderItems,
 } from '../../services/catalogService';
@@ -141,8 +145,46 @@ function Quantity({product, quantity}) {
     </View>
   );
 }
-function Choices({visible, title, options, value, onSelect, onClose}) {
+const FILTER_OPTIONS = [
+  ['all', 'All products'],
+  ['under500', 'Under ₹500'],
+  ['toprated', 'Rating 4.5 and above'],
+  ['topdiscount', 'Top discounts (30% off or more)'],
+];
+const SORT_OPTIONS = [
+  ['recommended', 'Recommended'],
+  ['low', 'Price: low to high'],
+  ['high', 'Price: high to low'],
+  ['discount', 'Top Discount'],
+  ['rating', 'Top Rated'],
+];
+
+function FilterSortSheet({
+  visible,
+  filter,
+  sort,
+  onFilter,
+  onSort,
+  onReset,
+  onClose,
+}) {
   const insets = useSafeAreaInsets();
+  const renderOptions = (options, value, onSelect) =>
+    options.map(([id, label]) => (
+      <Pressable
+        key={id}
+        style={[s.option, {paddingVertical: 13}]}
+        accessibilityRole="radio"
+        accessibilityState={{selected: value === id}}
+        onPress={() => onSelect(id)}>
+        <Text style={s.infoValue}>{label}</Text>
+        <MaterialIcons
+          name={value === id ? 'radio-button-checked' : 'radio-button-unchecked'}
+          size={22}
+          color={colors.primary}
+        />
+      </Pressable>
+    ));
   return (
     <Modal
       visible={visible}
@@ -156,33 +198,47 @@ function Choices({visible, title, options, value, onSelect, onClose}) {
           accessibilityLabel="Close options"
           onPress={onClose}
         />
-        <View style={[s.sheet, {paddingBottom: Math.max(insets.bottom, 20)}]}>
+        <View
+          style={[
+            s.sheet,
+            {paddingBottom: Math.max(insets.bottom, 20), maxHeight: '85%'},
+          ]}>
           <View style={s.row}>
-            <Text style={[ui.sectionTitle, {flex: 1}]}>{title}</Text>
+            <Text style={[ui.sectionTitle, {flex: 1}]}>Filter & sort</Text>
             <IconButton icon="close" label="Close options" onPress={onClose} />
           </View>
-          {options.map(([id, label]) => (
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={[s.muted, {marginTop: 8, fontWeight: '700'}]}>
+              Filter
+            </Text>
+            {renderOptions(FILTER_OPTIONS, filter, onFilter)}
+            <Text style={[s.muted, {marginTop: 8, fontWeight: '700'}]}>
+              Sort by
+            </Text>
+            {renderOptions(SORT_OPTIONS, sort, onSort)}
+          </ScrollView>
+          <View style={[s.row, {gap: 12, marginTop: 12}]}>
             <Pressable
-              key={id}
-              style={s.option}
-              accessibilityRole="radio"
-              accessibilityState={{selected: value === id}}
-              onPress={() => {
-                onSelect(id);
-                onClose();
-              }}>
-              <Text style={s.infoValue}>{label}</Text>
-              <MaterialIcons
-                name={
-                  value === id
-                    ? 'radio-button-checked'
-                    : 'radio-button-unchecked'
-                }
-                size={22}
-                color={colors.primary}
-              />
+              style={[s.chip, {flex: 1, justifyContent: 'center'}]}
+              accessibilityRole="button"
+              onPress={onReset}>
+              <Text style={s.chipText}>Reset</Text>
             </Pressable>
-          ))}
+            <Pressable
+              style={[
+                s.chip,
+                {
+                  flex: 1,
+                  justifyContent: 'center',
+                  backgroundColor: colors.primary,
+                  borderColor: colors.primary,
+                },
+              ]}
+              accessibilityRole="button"
+              onPress={onClose}>
+              <Text style={[s.chipText, {color: '#FFFFFF'}]}>Apply</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     </Modal>
@@ -243,7 +299,7 @@ export function ProductListScreen({navigation, route, embedded = false}) {
         );
         if (active) {
           setSubcategories(subs);
-          setLiveItems(lists.flat());
+          setLiveItems(groupVariants(lists.flat()));
         }
       })
       .catch(() => {
@@ -263,7 +319,10 @@ export function ProductListScreen({navigation, route, embedded = false}) {
   }, [categoryId, tableName, shopId, locationId]);
   const subcategory = subcategories.find(item => item.id === subcategoryId);
   const productScroll = useRef(null);
-  const sidebarWidth = 86;
+  // opened from a subcategory elsewhere in the app: just that subcategory's products, no
+  // subcategory list. The Categories tab (embedded) always keeps its subcategory sidebar.
+  const showSidebar = embedded || !subcategoryId;
+  const sidebarWidth = showSidebar ? 86 : 0;
   const productAreaWidth = width - sidebarWidth - 24;
   const productWidth = Math.floor((productAreaWidth - 12) / 2);
   const cart = useSelector(state => state.commerce.cart);
@@ -305,7 +364,9 @@ export function ProductListScreen({navigation, route, embedded = false}) {
       <View style={{paddingTop: insets.top}}>
         <Heading
           title={
-            embedded ? 'Categories' : shopName || category?.name || 'Products'
+            embedded
+              ? 'Categories'
+              : shopName || subcategory?.name || category?.name || 'Products'
           }
           titleStyle={{fontSize: 18, lineHeight: 24}}
           navigation={navigation}
@@ -338,46 +399,24 @@ export function ProductListScreen({navigation, route, embedded = false}) {
           style={{flex: 1}}
         />
         <Pressable
-          style={s.chip}
+          style={[
+            s.chip,
+            (filter !== 'all' || sort !== 'recommended') && s.selectedChip,
+          ]}
           accessibilityRole="button"
           onPress={() => setSheet('filter')}>
-          <MaterialIcons name="tune" size={20} color={colors.muted} />
+          <MaterialIcons
+            name="tune"
+            size={20}
+            color={
+              filter !== 'all' || sort !== 'recommended'
+                ? colors.primary
+                : colors.muted
+            }
+          />
           <Text style={s.chipText}>Filter</Text>
         </Pressable>
       </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={s.chipTrack}
-        contentContainerStyle={{gap: 8, paddingHorizontal: 16}}>
-        <Pressable
-          style={s.chip}
-          accessibilityRole="button"
-          onPress={() => setSheet('sort')}>
-          <Text style={s.chipText}>
-            {sort === 'low'
-              ? 'Price: low to high'
-              : sort === 'high'
-              ? 'Price: high to low'
-              : 'Sort by'}
-          </Text>
-          <MaterialIcons name="expand-more" size={20} color={colors.muted} />
-        </Pressable>
-        {[
-          ['discount', 'local-offer', 'Top Discount'],
-          ['rating', 'star-border', 'Top Rated'],
-        ].map(([id, icon, label]) => (
-          <Pressable
-            key={id}
-            style={[s.chip, sort === id && s.selectedChip]}
-            accessibilityRole="button"
-            accessibilityState={{selected: sort === id}}
-            onPress={() => setSort(sort === id ? 'recommended' : id)}>
-            <MaterialIcons name={icon} size={18} color={colors.muted} />
-            <Text style={s.chipText}>{label}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
       {embedded ? (
         <ScrollView
           horizontal
@@ -399,6 +438,7 @@ export function ProductListScreen({navigation, route, embedded = false}) {
         </ScrollView>
       ) : null}
       <View style={{flex: 1, flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#EEEAF7'}}>
+        {showSidebar ? (
         <ScrollView style={{width: sidebarWidth, flexGrow: 0, backgroundColor: '#FFFFFF', borderRightWidth: 1, borderRightColor: '#EEEAF7'}} contentContainerStyle={{paddingVertical: 8, paddingBottom: 90}} showsVerticalScrollIndicator={false}>
           {liveItemsLoading && !subcategories.length ? (
             <CategorySidebarSkeleton size={56} />
@@ -423,6 +463,7 @@ export function ProductListScreen({navigation, route, embedded = false}) {
             </Pressable>
           ))}
         </ScrollView>
+        ) : null}
       <ScrollView
         ref={productScroll}
         style={{flex: 1, backgroundColor: '#F8F7FC'}}
@@ -430,7 +471,11 @@ export function ProductListScreen({navigation, route, embedded = false}) {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[s.content, {paddingHorizontal: 12}]}>
         <View style={{flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 14}}>
-          <Text style={{flex: 1, fontSize: 16, lineHeight: 21, fontWeight: '700', color: colors.ink}}>{subcategory?.name || 'All products'}</Text>
+          <Text style={{flex: 1, fontSize: 16, lineHeight: 21, fontWeight: '700', color: colors.ink}}>{embedded
+              ? subcategory?.name || 'All products'
+              : subcategoryId
+              ? 'Products'
+              : 'All products'}</Text>
           <View style={{backgroundColor: '#EAE5FF', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 4}}>
             <Text style={{fontSize: 12, fontWeight: '700', color: '#6250B5'}}>{liveItemsLoading ? '' : visible.length}</Text>
           </View>
@@ -461,26 +506,16 @@ export function ProductListScreen({navigation, route, embedded = false}) {
       </ScrollView>
       </View>
       <CartPill navigation={navigation} bottomInset={insets.bottom} />
-      <Choices
-        visible={!!sheet}
-        title={sheet === 'filter' ? 'Filter products' : 'Sort products'}
-        options={
-          sheet === 'filter'
-            ? [
-                ['all', 'All products'],
-                ['under500', 'Under ₹500'],
-                ['toprated', 'Rating 4.5 and above'],
-              ]
-            : [
-                ['recommended', 'Recommended'],
-                ['low', 'Price: low to high'],
-                ['high', 'Price: high to low'],
-                ['discount', 'Top Discount'],
-                ['rating', 'Top Rated'],
-              ]
-        }
-        value={sheet === 'filter' ? filter : sort}
-        onSelect={sheet === 'filter' ? setFilter : setSort}
+      <FilterSortSheet
+        visible={sheet === 'filter'}
+        filter={filter}
+        sort={sort}
+        onFilter={setFilter}
+        onSort={setSort}
+        onReset={() => {
+          setFilter('all');
+          setSort('recommended');
+        }}
         onClose={() => setSheet('')}
       />
     </Page>
@@ -638,6 +673,11 @@ export function CartScreen({navigation}) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chargeKey, locationId, address?.customer_latitude, address?.customer_longitude]);
+  const itemGst = items.reduce(
+    (sum, item) =>
+      sum + includedGst(item.price * cart[item.id], item.gstPercent),
+    0,
+  );
   const total = amount - discount + (charges?.total || 0);
   const [liveRecommendations, setLiveRecommendations] = useState([]);
   useEffect(() => {
@@ -651,7 +691,9 @@ export function CartScreen({navigation}) {
     })
       .then(rows => {
         if (active) {
-          setLiveRecommendations(rows.filter(row => !cart[row.id]).slice(0, 6));
+          setLiveRecommendations(
+            groupVariants(rows).filter(row => !cart[row.id]).slice(0, 6),
+          );
         }
       })
       .catch(() => {});
@@ -683,7 +725,7 @@ export function CartScreen({navigation}) {
       originalPrice: original,
       couponDiscount: discount,
       couponCode: discount > 0 ? coupon : null,
-      savings: original - total,
+      savings: original - amount + discount,
       groups: groups.map(group => ({
         id: 'shipment-' + now.getTime() + '-' + group.id,
         categoryId: group.id,
@@ -736,7 +778,8 @@ export function CartScreen({navigation}) {
             saving_price: (item.originalPrice - item.price) * qty,
             shop_id: item.shopId,
             filter_one: null,
-            item_gst_amount: (lineTotal * (item.gstPercent || 0)) / 100,
+            // the price already includes gst: take the gst out of it
+            item_gst_amount: includedGst(lineTotal, item.gstPercent),
             item_gst: item.gstPercent || 0,
           };
         });
@@ -791,9 +834,7 @@ export function CartScreen({navigation}) {
             realOrderIds: response.data.ids || [response.data.id],
           }),
         );
-        navigation.replace('OrderConfirmation', {
-          orderId: response.data.order_id || order.id,
-        });
+        resetToConfirmation(navigation, response.data.order_id || order.id);
       } catch (err) {
         placing.current = false;
         setPlacingLive(false);
@@ -803,7 +844,7 @@ export function CartScreen({navigation}) {
     }
 
     dispatch(placePreviewOrder(order));
-    navigation.replace('OrderConfirmation', {orderId: order.id});
+    resetToConfirmation(navigation, order.id);
   };
   return (
     <Page style={{backgroundColor: '#F8F8FB'}}>
@@ -877,6 +918,7 @@ export function CartScreen({navigation}) {
                         onPress={() =>
                           navigation.navigate('ProductDetails', {
                             productId: item.id,
+                            liveProduct: item,
                           })
                         }>
                         <ReferenceArtwork
@@ -1030,6 +1072,9 @@ export function CartScreen({navigation}) {
               />
               <View style={s.divider}>
                 <BillRow label="Subtotal" value={money(amount - discount)} />
+                {itemGst > 0 ? (
+                  <BillRow label="GST included in items" value={money(itemGst)} />
+                ) : null}
                 <BillRow
                   label="Delivery Charge"
                   value={charges?.delivery > 0 ? money(charges.delivery) : 'FREE'}
@@ -1068,7 +1113,7 @@ export function CartScreen({navigation}) {
           <>
             <View style={{flex: 1}}>
               <Text style={s.total}>{money(total)}</Text>
-              <Text style={s.green}>Saved {money(original - total)}</Text>
+              <Text style={s.green}>Saved {money(original - amount + discount)}</Text>
             </View>
             <GradientButton
               style={{minWidth: 150}}
@@ -1105,30 +1150,54 @@ export function CartScreen({navigation}) {
   );
 }
 
+// Once an order is placed, drop Cart/Checkout/product screens from the stack so
+// Back from the confirmation (or order details) lands on Home.
+const resetToConfirmation = (navigation, orderId) =>
+  navigation.reset({
+    index: 1,
+    routes: [
+      {name: 'Home', params: {screen: 'HomeTab'}},
+      {name: 'OrderConfirmation', params: {orderId}},
+    ],
+  });
+
 export function OrderConfirmationScreen({navigation, route}) {
   const order = useSelector(state =>
     state.commerce.orders.find(item => item.id === route.params?.orderId),
   );
-  const {width} = useWindowDimensions();
+  const {width, height} = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  // The artwork is 393x852. Scale it to cover the whole window and pin it to the
+  // bottom-centre so the waves stay visible on any aspect ratio.
+  const backgroundScale = Math.max(width / 393, height / 852);
   useFocusEffect(
     useCallback(() => {
       if (!order?.id) return;
       const timer = setTimeout(
         () => navigation.replace('OrderDetails', {orderId: order.id}),
-        1500,
+        2500,
       );
       return () => clearTimeout(timer);
     }, [navigation, order?.id]),
   );
   return (
     <Page>
-      <Image
-        source={require('../../assets/main/references/order-confirmed-background.png')}
-        style={StyleSheet.absoluteFill}
-        resizeMode="cover"
-        accessible={false}
-      />
+      <View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, {overflow: 'hidden', backgroundColor: '#F1F3FF'}]}>
+        <Image
+          source={require('../../assets/main/references/order-confirmed-background.png')}
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: (width - 393 * backgroundScale) / 2,
+            width: 393 * backgroundScale,
+            height: 852 * backgroundScale,
+          }}
+          resizeMode="stretch"
+          accessible={false}
+        />
+      </View>
       <ScrollView
         contentContainerStyle={[
           s.confirmation,
@@ -1183,7 +1252,7 @@ export function OrderConfirmationScreen({navigation, route}) {
 }
 
 export function OrderDetailsScreen({navigation, route}) {
-  const allOrders = useAllOrders();
+  const {orders: allOrders, refresh: refreshOrders} = useOrders();
   const auth = useSelector(state => state.Auth);
   const savedFeedback = useSelector(
     state => state.commerce.feedback[route.params?.orderId],
@@ -1204,11 +1273,29 @@ export function OrderDetailsScreen({navigation, route}) {
           })),
         }
       : foundOrder;
-  const [rating, setRating] = useState(savedFeedback?.rating || 0);
-  const [feedback, setFeedback] = useState(savedFeedback?.text || '');
-  const [saved, setSaved] = useState(false);
+  // a live order's rating is what the server holds (set on its delivered shipments)
+  const ratedGroup = foundOrder?.groups?.find(group => group.rating);
+  const [rating, setRating] = useState(
+    ratedGroup?.rating || savedFeedback?.rating || 0,
+  );
+  const [feedback, setFeedback] = useState(
+    ratedGroup?.ratingComment || savedFeedback?.text || '',
+  );
+  const [saved, setSaved] = useState(Boolean(ratedGroup));
+  const [feedbackError, setFeedbackError] = useState('');
+  // the order can arrive after this screen mounts; take the server's rating when it does
+  useEffect(() => {
+    if (ratedGroup) {
+      setRating(ratedGroup.rating);
+      setFeedback(ratedGroup.ratingComment || '');
+      setSaved(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ratedGroup?.rating, ratedGroup?.ratingComment]);
   const [cancelling, setCancelling] = useState(false);
   const [cancelDialog, setCancelDialog] = useState(null);
+  // the shipments (order rows) the open confirm dialog will cancel
+  const [cancelTarget, setCancelTarget] = useState(null);
   const dispatch = useDispatch();
   if (!order) {
     return (
@@ -1221,21 +1308,59 @@ export function OrderDetailsScreen({navigation, route}) {
   const groups = order.groups.filter(
     group => !route.params?.groupName || group.name === route.params.groupName,
   );
+  // a shipment can be cancelled only while it is still Placed (not yet accepted by the shop)
+  const deliveredGroups = order.live
+    ? order.groups.filter(group => shipmentStatus(group, order) === 'Delivered')
+    : [];
+  const cancellableGroups = order.live
+    ? order.groups.filter(group => shipmentStatus(group, order) === 'Placed')
+    : [];
   const ids = groups.flatMap(group => group.productIds);
   const items = order.items
     ? order.items.filter(item => ids.includes(item.id))
     : [];
   const address = order.address || auth.deliveryAddress;
-  const amount = items.reduce(
+  // The bill covers the shipments that are still going ahead: a cancelled shipment's items and
+  // charges are not billed (unless every shipment was cancelled, when the whole order is shown).
+  const billable = groups.filter(group => shipmentStatus(group, order) !== 'Cancelled');
+  const billGroups = billable.length ? billable : groups;
+  const billIds = billGroups.flatMap(group => group.productIds);
+  const billItems = order.items
+    ? order.items.filter(item => billIds.includes(item.id))
+    : [];
+  const someCancelled = billable.length > 0 && billable.length < groups.length;
+  const amount = billItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
-  const original = items.reduce(
+  const original = billItems.reduce(
     (sum, item) => sum + item.originalPrice * item.quantity,
     0,
   );
-  const discount = route.params?.groupName ? 0 : order.couponDiscount || 0;
-  const billCharges = route.params?.groupName ? null : order.charges;
+  // GST already inside the item prices (price x rate / (100 + rate))
+  const itemGst = billItems.reduce(
+    (sum, item) => sum + includedGst(item.price * item.quantity, item.gstPercent),
+    0,
+  );
+  const discount = order.live
+    ? billGroups.reduce((sum, group) => sum + (group.coupon || 0), 0)
+    : route.params?.groupName
+    ? 0
+    : order.couponDiscount || 0;
+  const billCharges = order.live
+    ? billGroups.reduce(
+        (total, group) => {
+          const c = group.charges || {};
+          Object.keys(total).forEach(key => {
+            total[key] += c[key] || 0;
+          });
+          return total;
+        },
+        {delivery: 0, packing: 0, platform: 0, donation: 0, surcharges: 0, gst: 0},
+      )
+    : route.params?.groupName
+    ? null
+    : order.charges;
   const chargeSum = billCharges
     ? billCharges.delivery +
       billCharges.packing +
@@ -1276,15 +1401,29 @@ export function OrderDetailsScreen({navigation, route}) {
             <Text style={s.muted}>{order.cancelReason}</Text>
           </Section>
         ) : null}
-        {order.live && order.status === 'Placed' ? (
+        {cancellableGroups.length ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Cancel this order"
             disabled={cancelling}
-            onPress={() => setCancelDialog('confirm')}
-            style={{marginHorizontal: 16, marginBottom: 12, minHeight: 46, borderRadius: 12, borderWidth: 1, borderColor: '#E5B3B8', backgroundColor: '#FFF0F0', alignItems: 'center', justifyContent: 'center', opacity: cancelling ? 0.6 : 1}}>
-            <Text style={{fontSize: 15, fontWeight: '700', color: '#BC3C47'}}>
-              {cancelling ? 'Cancelling...' : 'Cancel order'}
+            onPress={() => {
+              setCancelTarget({
+                ids: cancellableGroups.map(group => group.realOrderId),
+                name:
+                  cancellableGroups.length === order.groups.length
+                    ? null
+                    : cancellableGroups.map(group => group.name).join(', '),
+              });
+              setCancelDialog('confirm');
+            }}
+            style={[s.cancelOrder, cancelling && {opacity: 0.6}]}>
+            <MaterialIcons name="highlight-off" size={20} color="#BC3C47" />
+            <Text style={s.cancelOrderText}>
+              {cancelling
+                ? 'Cancelling...'
+                : cancellableGroups.length === order.groups.length
+                ? 'Cancel entire order'
+                : 'Cancel remaining items'}
             </Text>
           </Pressable>
         ) : null}
@@ -1295,8 +1434,20 @@ export function OrderDetailsScreen({navigation, route}) {
             order={order}
             items={items}
             navigation={navigation}
+            onRateItem={(item, value) =>
+              rateLiveOrderItem({
+                orderItemId: item.orderItemId,
+                customerId: auth.customerId,
+                rating: value,
+              })
+            }
+            onCancel={target => {
+              setCancelTarget({ids: [target.realOrderId], name: target.name});
+              setCancelDialog('confirm');
+            }}
           />
         ))}
+        {!order.live || deliveredGroups.length ? (
         <Section>
           <TextInput
             multiline
@@ -1333,10 +1484,37 @@ export function OrderDetailsScreen({navigation, route}) {
           <Text style={[s.muted, {textAlign: 'center'}]}>
             Rate this order now
           </Text>
+          {feedbackError ? (
+            <Text style={[s.muted, {textAlign: 'center', color: '#BC3C47'}]}>
+              {feedbackError}
+            </Text>
+          ) : null}
           <Pressable
             accessibilityRole="button"
-            disabled={!rating && !feedback.trim()}
-            onPress={() => {
+            disabled={!rating}
+            onPress={async () => {
+              setFeedbackError('');
+              if (order.live) {
+                // the rating is stored on each delivered shipment of the order
+                let done = false;
+                try {
+                  done = await rateLiveShipments(
+                    deliveredGroups.map(group => group.realOrderId),
+                    {
+                      customerId: auth.customerId,
+                      rating,
+                      comment: feedback.trim(),
+                    },
+                  );
+                } catch (error) {
+                  done = false;
+                }
+                if (!done) {
+                  setFeedbackError('Could not save your feedback. Please try again.');
+                  return;
+                }
+                refreshOrders();
+              }
               dispatch(
                 saveOrderFeedback({
                   orderId: order.id,
@@ -1346,15 +1524,13 @@ export function OrderDetailsScreen({navigation, route}) {
               );
               setSaved(true);
             }}
-            style={[
-              s.feedbackSave,
-              !rating && !feedback.trim() && {opacity: 0.4},
-            ]}>
+            style={[s.feedbackSave, !rating && {opacity: 0.4}]}>
             <Text style={s.blue}>
               {saved ? 'Feedback saved' : 'Save feedback'}
             </Text>
           </Pressable>
         </Section>
+        ) : null}
         <Section title="Shipping Details">
           <InfoRow
             icon="person-outline"
@@ -1381,6 +1557,11 @@ export function OrderDetailsScreen({navigation, route}) {
           />
         </Section>
         <Section title="Bill details">
+          {someCancelled ? (
+            <Text style={[s.muted, {marginTop: 0, marginBottom: 6}]}>
+              Cancelled items are not included.
+            </Text>
+          ) : null}
           <BillRow label="Items total" value={money(original)} />
           <BillRow
             label="Savings"
@@ -1388,32 +1569,35 @@ export function OrderDetailsScreen({navigation, route}) {
             blue
           />
           <BillRow label="Coupon discount" value={`−${money(discount)}`} blue />
-          <BillRow
-            label="Delivery charge"
-            value={billCharges?.delivery > 0 ? money(billCharges.delivery) : 'FREE'}
-          />
-          {billCharges?.packing > 0 ? (
-            <BillRow label="Packing charge" value={money(billCharges.packing)} />
-          ) : null}
-          {billCharges?.platform > 0 ? (
-            <BillRow label="Platform fee" value={money(billCharges.platform)} />
-          ) : null}
-          {billCharges?.donation > 0 ? (
-            <BillRow label="Donation" value={money(billCharges.donation)} />
-          ) : null}
-          {billCharges?.surcharges > 0 ? (
-            <BillRow label="Surcharge" value={money(billCharges.surcharges)} />
-          ) : null}
-          <BillRow
-            label="GST"
-            value={billCharges?.gst > 0 ? money(billCharges.gst) : 'Included'}
-          />
+          <View style={s.divider}>
+            <BillRow label="Subtotal" value={money(amount - discount)} />
+            {itemGst > 0 ? (
+              <BillRow label="GST included in items" value={money(itemGst)} />
+            ) : null}
+            <BillRow
+              label="Delivery charge"
+              value={billCharges?.delivery > 0 ? money(billCharges.delivery) : 'FREE'}
+            />
+            {billCharges?.packing > 0 ? (
+              <BillRow label="Packing charge" value={money(billCharges.packing)} />
+            ) : null}
+            {billCharges?.platform > 0 ? (
+              <BillRow label="Platform fee" value={money(billCharges.platform)} />
+            ) : null}
+            {billCharges?.donation > 0 ? (
+              <BillRow label="Donation" value={money(billCharges.donation)} />
+            ) : null}
+            {billCharges?.surcharges > 0 ? (
+              <BillRow label="Surcharge" value={money(billCharges.surcharges)} />
+            ) : null}
+            {billCharges?.gst > 0 ? (
+              <BillRow label="GST on charges" value={money(billCharges.gst)} />
+            ) : null}
+          </View>
           <View style={s.divider}>
             <BillRow
               label="TOTAL"
-              value={money(
-                amount - discount + chargeSum,
-              )}
+              value={money(amount - discount + chargeSum)}
               strong
             />
           </View>
@@ -1423,20 +1607,28 @@ export function OrderDetailsScreen({navigation, route}) {
         visible={cancelDialog === 'confirm'}
         danger
         icon="highlight-off"
-        title="Cancel order?"
-        message="You can only cancel before the shop accepts it."
-        confirmLabel="Cancel order"
+        title={cancelTarget?.name ? `Cancel ${cancelTarget.name}?` : 'Cancel entire order?'}
+        message={
+          cancelTarget?.name
+            ? 'Only these items are cancelled; the rest of the order continues. You can cancel only before the shop accepts it.'
+            : 'All items in this order will be cancelled. You can cancel only before the shop accepts it.'
+        }
+        confirmLabel="Yes, cancel"
         cancelLabel="Keep order"
         onCancel={() => setCancelDialog(null)}
         onConfirm={async () => {
+          const target = cancelTarget;
           setCancelDialog(null);
           setCancelling(true);
           try {
-            const done = await cancelLiveOrder(
-              order.realOrderIds || order.realOrderId,
-            );
-            if (done) {
-              navigation.goBack();
+            const {cancelled, total} = await cancelLiveOrder(target.ids, {
+              customerId: auth.customerId,
+            });
+            refreshOrders();
+            if (cancelled === total) {
+              setCancelDialog('done');
+            } else if (cancelled > 0) {
+              setCancelDialog('partial');
             } else {
               setCancelDialog('accepted');
             }
@@ -1447,12 +1639,24 @@ export function OrderDetailsScreen({navigation, route}) {
         }}
       />
       <ConfirmDialog
-        visible={cancelDialog === 'accepted' || cancelDialog === 'failed'}
+        visible={['done', 'partial', 'accepted', 'failed'].includes(cancelDialog)}
         hideCancel
-        icon="info-outline"
-        title={cancelDialog === 'accepted' ? 'Cannot cancel' : 'Could not cancel'}
+        icon={cancelDialog === 'done' ? 'check-circle-outline' : 'info-outline'}
+        title={
+          cancelDialog === 'done'
+            ? 'Cancelled'
+            : cancelDialog === 'partial'
+            ? 'Partly cancelled'
+            : cancelDialog === 'accepted'
+            ? 'Cannot cancel'
+            : 'Could not cancel'
+        }
         message={
-          cancelDialog === 'accepted'
+          cancelDialog === 'done'
+            ? 'Your cancellation has been placed.'
+            : cancelDialog === 'partial'
+            ? 'Some items were cancelled. The shop has already accepted the rest.'
+            : cancelDialog === 'accepted'
             ? 'The shop has already accepted this order.'
             : 'Please try again.'
         }
@@ -1466,6 +1670,21 @@ export function OrderDetailsScreen({navigation, route}) {
 
 const s = StyleSheet.create({
   content: {paddingHorizontal: 16, paddingTop: 8, paddingBottom: 86},
+  // full width like the cards around it (the list already pads 16 each side)
+  cancelOrder: {
+    marginTop: 16,
+    marginBottom: 2,
+    minHeight: 50,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5B3B8',
+    backgroundColor: '#FFF0F0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  cancelOrderText: {fontSize: 15, fontWeight: '700', color: '#BC3C47'},
   grid: {flexDirection: 'row', flexWrap: 'wrap', gap: 12, rowGap: 24},
   row: {flexDirection: 'row', alignItems: 'center', gap: 8},
   bold: {fontSize: 14, lineHeight: 20, fontWeight: '700', color: colors.ink},

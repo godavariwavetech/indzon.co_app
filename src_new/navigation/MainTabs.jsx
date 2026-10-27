@@ -5,7 +5,7 @@ import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import StaticHomeScreen from '../screens/home/StaticHomeScreen';
-import {CategoriesBrowseScreen} from '../screens/main/CommerceScreens';
+import MainCategoriesScreen from '../screens/main/MainCategoriesScreen';
 import MainOrdersScreen from '../screens/main/MainOrdersScreen';
 import MainProfileScreen from '../screens/main/MainProfileScreen';
 import TabIcon from '../components/main/TabIcon';
@@ -116,7 +116,7 @@ export default function MainTabs() {
         tabBarHideOnKeyboard: true,
       }}>
       <Tab.Screen name="HomeTab" component={StaticHomeScreen} />
-      <Tab.Screen name="CategoriesTab" component={CategoriesBrowseScreen} />
+      <Tab.Screen name="CategoriesTab" component={MainCategoriesScreen} />
       <Tab.Screen name="OrdersTab" component={MainOrdersScreen} />
       <Tab.Screen name="ProfileTab" component={MainProfileScreen} />
     </Tab.Navigator>

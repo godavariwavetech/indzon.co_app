@@ -11,6 +11,7 @@ import {
 } from '../../redux/reducers/commerce';
 import {money} from '../../config/catalog';
 import {colors} from './MainUi';
+import {showToast} from './Toast';
 import {toggleLiveWishlist} from '../../services/catalogService';
 
 function ProductCard({product, width, navigation, variant = 'compact'}) {
@@ -37,6 +38,13 @@ function ProductCard({product, width, navigation, variant = 'compact'}) {
   const discount = Math.round(
     (1 - product.price / product.originalPrice) * 100,
   );
+  const openDetails = () =>
+    navigation.navigate('ProductDetails', {
+      productId: product.id,
+      // Live items have no single-item fetch endpoint — hand the
+      // already-fetched object through instead of looking it up.
+      liveProduct: product,
+    });
   return (
     <View style={[{width}, categoryGrid && styles.catalogCard]}>
       <View
@@ -50,14 +58,7 @@ function ProductCard({product, width, navigation, variant = 'compact'}) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`View ${product.name}`}
-            onPress={() =>
-              navigation.navigate('ProductDetails', {
-                productId: product.id,
-                // Live items have no single-item fetch endpoint — hand the
-                // already-fetched object through instead of looking it up.
-                liveProduct: product.itemId != null ? product : undefined,
-              })
-            }
+            onPress={openDetails}
             onPressIn={() => animateImage(0.975)}
             onPressOut={() => animateImage(1)}
             android_ripple={{color: '#3832FF12'}}>
@@ -84,6 +85,10 @@ function ProductCard({product, width, navigation, variant = 'compact'}) {
         <Pressable
           onPress={() => {
             dispatch(toggleWishlist(product.id));
+            showToast(
+              wished ? 'Removed from wishlist' : 'Added to wishlist',
+              wished ? 'favorite-border' : 'favorite',
+            );
             if (customerId) {
               toggleLiveWishlist({
                 customerId,
@@ -111,28 +116,30 @@ function ProductCard({product, width, navigation, variant = 'compact'}) {
         {detailed && !categoryGrid && product.bestseller ? (
           <Text style={styles.bestseller}>Bestseller</Text>
         ) : null}
-        <View
-          style={[
-            styles.rating,
-            detailed && {left: 8, bottom: 9},
-            suggested && styles.suggestedRating,
-            categoryGrid && {left: 4, bottom: 5, paddingHorizontal: 2, paddingVertical: 3, alignItems: 'center', gap: 1},
-          ]}>
-          <MaterialIcons
-            name="star"
-            size={categoryGrid ? 12 : detailed ? 19 : 12}
-            color="#009A5D"
-          />
-          <Text
+        {product.rating ? (
+          <View
             style={[
-              styles.ratingText,
-              detailed && {fontSize: 16},
-              suggested && {fontSize: 12, lineHeight: 16},
-              categoryGrid && {fontSize: 11},
+              styles.rating,
+              detailed && {left: 8, bottom: 9},
+              suggested && styles.suggestedRating,
+              categoryGrid && {left: 4, bottom: 5, paddingHorizontal: 2, paddingVertical: 3, alignItems: 'center', gap: 1},
             ]}>
-            {product.rating}
-          </Text>
-        </View>
+            <MaterialIcons
+              name="star"
+              size={categoryGrid ? 12 : detailed ? 19 : 12}
+              color="#009A5D"
+            />
+            <Text
+              style={[
+                styles.ratingText,
+                detailed && {fontSize: 16},
+                suggested && {fontSize: 12, lineHeight: 16},
+                categoryGrid && {fontSize: 11},
+              ]}>
+              {product.rating}
+            </Text>
+          </View>
+        ) : null}
         {wishlistCard ? null : quantity ? (
           <View
             style={[
@@ -185,58 +192,63 @@ function ProductCard({product, width, navigation, variant = 'compact'}) {
           </Pressable>
         )}
       </View>
-      <Text
-        numberOfLines={1}
-        style={[
-          styles.name,
-          detailed && {fontSize: 15, marginTop: 3},
-          suggested && styles.suggestedName,
-          categoryGrid && {fontSize: 13, lineHeight: 17, marginTop: 2},
-        ]}>
-        {product.name}
-      </Text>
-      {detailed ? (
-        <Text numberOfLines={1} style={[styles.subtitle, categoryGrid && {fontSize: 11, lineHeight: 15, marginTop: 2}]}>
-          {product.description}
-        </Text>
-      ) : null}
-      <View
-        style={[
-          styles.prices,
-          detailed && {flexWrap: 'wrap'},
-          suggested && {marginTop: 2, gap: 4},
-          categoryGrid && {gap: 3, marginTop: 3, minHeight: 18},
-        ]}>
+      <Pressable
+        onPress={openDetails}
+        accessibilityRole="button"
+        accessibilityLabel={`View ${product.name}`}>
         <Text
+          numberOfLines={1}
           style={[
-            styles.price,
-            detailed && {fontSize: 17},
-            suggested && styles.suggestedPrice,
-            categoryGrid && {fontSize: 14},
+            styles.name,
+            detailed && {fontSize: 15, marginTop: 3},
+            suggested && styles.suggestedName,
+            categoryGrid && {fontSize: 13, lineHeight: 17, marginTop: 2},
           ]}>
-          {money(product.price)}
+          {product.name}
         </Text>
-        <Text
+        {detailed ? (
+          <Text numberOfLines={1} style={[styles.subtitle, categoryGrid && {fontSize: 11, lineHeight: 15, marginTop: 2}]}>
+            {product.description}
+          </Text>
+        ) : null}
+        <View
           style={[
-            styles.oldPrice,
-            detailed && {fontSize: 12},
-            suggested && {fontSize: 10, lineHeight: 19},
-            categoryGrid && {fontSize: 10},
+            styles.prices,
+            detailed && {flexWrap: 'wrap'},
+            suggested && {marginTop: 2, gap: 4},
+            categoryGrid && {gap: 3, marginTop: 3, minHeight: 18},
           ]}>
-          {money(product.originalPrice)}
-        </Text>
-        {detailed && !categoryGrid ? <Text style={styles.discount}>↓ {discount}%</Text> : null}
-        {categoryGrid && discount > 0 ? <Text style={styles.catalogDiscount}>↓ {discount}%</Text> : null}
-      </View>
-      {!detailed ? (
-        <Text
-          style={[
-            styles.discount,
-            suggested && {fontSize: 12, lineHeight: 17, marginTop: 2},
-          ]}>
-          {discount}% OFF
-        </Text>
-      ) : null}
+          <Text
+            style={[
+              styles.price,
+              detailed && {fontSize: 17},
+              suggested && styles.suggestedPrice,
+              categoryGrid && {fontSize: 14},
+            ]}>
+            {money(product.price)}
+          </Text>
+          <Text
+            style={[
+              styles.oldPrice,
+              detailed && {fontSize: 12},
+              suggested && {fontSize: 10, lineHeight: 19},
+              categoryGrid && {fontSize: 10},
+            ]}>
+            {money(product.originalPrice)}
+          </Text>
+          {detailed && !categoryGrid ? <Text style={styles.discount}>↓ {discount}%</Text> : null}
+          {categoryGrid && discount > 0 ? <Text style={styles.catalogDiscount}>↓ {discount}%</Text> : null}
+        </View>
+        {!detailed ? (
+          <Text
+            style={[
+              styles.discount,
+              suggested && {fontSize: 12, lineHeight: 17, marginTop: 2},
+            ]}>
+            {discount}% OFF
+          </Text>
+        ) : null}
+      </Pressable>
     </View>
   );
 }

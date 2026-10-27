@@ -1,6 +1,5 @@
 import {Text} from '../../components/Typography';
 import React, {
-  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
@@ -48,6 +47,9 @@ export const matchesFilter = (product, filter) =>
     ? product.price < 500
     : filter === 'toprated'
     ? Number(product.rating) >= 4.5
+    : filter === 'topdiscount'
+    ? product.originalPrice > 0 &&
+      1 - product.price / product.originalPrice >= 0.3
     : true;
 
 function SubcategoryTile({sub, width, count, onPress, shadowsReady}) {
@@ -108,7 +110,6 @@ export default function MainCategoriesScreen({
   const [filterVisible, setFilterVisible] = useState(false);
   const [gridWidth, setGridWidth] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(0);
-  const deferredCategoryId = useDeferredValue(categoryId);
   const sidebar = useRef(null);
   const content = useRef(null);
   const categoryPositions = useRef({});
@@ -117,6 +118,12 @@ export default function MainCategoriesScreen({
   const [subcategories, setSubcategories] = useState([]);
   const [categoryItems, setCategoryItems] = useState([]);
   const [liveBanners, setLiveBanners] = useState([]);
+  // subcategories + item lists already fetched, by area and category, so going
+  // back to a category shows instantly instead of reloading
+  const loaded = useRef({});
+  // which category/area the tiles on screen belong to; until it matches the
+  // selected category the grid shows the skeleton, never the previous category
+  const [shownFor, setShownFor] = useState('');
   const [dataLoading, setDataLoading] = useState(liveCatalogEnabled);
   const [itemsLoading, setItemsLoading] = useState(liveCatalogEnabled);
   const [categoriesDone, setCategoriesDone] = useState(!liveCatalogEnabled);
@@ -160,7 +167,7 @@ export default function MainCategoriesScreen({
     content.current?.scrollTo({y: 0, animated: false});
   }, [categoryId]);
   const selected =
-    categoryList.find(item => item.id === deferredCategoryId) ||
+    categoryList.find(item => item.id === categoryId) ||
     categoryList[0] ||
     null;
   // Subcategories come from the backend; the items of the shops that stock
@@ -169,6 +176,16 @@ export default function MainCategoriesScreen({
   useEffect(() => {
     if (!liveCatalogEnabled || !selected || !locationId) {
       return;
+    }
+    const key = `${locationId}:${selected.id}`;
+    const cached = loaded.current[key];
+    if (cached?.items) {
+      setSubcategories(cached.subs);
+      setCategoryItems(cached.items);
+      setShownFor(key);
+      setDataLoading(false);
+      setItemsLoading(false);
+      return undefined;
     }
     let active = true;
     setDataLoading(true);
@@ -179,6 +196,7 @@ export default function MainCategoriesScreen({
         if (active) {
           setSubcategories(subs);
           setCategoryItems([]);
+          setShownFor(key);
           setDataLoading(false);
         }
         const shopIds = [...new Set(subs.flatMap(sub => sub.shopIds))];
@@ -190,6 +208,7 @@ export default function MainCategoriesScreen({
             }).catch(() => []),
           ),
         );
+        loaded.current[key] = {subs, items: lists.flat()};
         if (active) {
           setCategoryItems(lists.flat());
         }
@@ -198,6 +217,7 @@ export default function MainCategoriesScreen({
         if (active) {
           setSubcategories([]);
           setCategoryItems([]);
+          setShownFor(key);
         }
       })
       .finally(() => {
@@ -214,7 +234,7 @@ export default function MainCategoriesScreen({
   // Measure inside the divider and padding: calculating from window width
   // made two cards exceed the row by one pixel and wrap into a single column.
   const availableWidth = gridWidth || width - sidebarWidth - 25;
-  const cardWidth = Math.floor((availableWidth - 10) / 2);
+  const cardWidth = Math.floor((availableWidth - 12 - 2) / 2);
   const bannerWidth = Math.max(0, (viewportWidth || width - sidebarWidth) - 25);
   const bannerHeight = bannerWidth / (546 / 162);
   const loading =
@@ -222,7 +242,7 @@ export default function MainCategoriesScreen({
     dataLoading ||
     // a filter or search needs the items, not just the tiles
     (itemsLoading && (filter !== 'all' || query.trim() !== '')) ||
-    deferredCategoryId !== categoryId;
+    shownFor !== `${locationId}:${selected?.id}`;
   const categoryBanner = liveBanners.find(
     banner => banner.categoryId === selected?.id,
   );
@@ -322,7 +342,7 @@ export default function MainCategoriesScreen({
                 <LinearGradient
                   colors={
                     item.id === categoryId
-                      ? ['#DED9FF', '#C8C4FF']
+                      ? ['#2A30D6', '#9794FF']
                       : ['#FAFAFA', '#E1E1E1']
                   }
                   start={{x: 0.5, y: 0}}
@@ -443,6 +463,7 @@ export default function MainCategoriesScreen({
               ['all', 'All products'],
               ['under500', 'Under ₹500'],
               ['toprated', 'Rating 4.5 and above'],
+              ['topdiscount', 'Top discounts (30% off or more)'],
             ].map(([id, label]) => (
               <Pressable
                 key={id}
@@ -546,7 +567,8 @@ const styles = StyleSheet.create({
   filterButton: {
     borderWidth: 1,
     borderColor: '#C5CBD9',
-    borderRadius: 9,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
@@ -565,17 +587,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  selectedArt: {
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    backgroundColor: '#C8C4FF',
-  },
+  selectedArt: {borderColor: 'transparent'},
   categoryName: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 17,
     textAlign: 'center',
-    fontWeight: '600',
-    color: '#363636',
+    fontWeight: '500',
+    color: '#2B2B2B',
     marginTop: 5,
   },
   selectedName: {color: colors.ink, fontWeight: '700'},
@@ -589,31 +607,41 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 12,
     alignItems: 'stretch',
+    paddingBottom: 6,
   },
+  // Soft pastel card with a gentle drop shadow (iOS needs the shadow* props,
+  // Android uses elevation). No overflow clipping, or iOS would cut the shadow.
   card: {
-    borderRadius: 14,
-    minHeight: 82,
-    padding: 7,
-    overflow: 'hidden',
+    borderRadius: 16,
+    minHeight: 92,
+    padding: 10,
     borderWidth: 1,
-    borderColor: '#E4DFDC',
+    borderColor: 'rgba(255,255,255,0.7)',
   },
-  cardShadow: {elevation: 1},
+  cardShadow: {
+    elevation: 3,
+    shadowColor: '#7A6A8A',
+    shadowOpacity: 0.22,
+    shadowRadius: 6,
+    shadowOffset: {width: 0, height: 3},
+  },
   wideCard: {
     flex: 1,
     flexDirection: 'row',
     gap: 4,
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginRight: -7,
+    marginRight: -10,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   wideCopy: {flex: 1, minWidth: 0, justifyContent: 'center'},
   tilePicture: {overflow: 'hidden', alignSelf: 'center', flexShrink: 0},
   subcategoryName: {
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: 14,
+    lineHeight: 18,
     fontFamily: 'Lato-Bold',
     color: '#111111',
   },
@@ -625,8 +653,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   count: {
-    fontSize: 11,
-    fontFamily: 'Lato-Bold',
+    fontSize: 12,
+    fontFamily: 'Lato-Medium',
     color: colors.ink,
     flexShrink: 1,
   },
@@ -635,7 +663,9 @@ const styles = StyleSheet.create({
     height: 22,
     flexShrink: 0,
     backgroundColor: '#FFFFFF',
-    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
   },
