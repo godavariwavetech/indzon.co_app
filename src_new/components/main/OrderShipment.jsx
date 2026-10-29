@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import React, {useState} from 'react';
 import {Linking, Pressable, StyleSheet, View} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -88,7 +89,7 @@ export default function OrderShipment({
     <View style={styles.card}>
       <View style={styles.row}>
         <View style={styles.icon}>
-          <MaterialIcons name="inventory-2" size={23} color="#3832FF" />
+          <MaterialIcons name="inventory-2" size={23} color={appTheme.primary /* Original: "#3832FF" */} />
         </View>
         <View style={styles.flex}>
           <Text style={styles.title}>{group.name}</Text>
@@ -161,12 +162,12 @@ export default function OrderShipment({
         accessibilityRole="button"
         accessibilityLabel={`Track ${group.name} shipment`}
         accessibilityState={{expanded}}>
-        <MaterialIcons name="local-shipping" size={20} color="#3832FF" />
+        <MaterialIcons name="local-shipping" size={20} color={appTheme.primary /* Original: "#3832FF" */} />
         <Text style={styles.trackText}>Track this shipment</Text>
         <MaterialIcons
           name={expanded ? 'expand-less' : 'expand-more'}
           size={24}
-          color="#3832FF"
+          color={appTheme.primary /* Original: "#3832FF" */}
         />
       </Pressable>
       {expanded ? (
@@ -189,7 +190,7 @@ export default function OrderShipment({
                         complete ? 'check-circle' : 'radio-button-unchecked'
                       }
                       size={21}
-                      color={complete ? '#3832FF' : '#BDC2CE'}
+                      color={complete ? appTheme.primary /* Original: '#3832FF' */ : '#BDC2CE'}
                     />
                     {index < stages.length - 1 ? (
                       <View
@@ -228,7 +229,7 @@ export default function OrderShipment({
                 onPress={() =>
                   Linking.openURL(`tel:${group.deliveryPartner.phone}`)
                 }>
-                <Text style={[styles.caption, {color: '#3832FF'}]}>
+                <Text style={[styles.caption, {color: appTheme.primary /* Original: '#3832FF' */}]}>
                   Call {group.deliveryPartner.phone}
                 </Text>
               </Pressable>
@@ -258,7 +259,7 @@ export default function OrderShipment({
 const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
-    borderColor: '#E5E4F2',
+    borderColor: appTheme.border /* Original: '#E5E4F2' */,
     borderRadius: 18,
     padding: 16,
     backgroundColor: '#FFFFFF',
@@ -266,7 +267,7 @@ const styles = StyleSheet.create({
   },
   flex: {flex: 1},
   row: {flexDirection: 'row', alignItems: 'center', gap: 10},
-  icon: {backgroundColor: '#EFEDFF', borderRadius: 12, padding: 10},
+  icon: {backgroundColor: appTheme.tint /* Original: '#EFEDFF' */, borderRadius: 12, padding: 10},
   title: {fontSize: 21, lineHeight: 26, fontWeight: '700', color: '#202427'},
   caption: {fontSize: 15, lineHeight: 21, color: '#687384', marginTop: 3},
   badge: {
@@ -298,14 +299,14 @@ const styles = StyleSheet.create({
     gap: 9,
     paddingVertical: 14,
     borderTopWidth: 1,
-    borderTopColor: '#EEEFF5',
+    borderTopColor: appTheme.tint /* Original: '#EEEFF5' */,
     marginTop: 10,
   },
-  trackText: {flex: 1, fontSize: 17, fontWeight: '700', color: '#3832FF'},
+  trackText: {flex: 1, fontSize: 17, fontWeight: '700', color: appTheme.primary /* Original: '#3832FF' */},
   step: {flexDirection: 'row', gap: 12, minHeight: 57},
   rail: {alignItems: 'center', width: 23},
   line: {width: 2, flex: 1, backgroundColor: '#E6E8EF', marginVertical: 4},
-  completeLine: {backgroundColor: '#3832FF'},
+  completeLine: {backgroundColor: appTheme.primary /* Original: '#3832FF' */},
   pending: {color: '#8B92A0'},
   itemRating: {
     marginLeft: 54,

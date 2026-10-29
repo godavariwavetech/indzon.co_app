@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text} from '../../components/Typography';
 import React, {useEffect, useRef, useState} from 'react';
 import {
@@ -210,7 +211,7 @@ export default function LocationSetupScreen({navigation}) {
             style={styles.error}
             accessibilityRole="alert"
             accessibilityLiveRegion="polite">
-            <MaterialIcons name="info-outline" size={20} color="#3832FF" />
+            <MaterialIcons name="info-outline" size={20} color={appTheme.primary /* Original: "#3832FF" */} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
@@ -248,7 +249,7 @@ export default function LocationSetupScreen({navigation}) {
 }
 
 const styles = StyleSheet.create({
-  screen: {flex: 1, backgroundColor: '#F4F6FF'},
+  screen: {flex: 1, backgroundColor: appTheme.cream /* Original: '#F4F6FF' */},
   content: {
     flexGrow: 1,
     alignItems: 'center',
@@ -280,12 +281,12 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 12,
     borderRadius: 10,
-    backgroundColor: '#EEF0FF',
+    backgroundColor: appTheme.tint /* Original: '#EEF0FF' */,
     borderWidth: 1,
-    borderColor: '#D6DAFF',
+    borderColor: appTheme.tintStrong /* Original: '#D6DAFF' */,
     marginBottom: 16,
     width: '100%',
     maxWidth: 480,
   },
-  errorText: {flex: 1, fontSize: 13, lineHeight: 19, color: '#2A2F6B'},
+  errorText: {flex: 1, fontSize: 13, lineHeight: 19, color: appTheme.primaryDark /* Original: '#2A2F6B' */},
 });

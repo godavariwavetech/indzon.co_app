@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text, TextInput} from '../../components/Typography';
 import React, {useEffect, useState} from 'react';
 import {
@@ -94,7 +95,7 @@ export default function NamePromptScreen({navigation}) {
   if (checking) {
     return (
       <View style={[styles.screen, styles.checking]}>
-        <ActivityIndicator color="#3832FF" />
+        <ActivityIndicator color={appTheme.primary /* Original: "#3832FF" */} />
       </View>
     );
   }
@@ -135,7 +136,7 @@ export default function NamePromptScreen({navigation}) {
         />
         {error ? (
           <View style={styles.notice} accessibilityRole="alert">
-            <MaterialIcons name="info-outline" size={20} color="#3832FF" />
+            <MaterialIcons name="info-outline" size={20} color={appTheme.primary /* Original: "#3832FF" */} />
             <Text style={styles.noticeText}>{error}</Text>
           </View>
         ) : null}
@@ -152,7 +153,7 @@ export default function NamePromptScreen({navigation}) {
         ]}
         testID="setup-name-continue">
         <LinearGradient
-          colors={['#4B43FF', '#173CFF']}
+          colors={[appTheme.primary /* Original: '#4B43FF' */, appTheme.primary /* Original: '#173CFF' */]}
           start={{x: 0, y: 0}}
           end={{x: 1, y: 0}}
           style={styles.gradient}>
@@ -191,11 +192,11 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 12,
     borderRadius: 10,
-    backgroundColor: '#EEF0FF',
+    backgroundColor: appTheme.tint /* Original: '#EEF0FF' */,
     borderWidth: 1,
-    borderColor: '#D6DAFF',
+    borderColor: appTheme.tintStrong /* Original: '#D6DAFF' */,
   },
-  noticeText: {flex: 1, fontSize: 13, lineHeight: 18, color: '#2A2F6B'},
+  noticeText: {flex: 1, fontSize: 13, lineHeight: 18, color: appTheme.primaryDark /* Original: '#2A2F6B' */},
   button: {borderRadius: 11, overflow: 'hidden'},
   gradient: {
     minHeight: 46,

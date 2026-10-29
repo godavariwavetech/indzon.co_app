@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {useFocusEffect} from '@react-navigation/native';
 import SuccessCelebration from '../../components/main/SuccessCelebration';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
@@ -235,7 +236,7 @@ export default function CouponsScreen({navigation}) {
             }}
             style={styles.remove}>
             <Text style={styles.removeText}>Remove {selected}</Text>
-            <MaterialIcons name="close" color="#3832FF" size={18} />
+            <MaterialIcons name="close" color={appTheme.primary /* Original: "#3832FF" */} size={18} />
           </Pressable>
         ) : null}
 
@@ -280,7 +281,7 @@ export default function CouponsScreen({navigation}) {
               <View style={styles.featuredActions}>
                 <CodeBox
                   code={featured.code}
-                  color="#3832FF"
+                  color={appTheme.primary /* Original: "#3832FF" */}
                   onCopy={copy}
                   style={styles.featuredCode}
                 />
@@ -308,7 +309,7 @@ export default function CouponsScreen({navigation}) {
 
         <View style={styles.sectionHeading}>
           <View style={styles.sectionIcon}>
-            <MaterialIcons name="confirmation-number" size={20} color="#3832FF" />
+            <MaterialIcons name="confirmation-number" size={20} color={appTheme.primary /* Original: "#3832FF" */} />
           </View>
           <Text allowFontScaling={false} style={styles.sectionTitle}>
             All Coupons
@@ -453,7 +454,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     letterSpacing: 3,
-    color: '#3832FF',
+    color: appTheme.primary /* Original: '#3832FF' */,
     marginBottom: 6,
   },
   heroTitle: {fontSize: 40, fontWeight: '800', color: '#101223'},
@@ -524,7 +525,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     paddingVertical: 8,
   },
-  removeText: {fontSize: 13, color: '#3832FF'},
+  removeText: {fontSize: 13, color: appTheme.primary /* Original: '#3832FF' */},
   featured: {
     marginHorizontal: 16,
     flexDirection: 'row',

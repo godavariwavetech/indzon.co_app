@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import React, {forwardRef, useEffect, useRef, useState} from 'react';
 import {
   AccessibilityInfo,
@@ -84,13 +85,13 @@ export const LoadingImage = forwardRef(function LoadingImage(
   const [failedUri, setFailedUri] = useState(null);
   const [loadedUri, setLoadedUri] = useState(null);
   if (uri && failedUri === uri) {
-    return <View style={[style, {backgroundColor: '#EFECF8'}]} />;
+    return <View style={[style, {backgroundColor: appTheme.tint /* Original: '#EFECF8' */}]} />;
   }
   return (
     <NativeImage
       {...props}
       // a remote picture shows a soft tile until it has loaded instead of a blank hole
-      style={uri && loadedUri !== uri ? [style, {backgroundColor: '#EFECF8'}] : style}
+      style={uri && loadedUri !== uri ? [style, {backgroundColor: appTheme.tint /* Original: '#EFECF8' */}] : style}
       onLoad={() => uri && setLoadedUri(uri)}
       source={source}
       resizeMethod={resizeMethod}
@@ -298,7 +299,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderWidth: 1,
     borderColor: '#EDF0F5',
-    backgroundColor: '#F8F9FC',
+    backgroundColor: appTheme.surface /* Original: '#F8F9FC' */,
   },
   homeCategories: {
     flexDirection: 'row',
@@ -319,12 +320,12 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E6E8F2',
+    borderColor: appTheme.border /* Original: '#E6E8F2' */,
   },
   shipmentSkeleton: {
     padding: 12,
     borderRadius: 15,
-    backgroundColor: '#F7F8FC',
+    backgroundColor: appTheme.surface /* Original: '#F7F8FC' */,
     borderWidth: 1,
     borderColor: '#ECEEF5',
   },
@@ -341,7 +342,7 @@ const styles = StyleSheet.create({
     marginTop: 9,
   },
   address: {
-    backgroundColor: '#F8F9FC',
+    backgroundColor: appTheme.surface /* Original: '#F8F9FC' */,
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,

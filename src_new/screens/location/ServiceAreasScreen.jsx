@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text} from '../../components/Typography';
 import React, {useEffect, useState} from 'react';
 import {Pressable, ScrollView, StatusBar, StyleSheet, View} from 'react-native';
@@ -119,7 +120,7 @@ export default function ServiceAreasScreen({navigation}) {
         ) : null}
         {error ? (
           <View style={styles.notice} accessibilityRole="alert">
-            <MaterialIcons name="info-outline" size={20} color="#3832FF" />
+            <MaterialIcons name="info-outline" size={20} color={appTheme.primary /* Original: "#3832FF" */} />
             <Text style={styles.noticeText}>{error}</Text>
           </View>
         ) : null}
@@ -144,7 +145,7 @@ export default function ServiceAreasScreen({navigation}) {
             accessibilityRole="button"
             accessibilityLabel={`Deliver to ${area.name}`}>
             <View style={styles.pin}>
-              <MaterialIcons name="location-on" size={22} color="#3832FF" />
+              <MaterialIcons name="location-on" size={22} color={appTheme.primary /* Original: "#3832FF" */} />
             </View>
             <Text style={styles.areaName}>{area.name}</Text>
             <MaterialIcons name="chevron-right" size={22} color="#9299AA" />
@@ -169,15 +170,15 @@ const styles = StyleSheet.create({
     minHeight: 58,
     paddingHorizontal: 14,
     borderRadius: 14,
-    backgroundColor: '#F7F8FC',
+    backgroundColor: appTheme.surface /* Original: '#F7F8FC' */,
     borderWidth: 1,
-    borderColor: '#E6E8F2',
+    borderColor: appTheme.border /* Original: '#E6E8F2' */,
   },
   pin: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#EEF0FF',
+    backgroundColor: appTheme.tint /* Original: '#EEF0FF' */,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -188,10 +189,10 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 12,
     borderRadius: 10,
-    backgroundColor: '#EEF0FF',
+    backgroundColor: appTheme.tint /* Original: '#EEF0FF' */,
     borderWidth: 1,
-    borderColor: '#D6DAFF',
+    borderColor: appTheme.tintStrong /* Original: '#D6DAFF' */,
   },
-  noticeText: {flex: 1, fontSize: 13, lineHeight: 18, color: '#2A2F6B'},
+  noticeText: {flex: 1, fontSize: 13, lineHeight: 18, color: appTheme.primaryDark /* Original: '#2A2F6B' */},
   empty: {textAlign: 'center', color: '#6B7280', marginTop: 24, fontSize: 14},
 });

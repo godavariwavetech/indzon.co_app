@@ -1,3 +1,4 @@
+import {appTheme} from '../config/appTheme';
 import {Text} from '../components/Typography';
 import React, {useEffect, useRef, useState} from 'react';
 import {Animated, Keyboard, Pressable, StyleSheet, View} from 'react-native';
@@ -39,7 +40,7 @@ function AnimatedTabItem({name, focused, color}) {
       <Animated.View
         pointerEvents="none"
         style={[styles.activeLayer, {opacity: progress}]}>
-        <LinearGradient colors={['#C7C3FF', '#FFFFFF']} style={styles.active} />
+        <LinearGradient colors={[appTheme.tintStrong /* Original: '#C7C3FF' */, '#FFFFFF']} style={styles.active} />
       </Animated.View>
       <Animated.View style={{transform: [{scale}, {translateY: lift}]}}>
         <TabIcon name={name} focused={focused} color={color} />
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     elevation: 10,
-    shadowColor: '#5A528E',
+    shadowColor: appTheme.shadow /* Original: '#5A528E' */,
     shadowOpacity: 0.14,
     shadowRadius: 10,
     shadowOffset: {width: 0, height: -3},
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
     borderBottomWidth: 1,
-    borderColor: '#D8D4FF',
+    borderColor: appTheme.border /* Original: '#D8D4FF' */,
   },
   activeLayer: {...StyleSheet.absoluteFillObject},
   label: {fontSize: 11, lineHeight: 17, paddingTop: 4},

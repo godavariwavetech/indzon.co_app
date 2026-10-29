@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import React from 'react';
 import {StyleSheet} from 'react-native';
 import Svg, {Circle, Defs, LinearGradient, Stop} from 'react-native-svg';
@@ -37,8 +38,8 @@ export function LoginBackground({width, height, scale}: LoginBackgroundProps) {
           y1={top(0)}
           x2={x(360)}
           y2={top(173)}>
-          <Stop offset="0" stopColor="#9AD7E0" />
-          <Stop offset="1" stopColor="#44B0C0" />
+          <Stop offset="0" stopColor={appTheme.tintStrong /* Original: "#9AD7E0" */} />
+          <Stop offset="1" stopColor={appTheme.primaryLight /* Original: "#44B0C0" */} />
         </LinearGradient>
         <LinearGradient
           id="loginBottomCircle"
@@ -47,28 +48,28 @@ export function LoginBackground({width, height, scale}: LoginBackgroundProps) {
           y1={bottom(665)}
           x2={x(110)}
           y2={bottom(780)}>
-          <Stop offset="0" stopColor="#98D3DC" />
-          <Stop offset="1" stopColor="#CBEBF0" />
+          <Stop offset="0" stopColor={appTheme.tintStrong /* Original: "#98D3DC" */} />
+          <Stop offset="1" stopColor={appTheme.tintStrong /* Original: "#CBEBF0" */} />
         </LinearGradient>
       </Defs>
 
       {/* Top-right */}
-      <Circle cx={x(325)} cy={top(140)} r={r(69)} fill="#F3FAFB" />
+      <Circle cx={x(325)} cy={top(140)} r={r(69)} fill={appTheme.cream /* Original: "#F3FAFB" */} />
       <Circle cx={x(436)} cy={top(37)} r={r(136)} fill="url(#loginTopCircle)" />
       <Circle
         cx={x(367)}
         cy={top(7)}
         r={r(138)}
-        stroke="#0096A1"
+        stroke={appTheme.primary /* Original: "#0096A1" */}
         strokeOpacity={0.4}
         strokeWidth={Math.max(1, scale)}
         fill="none"
       />
-      <Circle cx={x(253.4)} cy={top(83.7)} r={r(10.3)} fill="#4DB3C3" />
+      <Circle cx={x(253.4)} cy={top(83.7)} r={r(10.3)} fill={appTheme.primaryLight /* Original: "#4DB3C3" */} />
 
       {/* Bottom-left */}
-      <Circle cx={x(362)} cy={bottom(727)} r={r(53)} fill="#F8FCFD" />
-      <Circle cx={x(42)} cy={bottom(790)} r={r(129)} fill="#F8FCFD" />
+      <Circle cx={x(362)} cy={bottom(727)} r={r(53)} fill={appTheme.cream /* Original: "#F8FCFD" */} />
+      <Circle cx={x(42)} cy={bottom(790)} r={r(129)} fill={appTheme.cream /* Original: "#F8FCFD" */} />
       <Circle
         cx={x(-4)}
         cy={bottom(779)}
@@ -79,12 +80,12 @@ export function LoginBackground({width, height, scale}: LoginBackgroundProps) {
         cx={x(110)}
         cy={bottom(792)}
         r={r(96)}
-        stroke="#0096A1"
+        stroke={appTheme.primary /* Original: "#0096A1" */}
         strokeOpacity={0.12}
         strokeWidth={Math.max(1, scale)}
         fill="none"
       />
-      <Circle cx={x(164)} cy={bottom(710)} r={r(12)} fill="#97D3DB" />
+      <Circle cx={x(164)} cy={bottom(710)} r={r(12)} fill={appTheme.tintStrong /* Original: "#97D3DB" */} />
     </Svg>
   );
 }

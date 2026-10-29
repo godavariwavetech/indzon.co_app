@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import ReferenceArtwork from '../../components/main/ReferenceArtwork';
 import React, {useEffect, useRef, useState} from 'react';
 import {
@@ -29,7 +30,7 @@ import {
 import {Page, EmptyState, Heading} from '../../components/main/MainUi';
 import {showToast} from '../../components/main/Toast';
 
-const blue = '#3832FF';
+const blue = appTheme.primary /* Original: '#3832FF' */;
 const green = '#00AD49';
 // Uses the app's shared typography scale so text sizes match the other screens.
 // Dimensions below follow the 393 pt source design.
@@ -43,7 +44,7 @@ function Quantity({product, quantity, scale}) {
   const dispatch = useDispatch();
   return (
     <LinearGradient
-      colors={['#4B43FF', '#173CFF']}
+      colors={[appTheme.primary /* Original: '#4B43FF' */, appTheme.primary /* Original: '#173CFF' */]}
       start={{x: 0, y: 0}}
       end={{x: 1, y: 0}}
       style={[styles.quantity, {height: 40 * scale}]}>
@@ -166,7 +167,7 @@ function RelatedProduct({product, navigation, scale}) {
           {money(product.originalPrice)}
         </Label>
         <Label
-          style={{fontSize: 11 * scale, color: '#0057FF', fontWeight: '700'}}>
+          style={{fontSize: 11 * scale, color: appTheme.primary /* Original: '#0057FF' */, fontWeight: '700'}}>
           ↓{discount}%
         </Label>
       </View>
@@ -747,7 +748,7 @@ const styles = StyleSheet.create({
     borderColor: '#C9CFD8',
     backgroundColor: '#FFFFFF',
   },
-  optionChipOn: {borderColor: blue, backgroundColor: '#EEF0FF'},
+  optionChipOn: {borderColor: blue, backgroundColor: appTheme.tint /* Original: '#EEF0FF' */},
   expandedDetails: {paddingTop: 14},
   detailsHeading: {
     fontSize: 14,

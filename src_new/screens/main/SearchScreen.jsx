@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import ReferenceArtwork from '../../components/main/ReferenceArtwork';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
@@ -162,7 +163,7 @@ export default function SearchScreen({navigation}) {
           <MaterialIcons name="arrow-back" size={28 * scale} color="#111827" />
         </Pressable>
         <View style={styles.searchBox}>
-          <MaterialIcons name="search" size={23 * scale} color="#245EF5" />
+          <MaterialIcons name="search" size={23 * scale} color={appTheme.primary /* Original: "#245EF5" */} />
           <TextInput
             ref={input}
             value={query}
@@ -234,7 +235,7 @@ export default function SearchScreen({navigation}) {
                   }
                 }}
                 accessibilityRole="button">
-                <View style={[styles.resultIcon, {backgroundColor: '#EEF3FF'}]}>
+                <View style={[styles.resultIcon, {backgroundColor: appTheme.surface /* Original: '#EEF3FF' */}]}>
                   <ReferenceArtwork
                     art={result.art}
                     width={styles.resultImage.width}
@@ -251,7 +252,7 @@ export default function SearchScreen({navigation}) {
                 <MaterialIcons
                   name="chevron-right"
                   size={22 * scale}
-                  color="#13213C"
+                  color={appTheme.ink /* Original: "#13213C" */}
                 />
               </Pressable>
             ))}
@@ -367,7 +368,7 @@ export default function SearchScreen({navigation}) {
                         <MaterialIcons
                           name="history"
                           size={23 * scale}
-                          color="#1768F5"
+                          color={appTheme.primary /* Original: "#1768F5" */}
                         />
                       </View>
                       <Text numberOfLines={1} style={styles.recentText}>
@@ -427,7 +428,7 @@ const makeStyles = s =>
       alignItems: 'center',
       gap: 10 * s,
       borderWidth: 1,
-      borderColor: '#827CFF',
+      borderColor: appTheme.primaryLight /* Original: '#827CFF' */,
       borderRadius: 10 * s,
       backgroundColor: '#FFFFFF',
       elevation: 2,
@@ -440,7 +441,7 @@ const makeStyles = s =>
       flex: 1,
       height: '100%',
       padding: 0,
-      color: '#111B34',
+      color: appTheme.ink /* Original: '#111B34' */,
       fontSize: 14 * s,
     },
     body: {flex: 1},
@@ -516,9 +517,9 @@ const makeStyles = s =>
       fontSize: 14 * s,
       lineHeight: 20 * s,
       fontWeight: '700',
-      color: '#0B123A',
+      color: appTheme.ink /* Original: '#0B123A' */,
     },
-    action: {fontSize: 12 * s, fontWeight: '500', color: '#1768F5'},
+    action: {fontSize: 12 * s, fontWeight: '500', color: appTheme.primary /* Original: '#1768F5' */},
     recentRow: {
       height: 46 * s,
       flexDirection: 'row',
@@ -537,7 +538,7 @@ const makeStyles = s =>
       width: 31 * s,
       height: 31 * s,
       borderRadius: 16 * s,
-      backgroundColor: '#EDF3FF',
+      backgroundColor: appTheme.surface /* Original: '#EDF3FF' */,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -545,7 +546,7 @@ const makeStyles = s =>
       flex: 1,
       marginLeft: 12 * s,
       fontSize: 12 * s,
-      color: '#0B123A',
+      color: appTheme.ink /* Original: '#0B123A' */,
     },
     removeButton: {
       width: 26 * s,
@@ -574,7 +575,7 @@ const makeStyles = s =>
     resultText: {flex: 1, marginLeft: 12 * s, justifyContent: 'center'},
     resultName: {
       fontSize: 14 * s,
-      color: '#111B34',
+      color: appTheme.ink /* Original: '#111B34' */,
     },
     empty: {padding: 20 * s, fontSize: 13 * s, color: colors.muted},
   });

@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {fontSizes, Text} from '../Typography';
 import React from 'react';
 import {Modal, Pressable, StyleSheet, View} from 'react-native';
@@ -82,7 +83,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: '#FFFFFF',
     elevation: 12,
-    shadowColor: '#161838',
+    shadowColor: appTheme.ink /* Original: '#161838' */,
     shadowOpacity: 0.2,
     shadowRadius: 20,
     shadowOffset: {width: 0, height: 8},
@@ -93,7 +94,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 24,
-    backgroundColor: '#F0EFFF',
+    backgroundColor: appTheme.tint /* Original: '#F0EFFF' */,
     marginBottom: 12,
   },
   dangerIcon: {backgroundColor: '#FFF0F1'},

@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text, TextInput} from '../Typography';
 import React, {useEffect, useRef, useState} from 'react';
 import {
@@ -130,7 +131,7 @@ export default function AddressDetailsSheet({
         <View
           style={[styles.sheet, {paddingBottom: Math.max(insets.bottom, 16)}]}>
           <View style={styles.heading}>
-            <MaterialIcons name="location-on" color="#0096A1" size={28} />
+            <MaterialIcons name="location-on" color={appTheme.primary /* Original: "#0096A1" */} size={28} />
             <View style={styles.addressCopy}>
               <Text style={styles.area}>{place?.area}</Text>
               <Text style={styles.address} numberOfLines={2}>
@@ -166,7 +167,7 @@ export default function AddressDetailsSheet({
                   <MaterialIcons
                     name={type.icon}
                     size={22}
-                    color={fields.type === type.label ? '#0096A1' : '#48535D'}
+                    color={fields.type === type.label ? appTheme.primary /* Original: '#0096A1' */ : '#48535D'}
                   />
                   <Text
                     style={[
@@ -288,9 +289,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 7,
   },
-  selectedType: {borderColor: '#0096A1'},
+  selectedType: {borderColor: appTheme.primary /* Original: '#0096A1' */},
   typeText: {fontSize: 15, color: '#48535D', fontWeight: '600'},
-  selectedTypeText: {color: '#0096A1'},
+  selectedTypeText: {color: appTheme.primary /* Original: '#0096A1' */},
   customType: {
     borderBottomWidth: 1,
     borderColor: '#808080',

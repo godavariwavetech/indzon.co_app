@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {fontSizes, Text, TextInput} from '../Typography';
 import React, {createContext, useCallback, useContext, useState} from 'react';
 import {
@@ -13,10 +14,10 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 
 export const colors = {
-  primary: '#3832FF',
+  primary: appTheme.primary /* Original: '#3832FF' */,
   ink: '#202427',
   muted: '#7B8294',
-  border: '#E5E8F1',
+  border: appTheme.border /* Original: '#E5E8F1' */,
 };
 const PageReadyContext = createContext(false);
 
@@ -45,7 +46,7 @@ export function Page({children, style}) {
       <View style={[ui.page, {paddingTop: insets.top}, style]}>
         <LinearGradient
           pointerEvents="none"
-          colors={['#CDCAFF', '#FFFFFF']}
+          colors={[appTheme.tintStrong /* Original: '#CDCAFF' */, '#FFFFFF']}
           style={{position: 'absolute', top: 0, left: 0, right: 0, height: insets.top + 180}}
         />
         <StatusBar
@@ -170,7 +171,7 @@ export const ui = StyleSheet.create({
   search: {
     minHeight: 46,
     borderWidth: 1,
-    borderColor: '#827CFF',
+    borderColor: appTheme.primaryLight /* Original: '#827CFF' */,
     borderRadius: 11,
     flexDirection: 'row',
     alignItems: 'center',

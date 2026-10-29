@@ -1,3 +1,4 @@
+import {appTheme} from './appTheme';
 import {onboardingAssets} from '../assets';
 
 export const OTP_LENGTH = 4;
@@ -5,7 +6,7 @@ export const DEFAULT_RESEND_SECONDS = 60;
 export const ONBOARDING_STORAGE_KEY = 'amaraa-new-onboarding-complete';
 
 export const authFlowColors = {
-  primary: '#0096A1',
+  primary: appTheme.primary /* Original: '#0096A1' */,
   background: '#FFFFFF',
   text: '#333333',
   muted: '#6B7280',

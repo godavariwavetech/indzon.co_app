@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text} from '../Typography';
 import React from 'react';
 import {StyleSheet, View} from 'react-native';
@@ -18,10 +19,10 @@ export default function DeliveryMapMarker({anchor, viewport, bottomInset = 0}) {
         <Svg width={markerWidth} height={markerHeight} viewBox="0 0 32 40">
           <Path
             d="M16 0C7.2 0 0 7.2 0 16c0 10 16 24 16 24s16-14 16-24C32 7.2 24.8 0 16 0Z"
-            fill="#3832FF"
+            fill={appTheme.primary /* Original: "#3832FF" */}
           />
           <Circle cx={16} cy={16} r={8} fill="#FFFFFF" />
-          <Circle cx={16} cy={16} r={4} fill="#3832FF" />
+          <Circle cx={16} cy={16} r={4} fill={appTheme.primary /* Original: "#3832FF" */} />
         </Svg>
       </View>
       {showCallout ? (

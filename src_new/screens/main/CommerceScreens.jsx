@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import OrderShipment, {
   shipmentStatus,
 } from '../../components/main/OrderShipment';
@@ -434,16 +435,16 @@ export function ProductListScreen({navigation, route, embedded = false}) {
               accessibilityLabel={`Browse ${item.name}`}
               accessibilityState={{selected: item.id === categoryId}}
               onPress={() => navigation.setParams({categoryId: item.id, subcategoryId: null, filter: 'all', shopId: null, shopItemsTableName: null, shopName: null})}
-              style={{width: 76, alignItems: 'center', paddingVertical: 8, paddingHorizontal: 4, borderRadius: 13, backgroundColor: item.id === categoryId ? '#E7E2FF' : 'transparent', borderWidth: 1, borderColor: item.id === categoryId ? '#C8BDFF' : 'transparent'}}>
+              style={{width: 76, alignItems: 'center', paddingVertical: 8, paddingHorizontal: 4, borderRadius: 13, backgroundColor: item.id === categoryId ? appTheme.tint /* Original: '#E7E2FF' */ : 'transparent', borderWidth: 1, borderColor: item.id === categoryId ? appTheme.tintStrong /* Original: '#C8BDFF' */ : 'transparent'}}>
               <ReferenceArtwork art={item.art} width={42} height={42} resizeMode="contain" />
               <Text numberOfLines={2} style={{fontSize: 12, lineHeight: 15, height: 26, marginTop: 5, textAlign: 'center', fontWeight: item.id === categoryId ? '700' : '500', color: item.id === categoryId ? colors.primary : colors.ink}}>{item.shortName || item.name}</Text>
             </Pressable>
           ))}
         </ScrollView>
       ) : null}
-      <View style={{flex: 1, flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#EEEAF7'}}>
+      <View style={{flex: 1, flexDirection: 'row', borderTopWidth: 1, borderTopColor: appTheme.tint /* Original: '#EEEAF7' */}}>
         {showSidebar ? (
-        <ScrollView style={{width: sidebarWidth, flexGrow: 0, backgroundColor: '#FFFFFF', borderRightWidth: 1, borderRightColor: '#EEEAF7'}} contentContainerStyle={{paddingVertical: 8, paddingBottom: 90}} showsVerticalScrollIndicator={false}>
+        <ScrollView style={{width: sidebarWidth, flexGrow: 0, backgroundColor: '#FFFFFF', borderRightWidth: 1, borderRightColor: appTheme.tint /* Original: '#EEEAF7' */}} contentContainerStyle={{paddingVertical: 8, paddingBottom: 90}} showsVerticalScrollIndicator={false}>
           {liveItemsLoading && !subcategories.length ? (
             <CategorySidebarSkeleton size={56} />
           ) : null}
@@ -459,8 +460,8 @@ export function ProductListScreen({navigation, route, embedded = false}) {
                 navigation.setParams({subcategoryId: sub.id || null});
                 productScroll.current?.scrollTo({y: 0, animated: false});
               }}
-              style={{alignItems: 'center', paddingHorizontal: 6, paddingVertical: 10, marginBottom: 4, backgroundColor: (subcategoryId || undefined) === sub.id ? '#F1EEFF' : 'transparent', borderLeftWidth: 3, borderLeftColor: (subcategoryId || undefined) === sub.id ? colors.primary : 'transparent'}}>
-              <LinearGradient colors={(subcategoryId || undefined) === sub.id ? ['#E4DFFF', '#CFC8FF'] : ['#FFFFFF', '#E9E7EE']} style={{width: 56, height: 56, borderRadius: 13, alignItems: 'center', justifyContent: 'center'}}>
+              style={{alignItems: 'center', paddingHorizontal: 6, paddingVertical: 10, marginBottom: 4, backgroundColor: (subcategoryId || undefined) === sub.id ? appTheme.tint /* Original: '#F1EEFF' */ : 'transparent', borderLeftWidth: 3, borderLeftColor: (subcategoryId || undefined) === sub.id ? colors.primary : 'transparent'}}>
+              <LinearGradient colors={(subcategoryId || undefined) === sub.id ? [appTheme.tintStrong /* Original: '#E4DFFF' */, appTheme.tintStrong /* Original: '#CFC8FF' */] : ['#FFFFFF', '#E9E7EE']} style={{width: 56, height: 56, borderRadius: 13, alignItems: 'center', justifyContent: 'center'}}>
                 {sub.art ? <ReferenceArtwork art={sub.art} width={45} height={45} resizeMode="contain" /> : <MaterialIcons name="apps" size={26} color={colors.primary} />}
               </LinearGradient>
               <Text style={{fontSize: 12, lineHeight: 16, textAlign: 'center', marginTop: 6, fontWeight: (subcategoryId || undefined) === sub.id ? '700' : '500', color: (subcategoryId || undefined) === sub.id ? colors.primary : colors.ink}}>{sub.name}</Text>
@@ -470,7 +471,7 @@ export function ProductListScreen({navigation, route, embedded = false}) {
         ) : null}
       <ScrollView
         ref={productScroll}
-        style={{flex: 1, backgroundColor: '#F8F7FC'}}
+        style={{flex: 1, backgroundColor: appTheme.surface /* Original: '#F8F7FC' */}}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[s.content, {paddingHorizontal: 12}]}>
@@ -480,8 +481,8 @@ export function ProductListScreen({navigation, route, embedded = false}) {
               : subcategoryId
               ? 'Products'
               : 'All products'}</Text>
-          <View style={{backgroundColor: '#EAE5FF', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 4}}>
-            <Text style={{fontSize: 12, fontWeight: '700', color: '#6250B5'}}>{liveItemsLoading ? '' : visible.length}</Text>
+          <View style={{backgroundColor: appTheme.tintStrong /* Original: '#EAE5FF' */, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 4}}>
+            <Text style={{fontSize: 12, fontWeight: '700', color: appTheme.primaryDark /* Original: '#6250B5' */}}>{liveItemsLoading ? '' : visible.length}</Text>
           </View>
         </View>
         {liveItemsLoading ? (
@@ -883,7 +884,7 @@ export function CartScreen({navigation}) {
     resetToConfirmation(navigation, order.id);
   };
   return (
-    <Page style={{backgroundColor: '#F8F8FB'}}>
+    <Page style={{backgroundColor: appTheme.surface /* Original: '#F8F8FB' */}}>
       <Heading
         title="Cart"
         back
@@ -928,6 +929,7 @@ export function CartScreen({navigation}) {
                 }>
                 <ReferenceArtwork
                   art={group.art}
+                  backgroundColor={appTheme.tint /* Original: category-background.png blue shading */}
                   width={44}
                   height={44}
                   style={{borderRadius: 10}}
@@ -1220,7 +1222,7 @@ export function OrderConfirmationScreen({navigation, route}) {
     <Page>
       <View
         pointerEvents="none"
-        style={[StyleSheet.absoluteFill, {overflow: 'hidden', backgroundColor: '#F1F3FF'}]}>
+        style={[StyleSheet.absoluteFill, {overflow: 'hidden', backgroundColor: appTheme.surface /* Original: '#F1F3FF' */}]}>
         <Image
           source={require('../../assets/main/references/order-confirmed-background.png')}
           style={{
@@ -1770,7 +1772,7 @@ const s = StyleSheet.create({
     minHeight: 34,
     backgroundColor: '#FFFFFF',
   },
-  selectedChip: {backgroundColor: '#EDEAFF', borderColor: colors.primary},
+  selectedChip: {backgroundColor: appTheme.tint /* Original: '#EDEAFF' */, borderColor: colors.primary},
   chipText: {fontSize: 13, color: '#49555F', fontWeight: '600'},
   chipTrack: {flexGrow: 0, marginBottom: 14, minHeight: 35},
   backdrop: {flex: 1, backgroundColor: '#00000055', justifyContent: 'flex-end'},
@@ -2061,7 +2063,7 @@ const s = StyleSheet.create({
     gap: 10,
     borderWidth: 1,
     borderColor: colors.primary,
-    backgroundColor: '#EDEBFF',
+    backgroundColor: appTheme.tint /* Original: '#EDEBFF' */,
     borderRadius: 11,
     padding: 10,
     width: '100%',

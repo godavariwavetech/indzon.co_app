@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text, TextInput} from '../../components/Typography';
 import React, {useEffect, useState} from 'react';
 import {
@@ -168,7 +169,7 @@ export function MyAccountScreen({navigation}) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <LinearGradient
-          colors={['#31436A', '#465995']}
+          colors={[appTheme.primaryDark /* Original: '#31436A' */, appTheme.primaryDark /* Original: '#465995' */]}
           start={{x: 0, y: 0}}
           end={{x: 1, y: 1}}
           style={styles.accountHero}>
@@ -391,7 +392,7 @@ export function AboutUsScreen({navigation}) {
         contentContainerStyle={styles.aboutContent}
         showsVerticalScrollIndicator={false}>
         <LinearGradient
-          colors={['#302ACB', '#635DFF']}
+          colors={[appTheme.primary /* Original: '#302ACB' */, appTheme.primary /* Original: '#635DFF' */]}
           start={{x: 0, y: 0}}
           end={{x: 1, y: 1}}
           style={styles.aboutHero}>
@@ -513,7 +514,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 1.5,
     fontWeight: '700',
-    color: '#E2E0FF',
+    color: appTheme.tint /* Original: '#E2E0FF' */,
   },
   aboutBrand: {
     fontSize: 43,
@@ -533,7 +534,7 @@ const styles = StyleSheet.create({
   aboutHeroBody: {
     fontSize: 17,
     lineHeight: 25,
-    color: '#ECEBFF',
+    color: appTheme.tint /* Original: '#ECEBFF' */,
     marginTop: 12,
   },
   aboutSection: {marginVertical: 28},
@@ -546,27 +547,27 @@ const styles = StyleSheet.create({
   aboutBody: {fontSize: 17, lineHeight: 25, color: '#626C7D', marginTop: 7},
   aboutPills: {flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16},
   aboutPill: {
-    backgroundColor: '#F0EFFF',
+    backgroundColor: appTheme.tint /* Original: '#F0EFFF' */,
     borderRadius: 20,
     paddingHorizontal: 13,
     paddingVertical: 9,
   },
-  aboutPillText: {fontSize: 14, fontWeight: '600', color: '#4841C5'},
+  aboutPillText: {fontSize: 14, fontWeight: '600', color: appTheme.primaryDark /* Original: '#4841C5' */},
   aboutFeatures: {marginTop: 16, gap: 12},
   aboutFeature: {
     flexDirection: 'row',
     gap: 14,
     padding: 16,
     borderRadius: 18,
-    backgroundColor: '#F8F9FC',
+    backgroundColor: appTheme.surface /* Original: '#F8F9FC' */,
     borderWidth: 1,
-    borderColor: '#EEF0F6',
+    borderColor: appTheme.tint /* Original: '#EEF0F6' */,
   },
   aboutFeatureIcon: {
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: '#EBE9FF',
+    backgroundColor: appTheme.tint /* Original: '#EBE9FF' */,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -590,7 +591,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 18,
   },
-  aboutLinkBorder: {borderTopWidth: 1, borderTopColor: '#EEF0F6'},
+  aboutLinkBorder: {borderTopWidth: 1, borderTopColor: appTheme.tint /* Original: '#EEF0F6' */},
   aboutLinkText: {flex: 1, fontSize: 18, fontWeight: '600', color: colors.ink},
   aboutClosing: {
     textAlign: 'center',
@@ -628,7 +629,7 @@ const styles = StyleSheet.create({
     color: '#777777',
     textDecorationLine: 'line-through',
   },
-  offer: {fontSize: 13, color: '#0057FF', fontWeight: '600', marginTop: 5},
+  offer: {fontSize: 13, color: appTheme.primary /* Original: '#0057FF' */, fontWeight: '600', marginTop: 5},
   description: {
     fontSize: 15,
     lineHeight: 23,
@@ -728,7 +729,7 @@ const styles = StyleSheet.create({
     fontSize: 19,
     lineHeight: 24,
     fontWeight: '800',
-    color: '#40528D',
+    color: appTheme.primaryDark /* Original: '#40528D' */,
   },
   accountHeroCopy: {flex: 1, minWidth: 0, zIndex: 1},
   accountEyebrow: {
@@ -736,7 +737,7 @@ const styles = StyleSheet.create({
     lineHeight: 13,
     letterSpacing: 0.7,
     fontWeight: '700',
-    color: '#DCD9FF',
+    color: appTheme.tintStrong /* Original: '#DCD9FF' */,
     marginBottom: 3,
   },
   accountHeroName: {
@@ -748,7 +749,7 @@ const styles = StyleSheet.create({
   accountHeroPhone: {
     fontSize: 12,
     lineHeight: 17,
-    color: '#E8E8FF',
+    color: appTheme.tintStrong /* Original: '#E8E8FF' */,
     marginTop: 2,
   },
   accountIntro: {marginTop: 22, marginBottom: 12},
@@ -772,7 +773,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   accountCardShadow: {
-    shadowColor: '#1E2440',
+    shadowColor: appTheme.shadow /* Original: '#1E2440' */,
     shadowOpacity: 0.05,
     shadowRadius: 9,
     shadowOffset: {width: 0, height: 3},
@@ -789,7 +790,7 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F0EFFF',
+    backgroundColor: appTheme.tint /* Original: '#F0EFFF' */,
   },
   accountFieldTitle: {
     fontSize: 14,

@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text, TextInput} from '../../components/Typography';
 import React, {useEffect, useRef, useState} from 'react';
 import {
@@ -316,7 +317,7 @@ const styles = StyleSheet.create({
     width: 2,
     height: 22,
     borderRadius: 1,
-    backgroundColor: '#3832FF',
+    backgroundColor: appTheme.primary /* Original: '#3832FF' */,
   },
   hiddenInput: {
     ...StyleSheet.absoluteFillObject,
@@ -332,7 +333,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   resend: {alignSelf: 'center', marginTop: 24, padding: 4},
-  resendText: {color: '#3832FF', fontSize: 16, lineHeight: 22},
+  resendText: {color: appTheme.primary /* Original: '#3832FF' */, fontSize: 16, lineHeight: 22},
   muted: {color: '#606060'},
   button: {width: '76%', marginTop: 18},
   dimmed: {opacity: 0.65},

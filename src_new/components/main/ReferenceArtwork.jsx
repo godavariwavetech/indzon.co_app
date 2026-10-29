@@ -9,6 +9,7 @@ function ReferenceArtwork({
   height,
   style,
   resizeMode,
+  backgroundColor,
 }) {
   const cellSize = Math.min(width, height);
   const sprite = art.sprite;
@@ -30,9 +31,10 @@ function ReferenceArtwork({
   return (
     <View
       pointerEvents="none"
-      style={[{width, height, overflow: 'hidden'}, style]}
+      style={[{width, height, overflow: 'hidden', backgroundColor}, style]}
       accessible={false}>
-      {art.background ? (
+      {/* Keep the original background asset available when no theme override is supplied. */}
+      {art.background && !backgroundColor ? (
         <LoadingImage
           source={art.background}
           style={[StyleSheet.absoluteFillObject, {width, height}]}

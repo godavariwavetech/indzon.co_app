@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text} from '../../components/Typography';
 import React, {useEffect, useState} from 'react';
 import {
@@ -347,6 +348,7 @@ export default function HomeContent({navigation}) {
               accessibilityLabel={`Browse ${item.name}`}>
               <ReferenceArtwork
                 art={item.art}
+                backgroundColor={appTheme.tint /* Original: category-background.png blue shading */}
                 width={iconWidth}
                 height={iconWidth}
                 resizeMode={item.art.resizeMode}
@@ -384,7 +386,9 @@ export default function HomeContent({navigation}) {
           </View>
         )}
         {loadingCategories || deals.length > 0 ? (
-        <LinearGradient colors={['#F2EAFE', '#C39DFA']} style={styles.deals}>
+        <LinearGradient
+          colors={[appTheme.tint, appTheme.tintStrong] /* Original: ['#F2EAFE', '#C39DFA'] */}
+          style={styles.deals}>
           <View style={styles.dealsInner}>
             <Text style={[ui.sectionTitle, styles.dealsTitle]}>
               Top Deals for you!
@@ -412,6 +416,7 @@ export default function HomeContent({navigation}) {
                   accessibilityLabel={deal.title}>
                   <ReferenceArtwork
                     art={deal.art}
+                    backgroundColor={appTheme.tint /* Original: category-background.png blue shading */}
                     width={contentWidth * 0.28 - 10}
                     height={contentWidth * 0.28 - 10}
                     style={{borderRadius: 10}}
@@ -441,7 +446,7 @@ export default function HomeContent({navigation}) {
               categoryId: banner.categoryId,
               title: banner.title,
               source: banner.cardSource || {uri: banner.cardUri},
-              background: '#EAF1FC',
+              background: appTheme.tint /* Original: '#EAF1FC' */,
               imageOnly: true,
             }))}
           />
@@ -511,7 +516,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 13,
     overflow: 'hidden',
-    backgroundColor: '#EAF1FC',
+    backgroundColor: appTheme.tint /* Original: '#EAF1FC' */,
   },
   bannerDots: {
     position: 'absolute',
@@ -555,7 +560,7 @@ const styles = StyleSheet.create({
   },
   surfaceShadow: {
     elevation: 2,
-    shadowColor: '#252744',
+    shadowColor: appTheme.shadow /* Original: '#252744' */,
     shadowOpacity: 0.1,
     shadowRadius: 5,
     shadowOffset: {width: 0, height: 2},
