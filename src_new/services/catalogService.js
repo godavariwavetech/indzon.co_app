@@ -256,6 +256,20 @@ const parseJson = value => {
   }
 };
 
+// Variant records can include prices and SKUs; only their size is display text.
+const displayValue = value => {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(displayValue).filter(Boolean).join(', ');
+  }
+  if (value && typeof value === 'object') {
+    return displayValue(value.size);
+  }
+  return '';
+};
+
 // Dashboard-entered details of one item row: gallery, specs (material, warranty,
 // ...) and this row's variant (size, colour, storage, ...).
 function itemDetails(row) {
@@ -264,7 +278,10 @@ function itemDetails(row) {
     .filter(Boolean)
     .map(mediaUrl);
   const toEntries = value =>
-    Object.entries(parseJson(value) || {}).filter(
+    Object.entries(parseJson(value) || {}).map(([key, entry]) => [
+      key,
+      displayValue(entry),
+    ]).filter(
       ([key, entry]) =>
         entry !== null && entry !== '' && !['qa_batch', 'image_type', 'color_hex'].includes(key),
     );
@@ -294,7 +311,7 @@ function mapLiveItem(row, shopItemsTableName) {
     brand: row.brand,
     price: Number(row.selling_price) || 0,
     originalPrice: Number(row.actual_price) || Number(row.selling_price) || 0,
-    unit: row.quantity_varient || '1 item',
+    unit: displayValue(parseJson(row.quantity_varient) || row.quantity_varient) || '1 item',
     gstPercent: Number(row.item_gst) || 0,
     art: photoArt(row.item_image),
     // average of the customers' ratings of this item; null until someone rates it
@@ -338,7 +355,7 @@ export async function getLiveItemById(compoundId, locationId) {
     brand: row.brand,
     price: Number(row.selling_price) || 0,
     originalPrice: Number(row.actual_price) || Number(row.selling_price) || 0,
-    unit: row.quantity_varient || '1 item',
+    unit: displayValue(parseJson(row.quantity_varient) || row.quantity_varient) || '1 item',
     gstPercent: Number(row.item_gst) || 0,
     art: photoArt(row.item_image),
   };
@@ -735,7 +752,7 @@ export async function getLiveOrderItems(realOrderId) {
     myRating: Number(row.my_rating) || 0,
     myComment: row.my_comment || '',
     name: row.item_name,
-    unit: row.quantity_varient || '1 item',
+    unit: displayValue(parseJson(row.quantity_varient) || row.quantity_varient) || '1 item',
     price: Number(row.item_price) || 0,
     originalPrice: Number(row.actualitem_price) || Number(row.item_price) || 0,
     quantity: Number(row.sub_item_count) || 1,
