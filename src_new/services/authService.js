@@ -20,11 +20,20 @@ const requestOtp = async phoneNumber => {
   if (!isValidPhoneNumber(phoneNumber)) {
     throw new Error('Enter a valid 10-digit mobile number.');
   }
-  const body = requireSuccess(
-    await api.post(endpoints.REQUEST_OTP, {
+  let response;
+  try {
+    response = await api.post(endpoints.REQUEST_OTP, {
       customer_mobile_number: phoneNumber,
-    }),
-  );
+    });
+  } catch (error) {
+    if (error.response?.status >= 500) {
+      throw new Error(
+        'The OTP service is temporarily unavailable. Please try again later.',
+      );
+    }
+    throw error;
+  }
+  const body = requireSuccess(response);
   const seconds = Number(body.resendAfterSeconds ?? body.resend_after_seconds);
   return {
     resendAfterSeconds:

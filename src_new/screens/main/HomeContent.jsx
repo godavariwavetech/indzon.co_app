@@ -20,6 +20,7 @@ import {
   getHomeSections,
   liveCatalogEnabled,
   resolveServiceLocation,
+  refreshLiveItems,
   searchAll,
 } from '../../services/catalogService';
 import {
@@ -47,6 +48,7 @@ export default function HomeContent({navigation}) {
   const address = useSelector(state => state.Auth.deliveryAddress);
   const deliveryLocation = useSelector(state => state.Auth.location);
   const locationId = useSelector(state => state.Auth.locationId);
+  const cart = useSelector(state => state.commerce.cart);
   const dispatch = useDispatch();
   const [outOfArea, setOutOfArea] = useState(false);
   useEffect(() => {
@@ -73,20 +75,36 @@ export default function HomeContent({navigation}) {
   }, [locationId, deliveryLocation, dispatch]);
   const [query, setQuery] = useState('');
   const [liveCategories, setLiveCategories] = useState(null);
+  const [categoryError, setCategoryError] = useState('');
   const [liveBanners, setLiveBanners] = useState([]);
   const [bannerIndex, setBannerIndex] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = () => {
     setRefreshing(true);
+    setBannersDone(false);
+    setCategoriesDone(false);
+    setFeaturedDone(false);
+    setCartDone(false);
+    setCartError('');
+    refreshLiveItems(Object.keys(cart), locationId)
+      .catch(() => setCartError('Could not refresh cart prices. Pull down to try again.'))
+      .finally(() => setCartDone(true));
     setRefreshKey(key => key + 1);
-    setTimeout(() => setRefreshing(false), 1200);
   };
   const [bannersDone, setBannersDone] = useState(false);
   const [categoriesDone, setCategoriesDone] = useState(false);
   const [featuredDone, setFeaturedDone] = useState(false);
+  const [cartDone, setCartDone] = useState(true);
+  const [cartError, setCartError] = useState('');
+  useEffect(() => {
+    if (bannersDone && categoriesDone && featuredDone && cartDone) {
+      setRefreshing(false);
+    }
+  }, [bannersDone, categoriesDone, featuredDone, cartDone]);
   useEffect(() => {
     if (!liveCatalogEnabled || !locationId) {
+      setBannersDone(true);
       return;
     }
     let active = true;
@@ -100,16 +118,20 @@ export default function HomeContent({navigation}) {
   }, [locationId, refreshKey]);
   useEffect(() => {
     if (!liveCatalogEnabled) {
+      setCategoriesDone(true);
       return;
     }
     let active = true;
+    setCategoryError('');
     getLiveCategories()
       .then(rows => {
-        if (active && rows.length) {
+        if (active) {
           setLiveCategories(rows);
         }
       })
-      .catch(() => {})
+      .catch(() => active && setCategoryError(
+        'Could not refresh categories. Pull down to try again.',
+      ))
       .finally(() => active && setCategoriesDone(true));
     return () => {
       active = false;
@@ -123,6 +145,7 @@ export default function HomeContent({navigation}) {
   });
   useEffect(() => {
     if (!liveCatalogEnabled) {
+      setFeaturedDone(true);
       return;
     }
     let active = true;
@@ -252,6 +275,11 @@ export default function HomeContent({navigation}) {
           style={styles.search}
           onPress={() => navigation.navigate('Search')}
         />
+        {categoryError || cartError ? (
+          <Text accessibilityRole="alert" style={{color: '#C62828', marginHorizontal: 16}}>
+            {categoryError || cartError}
+          </Text>
+        ) : null}
         {loadingBanners ? (
           <HomeBannerSkeleton
             width={contentWidth}

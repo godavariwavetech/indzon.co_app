@@ -1,5 +1,6 @@
 import {Text} from '../../components/Typography';
 import React, {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -18,6 +19,7 @@ import {Text as NativeText} from '../../components/ReadableText';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import {useSelector} from 'react-redux';
+import {useFocusEffect} from '@react-navigation/native';
 import {
   getLiveBanners,
   getLiveCategories,
@@ -129,20 +131,23 @@ export default function MainCategoriesScreen({
   const [categoriesDone, setCategoriesDone] = useState(!liveCatalogEnabled);
   const [bannersDone, setBannersDone] = useState(!liveCatalogEnabled);
   const categoryList = useMemo(() => liveCategories || [], [liveCategories]);
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (!liveCatalogEnabled) {
       return;
     }
+    let active = true;
     getLiveCategories()
       .then(rows => {
-        if (rows.length) {
+        if (active) {
           setLiveCategories(rows);
-          setCategoryId(current => current || rows[0].id);
+          setCategoryId(current => rows.some(row => row.id === current)
+            ? current : rows[0]?.id || null);
         }
       })
       .catch(() => {})
-      .finally(() => setCategoriesDone(true));
-  }, []);
+      .finally(() => active && setCategoriesDone(true));
+    return () => { active = false; };
+  }, []));
   useEffect(() => {
     if (!liveCatalogEnabled || !locationId) {
       return;

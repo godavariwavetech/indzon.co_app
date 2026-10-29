@@ -4,11 +4,14 @@
 // data source changes. See ReferenceArtwork.jsx: `art.source` is passed
 // straight to <Image>, so a {uri} works exactly like a local require().
 import {useCallback, useEffect, useState} from 'react';
+import {AppState} from 'react-native';
 import {useSelector} from 'react-redux';
 import {useFocusEffect} from '@react-navigation/native';
 import api from '../utils/api';
 import {baseURL, endpoints} from '../config/config';
 import {ENABLE_LIVE_DATA} from '../config/appMode';
+import {createLiveItemCache} from './liveItemCache';
+import {startForegroundPolling} from './foregroundPolling';
 
 // The backend stores media URLs with whatever dev IP it was seeded under
 // (e.g. http://192.168.0.111:2406/images/...). Point any such local-server URL
@@ -57,6 +60,9 @@ export function groupVariants(items) {
 
 export async function getLiveCategories() {
   const response = await api.post(endpoints.DADDY_GET_CATEGORIES, {});
+  if (Number(response.data?.status) !== 200 || !Array.isArray(response.data?.data)) {
+    throw new Error('Could not load categories.');
+  }
   const rows = Array.isArray(response.data?.data) ? response.data.data : [];
   // category_active_status 0 = active (the API already filters; this guards
   // against rows that do carry the flag); rows without the field are kept.
@@ -250,6 +256,20 @@ const parseJson = value => {
   }
 };
 
+// Variant records can include prices and SKUs; only their size is display text.
+const displayValue = value => {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(displayValue).filter(Boolean).join(', ');
+  }
+  if (value && typeof value === 'object') {
+    return displayValue(value.size);
+  }
+  return '';
+};
+
 // Dashboard-entered details of one item row: gallery, specs (material, warranty,
 // ...) and this row's variant (size, colour, storage, ...).
 function itemDetails(row) {
@@ -258,7 +278,10 @@ function itemDetails(row) {
     .filter(Boolean)
     .map(mediaUrl);
   const toEntries = value =>
-    Object.entries(parseJson(value) || {}).filter(
+    Object.entries(parseJson(value) || {}).map(([key, entry]) => [
+      key,
+      displayValue(entry),
+    ]).filter(
       ([key, entry]) =>
         entry !== null && entry !== '' && !['qa_batch', 'image_type', 'color_hex'].includes(key),
     );
@@ -288,7 +311,7 @@ function mapLiveItem(row, shopItemsTableName) {
     brand: row.brand,
     price: Number(row.selling_price) || 0,
     originalPrice: Number(row.actual_price) || Number(row.selling_price) || 0,
-    unit: row.quantity_varient || '1 item',
+    unit: displayValue(parseJson(row.quantity_varient) || row.quantity_varient) || '1 item',
     gstPercent: Number(row.item_gst) || 0,
     art: photoArt(row.item_image),
     // average of the customers' ratings of this item; null until someone rates it
@@ -311,6 +334,9 @@ export async function getLiveItemById(compoundId, locationId) {
     id: itemId,
     location_id: Number(locationId) || 0,
   });
+  if (Number(response.data?.status) !== 200 || !Array.isArray(response.data?.data)) {
+    throw new Error('Could not check the latest product prices. Please try again.');
+  }
   const row = Array.isArray(response.data?.data) ? response.data.data[0] : null;
   if (!row) {
     return null;
@@ -329,7 +355,7 @@ export async function getLiveItemById(compoundId, locationId) {
     brand: row.brand,
     price: Number(row.selling_price) || 0,
     originalPrice: Number(row.actual_price) || Number(row.selling_price) || 0,
-    unit: row.quantity_varient || '1 item',
+    unit: displayValue(parseJson(row.quantity_varient) || row.quantity_varient) || '1 item',
     gstPercent: Number(row.item_gst) || 0,
     art: photoArt(row.item_image),
   };
@@ -389,45 +415,35 @@ const isLiveId = id => typeof id === 'string' && id.includes(':');
 // Cart/wishlist only ever store an id — this resolves the live ones (ids
 // containing ':') back to full product objects for rendering, caching across
 // calls so re-rendering the same cart/wishlist doesn't refetch every item.
-const itemCache = new Map();
+const itemCache = createLiveItemCache(getLiveItemById);
+export const refreshLiveItems = (ids, locationId) =>
+  itemCache.refresh(ENABLE_LIVE_DATA ? ids.filter(isLiveId) : [], locationId);
 export function useLiveItemsByIds(ids) {
   const [, forceRender] = useState(0);
+  const [loading, setLoading] = useState(false);
   const locationId = useSelector(state => state.Auth.locationId);
   const liveIds = ENABLE_LIVE_DATA ? ids.filter(isLiveId) : [];
-  // an item's shop depends on the delivery area, so the cache is per area
-  const cacheKey = id => `${locationId || 0}|${id}`;
-  const missing = liveIds.filter(id => !itemCache.has(cacheKey(id)));
-  useEffect(() => {
-    if (!missing.length) {
-      return;
-    }
+  const idsKey = [...new Set(liveIds)].sort().join(',');
+  useEffect(() => itemCache.subscribe(() => forceRender(n => n + 1)), []);
+  useFocusEffect(useCallback(() => {
+    if (!idsKey) { return undefined; }
     let active = true;
-    Promise.all(
-      missing.map(id =>
-        getLiveItemById(id, locationId)
-          .then(item => itemCache.set(cacheKey(id), item))
-          // a failed request (server down, network) is not cached, so reopening
-          // the screen retries instead of the cart staying empty for the session
-          .catch(() => {}),
-      ),
-    ).then(() => {
-      if (active) {
-        forceRender(n => n + 1);
-      }
-    });
+    setLoading(true);
+    refreshLiveItems(idsKey.split(','), locationId)
+      .catch(() => {})
+      .finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [missing.join(','), locationId]);
+  }, [idsKey, locationId]));
   const itemsById = {};
   liveIds.forEach(id => {
-    const item = itemCache.get(cacheKey(id));
+    const item = itemCache.get(id, locationId);
     if (item) {
       itemsById[id] = item;
     }
   });
-  return {itemsById, loading: liveIds.length > 0 && missing.length > 0};
+  return {itemsById, loading: liveIds.length > 0 && loading};
 }
 
 // categoryId / shopId null lists every coupon of the location.
@@ -437,8 +453,14 @@ export async function getLiveCoupons({locationId, categoryId = 0, shopId = 0}) {
     coupon_category_id: categoryId,
     shop_id: shopId,
   });
+  if (Number(response.data?.status) !== 200 || !Array.isArray(response.data?.data)) {
+    throw new Error('Could not verify current coupons. Please try again.');
+  }
   const rows = Array.isArray(response.data?.data) ? response.data.data : [];
-  return rows.map(row => ({
+  return rows.filter(row =>
+    (row.d_in == null || Number(row.d_in) === 0) &&
+    (row.coupon_active_status == null || Number(row.coupon_active_status) === 0),
+  ).map(row => ({
     id: row.id,
     code: row.coupon_name,
     label: Number(row.coupon_user_permission) ? 'ONE-TIME' : 'FLAT',
@@ -730,7 +752,7 @@ export async function getLiveOrderItems(realOrderId) {
     myRating: Number(row.my_rating) || 0,
     myComment: row.my_comment || '',
     name: row.item_name,
-    unit: row.quantity_varient || '1 item',
+    unit: displayValue(parseJson(row.quantity_varient) || row.quantity_varient) || '1 item',
     price: Number(row.item_price) || 0,
     originalPrice: Number(row.actualitem_price) || Number(row.item_price) || 0,
     quantity: Number(row.sub_item_count) || 1,
@@ -741,7 +763,7 @@ export async function getLiveOrderItems(realOrderId) {
 // Orders from the backend (the source of truth) plus any placed in this
 // session that the server has not returned yet. Refetched whenever the
 // screen regains focus, so a fresh order shows up after checkout.
-export function useOrders() {
+export function useOrders({pollInterval = 0} = {}) {
   const customerId = useSelector(state => state.Auth.customerId);
   const localOrders = useSelector(state => state.commerce.orders);
   const [liveOrders, setLiveOrders] = useState([]);
@@ -753,22 +775,19 @@ export function useOrders() {
       if (!ENABLE_LIVE_DATA || !customerId) {
         return undefined;
       }
-      let active = true;
-      getLiveOrders({customerId})
-        .then(rows => active && setLiveOrders(rows))
-        .catch(() => {})
-        .finally(() => {
-          if (active) {
-            setRefreshing(false);
-            setLoading(false);
-          }
-        });
-      return () => {
-        active = false;
-      };
+      return startForegroundPolling({
+        load: () => getLiveOrders({customerId}),
+        onSuccess: setLiveOrders,
+        onSettled: () => {
+          setRefreshing(false);
+          setLoading(false);
+        },
+        intervalMs: pollInterval,
+        appState: AppState,
+      });
     // refreshKey re-runs the fetch on pull-to-refresh
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [customerId, refreshKey]),
+    }, [customerId, refreshKey, pollInterval]),
   );
   const liveIds = new Set(liveOrders.map(order => order.id));
   return {

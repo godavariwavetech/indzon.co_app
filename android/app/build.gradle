@@ -11,7 +11,7 @@ if (localPropertiesFile.exists()) {
 
 def googleMapsApiKey = providers.environmentVariable("GOOGLE_MAPS_API_KEY").orNull ?: localProperties.getProperty("GOOGLE_MAPS_API_KEY")
 // Use the supplied Firebase configuration as-is. Builds must never rewrite it.
-// Download google-services.json for com.indzon.co into android/app.
+// Download google-services.json for com.indzon into android/app.
 googleMapsApiKey = googleMapsApiKey ?: ""
 
 /**
@@ -95,8 +95,11 @@ android {
         manifestPlaceholders = [googleMapsApiKey: googleMapsApiKey ?: ""]
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        versionName "1.0.0"
+        // versionCode 3
+        // versionName "1.0.0"
+
+        versionCode 4
+        versionName "1.1.0"
     }
     signingConfigs {
         debug {
@@ -152,4 +155,24 @@ dependencies {
     // implementation 'com.razorpay:checkout:1.6.33'  // latest version
 }
 apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")
+
+// Keep UI development possible without using a fabricated production config.
+// Supply the fallback directly to the debug task, outside the source tree.
+afterEvaluate {
+    tasks.named("processDebugGoogleServices").configure { task ->
+        def suppliedConfigs = task.googleServicesJsonFiles.get()
+        def fallbackConfig = layout.buildDirectory.file("generated/firebase-debug/google-services.json")
+        if (!suppliedConfigs.any { it.isFile() }) {
+            def config = new groovy.json.JsonSlurper().parse(file("google-services.template.json"))
+            config.client[0].client_info.android_client_info.package_name = android.defaultConfig.applicationId
+            def firebaseKey = providers.environmentVariable("FIREBASE_ANDROID_API_KEY").orNull ?: localProperties.getProperty("FIREBASE_ANDROID_API_KEY")
+            config.client[0].api_key[0].current_key = firebaseKey ?: "AIza" + ("0" * 35)
+            def output = fallbackConfig.get().asFile
+            output.parentFile.mkdirs()
+            output.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(config))
+            task.googleServicesJsonFiles.set([output])
+            logger.warn("Using the Firebase template for debug only. Supply android/app/google-services.json for working Firebase services.")
+        }
+    }
+}
 

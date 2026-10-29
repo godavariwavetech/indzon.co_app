@@ -1,0 +1,18 @@
+diff --git a/dashboard_api/models/mainModel.js b/dashboard_api/models/mainModel.js
+--- a/dashboard_api/models/mainModel.js
++++ b/dashboard_api/models/mainModel.js
+@@ -1428,1 +1428,1 @@
+-	var QRY_TO_EXEC = `update category_location_t set category_active_status = ? where id = ?;`;
++	var QRY_TO_EXEC = `UPDATE category_tbl SET category_active_status = ? WHERE id = ? AND d_in = 0;`;
+diff --git a/dashboard_api11/models/mainModel.js b/dashboard_api11/models/mainModel.js
+--- a/dashboard_api11/models/mainModel.js
++++ b/dashboard_api11/models/mainModel.js
+@@ -1376,1 +1376,1 @@
+-	var QRY_TO_EXEC = `update category_location_t set category_active_status = ? where id = ?;`;
++	var QRY_TO_EXEC = `UPDATE category_tbl SET category_active_status = ? WHERE id = ? AND d_in = 0;`;
+diff --git a/public_app/models/public_mainModel.js b/public_app/models/public_mainModel.js
+--- a/public_app/models/public_mainModel.js
++++ b/public_app/models/public_mainModel.js
+@@ -122,1 +122,1 @@
+-	var QRY_TO_EXEC = `SELECT a.id as id,a.category_name,a.category_image,a.category_ind,a.shop_items_tb_nm , a.regular_status,a.order_offer_amount,a.category_gst, a.highlight FROM category_tbl as a WHERE a.d_in=0 and a.category_active_status=0 order BY a.category_order;`;
++	var QRY_TO_EXEC = `SELECT a.id as id,a.category_name,a.category_image,a.category_ind,a.shop_items_tb_nm , a.regular_status,a.order_offer_amount,a.category_gst, a.highlight,a.category_active_status FROM category_tbl as a WHERE a.d_in=0 and a.category_active_status=0 order BY a.category_order;`;
