@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import React from 'react';
 import {ActivityIndicator, Pressable, StyleSheet, View} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -6,7 +7,7 @@ import {Text} from '../Typography';
 // The primary call-to-action used on the Login and OTP screens: blue gradient, 11px corners.
 // `style` sizes the button from outside (width, margins, flex); children replace the label
 // (e.g. an icon plus text).
-export const BUTTON_GRADIENT = ['#4B43FF', '#173CFF'];
+export const BUTTON_GRADIENT = [appTheme.primary /* Original: '#4B43FF' */, appTheme.primary /* Original: '#173CFF' */];
 
 export default function GradientButton({
   label,

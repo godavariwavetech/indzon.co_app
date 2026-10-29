@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import React, {useEffect, useRef} from 'react';
 import {AccessibilityInfo, Animated, StyleSheet, View} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -64,7 +65,7 @@ export default function SuccessCelebration({children, size = 120, loop = false})
             style={[
               styles.spark,
               {
-                backgroundColor: index % 2 ? '#32BD8A' : '#655BFF',
+                backgroundColor: index % 2 ? '#32BD8A' : appTheme.primary /* Original: '#655BFF' */,
                 opacity: progress.interpolate({
                   inputRange: [0, 0.2, 0.75, 1],
                   outputRange: [0, 1, 1, 0],

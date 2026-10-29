@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text} from '../../components/Typography';
 import React, {
   useCallback,
@@ -347,7 +348,7 @@ export default function MainCategoriesScreen({
                 <LinearGradient
                   colors={
                     item.id === categoryId
-                      ? ['#2A30D6', '#9794FF']
+                      ? [appTheme.primary /* Original: '#2A30D6' */, appTheme.primaryLight /* Original: '#9794FF' */]
                       : ['#FAFAFA', '#E1E1E1']
                   }
                   start={{x: 0.5, y: 0}}
@@ -512,10 +513,10 @@ const styles = StyleSheet.create({
     height: 176,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F0FA',
+    backgroundColor: appTheme.tint /* Original: '#F1F0FA' */,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#E8E5F3',
+    borderColor: appTheme.border /* Original: '#E8E5F3' */,
   },
   bannerCopy: {
     width: '56%',
@@ -524,14 +525,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bannerEyebrow: {
-    color: '#655A84',
+    color: appTheme.muted /* Original: '#655A84' */,
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1,
     marginBottom: 9,
   },
   bannerTitle: {
-    color: '#242038',
+    color: appTheme.ink /* Original: '#242038' */,
     fontSize: 25,
     lineHeight: 29,
     fontWeight: '800',
@@ -560,7 +561,7 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 1,
     borderRadius: 100,
-    backgroundColor: '#E1DCF6',
+    backgroundColor: appTheme.tint /* Original: '#E1DCF6' */,
   },
   bannerProduct: {width: '100%', height: '100%'},
   searchRow: {
@@ -579,7 +580,7 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 9,
   },
-  selectedFilter: {backgroundColor: '#EFEDFF', borderColor: colors.primary},
+  selectedFilter: {backgroundColor: appTheme.tint /* Original: '#EFEDFF' */, borderColor: colors.primary},
   filterText: {fontSize: 14, fontWeight: '600', color: '#48535D'},
   body: {flex: 1, flexDirection: 'row'},
   sidebar: {paddingBottom: 16, gap: 12},

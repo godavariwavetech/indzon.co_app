@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import React, {useCallback, useEffect, useState} from 'react';
 import {
   AppState,
@@ -159,7 +160,7 @@ export default function SettingsModal({visible, onClose, onLogout, onDelete}) {
               }}
               disabled={busy || !ready}
               onPress={() => toggle(item.key)}>
-              <MaterialIcons name={item.icon} size={24} color="#3832FF" />
+              <MaterialIcons name={item.icon} size={24} color={appTheme.primary /* Original: "#3832FF" */} />
               <Text allowFontScaling={false} style={styles.label}>
                 {item.label}
               </Text>
@@ -269,7 +270,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#D9D9D9',
     padding: 5,
   },
-  trackOn: {backgroundColor: '#3832FF'},
+  trackOn: {backgroundColor: appTheme.primary /* Original: '#3832FF' */},
   thumb: {width: 12, height: 12, borderRadius: 6, backgroundColor: '#FFFFFF'},
   thumbOn: {alignSelf: 'flex-end'},
   actions: {flexDirection: 'row', gap: 12, marginTop: 12},

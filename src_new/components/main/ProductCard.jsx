@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text} from '../Typography';
 import React, {useRef} from 'react';
 import {Animated, Pressable, StyleSheet, View} from 'react-native';
@@ -61,7 +62,7 @@ function ProductCard({product, width, navigation, variant = 'compact'}) {
             onPress={openDetails}
             onPressIn={() => animateImage(0.975)}
             onPressOut={() => animateImage(1)}
-            android_ripple={{color: '#3832FF12'}}>
+            android_ripple={{color: appTheme.primaryWash /* Original: '#3832FF12' */}}>
             <ReferenceArtwork
               art={product.art}
               width={detailed ? width - 18 : width}
@@ -256,8 +257,8 @@ const styles = StyleSheet.create({
   catalogCard: {
     paddingBottom: 2,
   },
-  catalogPicture: {borderWidth: 1, borderColor: '#DDDDEA', borderRadius: 10, backgroundColor: '#FFFFFF', marginBottom: 5},
-  catalogDiscount: {fontSize: 10, fontWeight: '700', color: '#0057FF'},
+  catalogPicture: {borderWidth: 1, borderColor: appTheme.border /* Original: '#DDDDEA' */, borderRadius: 10, backgroundColor: '#FFFFFF', marginBottom: 5},
+  catalogDiscount: {fontSize: 10, fontWeight: '700', color: appTheme.primary /* Original: '#0057FF' */},
   picture: {position: 'relative', marginBottom: 6},
   suggestedPicture: {
     backgroundColor: '#F5F6F8',
@@ -367,7 +368,7 @@ const styles = StyleSheet.create({
   prices: {flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3},
   price: {fontSize: 13, fontWeight: '700', color: colors.ink},
   oldPrice: {fontSize: 9, color: '#777777', textDecorationLine: 'line-through'},
-  discount: {fontSize: 11, fontWeight: '700', color: '#0057FF', marginTop: 4},
+  discount: {fontSize: 11, fontWeight: '700', color: appTheme.primary /* Original: '#0057FF' */, marginTop: 4},
 });
 
 export default React.memo(ProductCard);

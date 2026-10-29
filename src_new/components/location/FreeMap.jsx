@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text} from '../Typography';
 import React, {
   useEffect,
@@ -521,7 +522,7 @@ export default function FreeMap({
           accessibilityRole="button"
           accessibilityLabel="Zoom in"
           testID="map-zoom-in">
-          <MaterialIcons name="add" size={24} color="#3832FF" />
+          <MaterialIcons name="add" size={24} color={appTheme.primary /* Original: "#3832FF" */} />
         </Pressable>
         <Pressable
           style={styles.control}
@@ -530,7 +531,7 @@ export default function FreeMap({
           accessibilityRole="button"
           accessibilityLabel="Zoom out"
           testID="map-zoom-out">
-          <MaterialIcons name="remove" size={24} color="#3832FF" />
+          <MaterialIcons name="remove" size={24} color={appTheme.primary /* Original: "#3832FF" */} />
         </Pressable>
         <Pressable
           style={styles.control}
@@ -539,7 +540,7 @@ export default function FreeMap({
           accessibilityRole="button"
           accessibilityLabel="Use current location"
           testID="map-current-location">
-          <MaterialIcons name="my-location" size={22} color="#3832FF" />
+          <MaterialIcons name="my-location" size={22} color={appTheme.primary /* Original: "#3832FF" */} />
         </Pressable>
       </View>
       <Pressable

@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   AccessibilityInfo,
@@ -336,7 +337,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#ECE8F2',
+    borderColor: appTheme.border /* Original: '#ECE8F2' */,
   },
   photo: {position: 'absolute', right: 0, width: '100%', height: '100%'},
   copy: {
@@ -353,7 +354,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 7,
   },
-  title: {fontSize: 20, lineHeight: 23, fontWeight: '700', color: '#242033'},
+  title: {fontSize: 20, lineHeight: 23, fontWeight: '700', color: appTheme.ink /* Original: '#242033' */},
   caption: {
     fontSize: 11,
     lineHeight: 15,
@@ -385,6 +386,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  dot: {width: 6, height: 6, borderRadius: 4, backgroundColor: '#DCD8EB'},
-  activeDot: {width: 20, backgroundColor: '#3832FF'},
+  dot: {width: 6, height: 6, borderRadius: 4, backgroundColor: appTheme.border /* Original: '#DCD8EB' */},
+  activeDot: {width: 20, backgroundColor: appTheme.primary /* Original: '#3832FF' */},
 });

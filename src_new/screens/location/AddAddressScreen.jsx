@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text, TextInput} from '../../components/Typography';
 import React, {useEffect, useRef, useState} from 'react';
 import {
@@ -303,7 +304,7 @@ export default function AddAddressScreen({navigation, route}) {
         />
         <View style={styles.searchContainer}>
           <View style={styles.searchField}>
-            <MaterialIcons name="search" size={22} color="#3832FF" />
+            <MaterialIcons name="search" size={22} color={appTheme.primary /* Original: "#3832FF" */} />
             <TextInput
               value={query}
               onChangeText={changeQuery}
@@ -334,7 +335,7 @@ export default function AddAddressScreen({navigation, route}) {
               {searching ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <MaterialIcons name="arrow-forward" size={20} color={query.trim().length < 3 ? '#9C96BD' : '#FFFFFF'} />
+                <MaterialIcons name="arrow-forward" size={20} color={query.trim().length < 3 ? appTheme.muted /* Original: '#9C96BD' */ : '#FFFFFF'} />
               )}
             </Pressable>
           </View>
@@ -350,13 +351,13 @@ export default function AddAddressScreen({navigation, route}) {
                   style={styles.result}
                   accessibilityRole="button">
                   <View style={styles.resultIcon}>
-                    <MaterialIcons name="location-on" size={20} color="#3832FF" />
+                    <MaterialIcons name="location-on" size={20} color={appTheme.primary /* Original: "#3832FF" */} />
                   </View>
                   <View style={{flex: 1, minWidth: 0}}>
                     <Text style={styles.resultTitle} numberOfLines={1}>{item.place.area}</Text>
                     <Text style={styles.resultText} numberOfLines={2}>{item.description}</Text>
                   </View>
-                  <MaterialIcons name="chevron-right" size={20} color="#9C96AD" />
+                  <MaterialIcons name="chevron-right" size={20} color={appTheme.muted /* Original: "#9C96AD" */} />
                 </Pressable>
               )}
             />
@@ -369,7 +370,7 @@ export default function AddAddressScreen({navigation, route}) {
             {paddingBottom: Math.max(insets.bottom, 16)},
           ]}>
           <View style={styles.previewAddress}>
-            <MaterialIcons name="location-on" size={28} color="#3832FF" />
+            <MaterialIcons name="location-on" size={28} color={appTheme.primary /* Original: "#3832FF" */} />
             <View style={styles.addressCopy}>
               <Text style={styles.area} numberOfLines={1}>
                 {place?.area || 'Select your delivery location'}
@@ -381,7 +382,7 @@ export default function AddAddressScreen({navigation, route}) {
                     'Search for an area or move the map pin.'}
               </Text>
             </View>
-            {locating ? <ActivityIndicator color="#3832FF" /> : null}
+            {locating ? <ActivityIndicator color={appTheme.primary /* Original: "#3832FF" */} /> : null}
           </View>
           {error ? (
             <Text
@@ -397,7 +398,7 @@ export default function AddAddressScreen({navigation, route}) {
               accessibilityLabel="Retry address lookup"
               onPress={() => resolveCoordinates(currentRegion.current)}
               style={{paddingVertical: 10, alignSelf: 'flex-start'}}>
-              <Text style={{color: '#3832FF', fontSize: 14, fontWeight: '700'}}>
+              <Text style={{color: appTheme.primary /* Original: '#3832FF' */, fontSize: 14, fontWeight: '700'}}>
                 Retry address lookup
               </Text>
             </Pressable>
@@ -446,14 +447,14 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#827CFF',
+    borderColor: appTheme.primaryLight /* Original: '#827CFF' */,
     borderRadius: 10,
     paddingHorizontal: 14,
     minHeight: 46,
     elevation: 3,
   },
-  searchAction: {width: 40, height: 40, backgroundColor: '#3832FF', borderRadius: 10, alignItems: 'center', justifyContent: 'center'},
-  searchActionInactive: {backgroundColor: '#F0EEFA'},
+  searchAction: {width: 40, height: 40, backgroundColor: appTheme.primary /* Original: '#3832FF' */, borderRadius: 10, alignItems: 'center', justifyContent: 'center'},
+  searchActionInactive: {backgroundColor: appTheme.tint /* Original: '#F0EEFA' */},
   searchInput: {
     flex: 1,
     minHeight: 44,
@@ -468,8 +469,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
     elevation: 4,
   },
-  result: {flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: '#F0EEF5'},
-  resultIcon: {width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F0EEFF'},
+  result: {flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: appTheme.tint /* Original: '#F0EEF5' */},
+  resultIcon: {width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: appTheme.tint /* Original: '#F0EEFF' */},
   resultTitle: {fontSize: 15, fontWeight: '700', color: '#202427', marginBottom: 3},
   resultText: {fontSize: 14, color: '#202427'},
   preview: {

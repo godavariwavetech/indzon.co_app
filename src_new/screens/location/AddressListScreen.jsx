@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text} from '../../components/Typography';
 import React, {useCallback, useState} from 'react';
 import {
@@ -135,7 +136,7 @@ export default function AddressListScreen({navigation}) {
           onPress={() => navigation.navigate('AddAddress')}
           accessibilityRole="button"
           accessibilityLabel="Add new address">
-          <MaterialIcons name="add" size={23} color="#3832FF" />
+          <MaterialIcons name="add" size={23} color={appTheme.primary /* Original: "#3832FF" */} />
           <Text style={styles.addLabel}>Add New</Text>
         </Pressable>
       </View>
@@ -180,7 +181,7 @@ export default function AddressListScreen({navigation}) {
                     {
                       backgroundColor:
                         item.address_type === 'Home'
-                          ? '#E4E1FF'
+                          ? appTheme.tintStrong /* Original: '#E4E1FF' */
                           : /work|office/i.test(item.address_type)
                           ? '#FFF1E5'
                           : '#E2FBEB',
@@ -197,7 +198,7 @@ export default function AddressListScreen({navigation}) {
                     size={30}
                     color={
                       item.address_type === 'Home'
-                        ? '#3832FF'
+                        ? appTheme.primary /* Original: '#3832FF' */
                         : /work|office/i.test(item.address_type)
                         ? '#FF7915'
                         : '#00A541'
@@ -238,7 +239,7 @@ export default function AddressListScreen({navigation}) {
                   <MaterialIcons
                     name="arrow-forward"
                     size={20}
-                    color="#3832FF"
+                    color={appTheme.primary /* Original: "#3832FF" */}
                   />
                   <Text style={styles.useLabel}>Use This Address</Text>
                 </Pressable>
@@ -275,13 +276,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     borderWidth: 1,
-    borderColor: '#3832FF',
-    backgroundColor: '#F4F2FF',
+    borderColor: appTheme.primary /* Original: '#3832FF' */,
+    backgroundColor: appTheme.surface /* Original: '#F4F2FF' */,
     borderRadius: 7,
     paddingHorizontal: 9,
     paddingVertical: 7,
   },
-  addLabel: {fontSize: 13, fontWeight: '700', color: '#3832FF'},
+  addLabel: {fontSize: 13, fontWeight: '700', color: appTheme.primary /* Original: '#3832FF' */},
   list: {padding: 16, gap: 20, paddingBottom: 28},
   card: {
     borderWidth: 1,
@@ -294,7 +295,7 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     shadowOffset: {width: 0, height: 2},
   },
-  defaultCard: {backgroundColor: '#F7F6FF'},
+  defaultCard: {backgroundColor: appTheme.cream /* Original: '#F7F6FF' */},
   address: {flexDirection: 'row', gap: 12, padding: 12},
   addressIcon: {
     width: 40,
@@ -309,7 +310,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#FFFFFF',
-    backgroundColor: '#3832FF',
+    backgroundColor: appTheme.primary /* Original: '#3832FF' */,
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -336,7 +337,7 @@ const styles = StyleSheet.create({
     borderColor: '#E7E7ED',
   },
   deleteLabel: {fontSize: 13, fontWeight: '700', color: '#FF0000'},
-  useLabel: {fontSize: 13, fontWeight: '700', color: '#3832FF'},
+  useLabel: {fontSize: 13, fontWeight: '700', color: appTheme.primary /* Original: '#3832FF' */},
   loading: {flex: 1},
   empty: {
     fontSize: 15,

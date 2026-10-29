@@ -1,3 +1,4 @@
+import {appTheme} from '../config/appTheme';
 import React, {useEffect, useRef} from 'react';
 import {
   AccessibilityInfo,
@@ -76,7 +77,7 @@ export default function SplashScreen({onLogoReady}) {
       <View style={styles.footer}>
         <ActivityIndicator
           size="small"
-          color="#3832FF"
+          color={appTheme.primary /* Original: "#3832FF" */}
           accessibilityLabel="Loading INDZON"
         />
         <Text style={styles.loading} accessibilityLiveRegion="polite">

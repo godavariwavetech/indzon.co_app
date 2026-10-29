@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text, TextInput} from '../../components/Typography';
 import React, {useState} from 'react';
 import {Pressable, RefreshControl, ScrollView, StyleSheet, View} from 'react-native';
@@ -26,7 +27,7 @@ const statusTone = status => {
   if (value === 'out for delivery') {
     return {background: '#FFF2E0', color: '#B25E00'};
   }
-  return {background: '#EEF0FF', color: '#3832FF'};
+  return {background: appTheme.tint /* Original: '#EEF0FF' */, color: appTheme.primary /* Original: '#3832FF' */};
 };
 
 export function DeliveryAddress({address, phoneNumber}) {
@@ -113,7 +114,7 @@ export default function MainOrdersScreen({navigation}) {
         {loading && !allOrders.length ? <OrdersSkeleton /> : null}
         {filteredOrders.length === 0 && !loading && (
           <View style={styles.emptySearch}>
-            <MaterialIcons name="search-off" size={32} color="#8A829D" />
+            <MaterialIcons name="search-off" size={32} color={appTheme.muted /* Original: "#8A829D" */} />
             <Text style={styles.emptyTitle}>No orders found</Text>
             <Text style={styles.emptyCaption}>Try another order ID, category or status.</Text>
           </View>
@@ -123,7 +124,7 @@ export default function MainOrdersScreen({navigation}) {
             key={order.id}
             style={[styles.order, pageReady && styles.orderShadow]}>
             <LinearGradient
-              colors={['#4B43FF', '#2F3BFF']}
+              colors={[appTheme.primary /* Original: '#4B43FF' */, appTheme.primary /* Original: '#2F3BFF' */]}
               start={{x: 0, y: 0}}
               end={{x: 1, y: 0}}
               style={styles.orderHeader}>
@@ -225,7 +226,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E1E5F0',
     borderRadius: 12,
-    backgroundColor: '#F7F8FC',
+    backgroundColor: appTheme.surface /* Original: '#F7F8FC' */,
   },
   searchInput: {flex: 1, minWidth: 0, fontSize: 15, color: '#242637', paddingVertical: 10},
   clearSearch: {minWidth: 40, minHeight: 40, alignItems: 'center', justifyContent: 'center'},
@@ -243,7 +244,7 @@ const styles = StyleSheet.create({
     fontSize: 9.9,
     fontWeight: '700',
     letterSpacing: 0.7,
-    color: '#DBD9FF',
+    color: appTheme.tintStrong /* Original: '#DBD9FF' */,
   },
   headerId: {
     fontSize: 14.4,
@@ -255,7 +256,7 @@ const styles = StyleSheet.create({
   headerDate: {
     fontSize: 10.8,
     lineHeight: 15.3,
-    color: '#E6E4FF',
+    color: appTheme.tintStrong /* Original: '#E6E4FF' */,
     marginTop: 5,
   },
   headerTotal: {alignItems: 'flex-end', maxWidth: '42%'},
@@ -273,7 +274,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 12,
     marginBottom: 10,
-    backgroundColor: '#F7F8FC',
+    backgroundColor: appTheme.surface /* Original: '#F7F8FC' */,
   },
   shipmentHeading: {
     flexDirection: 'row',
@@ -290,13 +291,13 @@ const styles = StyleSheet.create({
   },
   categoryTitle: {flex: 1, fontSize: 17.1, fontWeight: '700', color: '#242637'},
   statusBadge: {
-    backgroundColor: '#EEF0FF',
+    backgroundColor: appTheme.tint /* Original: '#EEF0FF' */,
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: 20,
     maxWidth: '42%',
   },
-  statusText: {fontSize: 11.7, fontWeight: '700', color: '#5146C9'},
+  statusText: {fontSize: 11.7, fontWeight: '700', color: appTheme.primaryDark /* Original: '#5146C9' */},
   productRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -317,13 +318,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
     borderTopWidth: 1,
-    borderTopColor: '#EEEFF5',
+    borderTopColor: appTheme.tint /* Original: '#EEEFF5' */,
     paddingTop: 8,
   },
   trackAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EEF0FF',
+    backgroundColor: appTheme.tint /* Original: '#EEF0FF' */,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -345,11 +346,11 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E6E8F2',
+    borderColor: appTheme.border /* Original: '#E6E8F2' */,
   },
   orderShadow: {
     elevation: 3,
-    shadowColor: '#302B55',
+    shadowColor: appTheme.ink /* Original: '#302B55' */,
     shadowOpacity: 0.1,
     shadowRadius: 7,
     shadowOffset: {width: 0, height: 3},

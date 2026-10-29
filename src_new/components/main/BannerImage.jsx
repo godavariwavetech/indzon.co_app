@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import React from 'react';
 import {Image, StyleSheet, View} from 'react-native';
 
@@ -36,5 +37,5 @@ export default function BannerImage({source, style, accessibilityLabel}) {
 }
 
 const styles = StyleSheet.create({
-  frame: {overflow: 'hidden', backgroundColor: '#EAF1FC'},
+  frame: {overflow: 'hidden', backgroundColor: appTheme.tint /* Original: '#EAF1FC' */},
 });

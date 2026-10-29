@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text} from '../Typography';
 import React from 'react';
 import {
@@ -84,7 +85,7 @@ export default function ShoppingLoginLayout({children, navigation}) {
                     <Path
                       d={benefit.path}
                       fill="none"
-                      stroke="#243FFF"
+                      stroke={appTheme.primary /* Original: "#243FFF" */}
                       strokeWidth={1.3}
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -113,15 +114,15 @@ export default function ShoppingLoginLayout({children, navigation}) {
               preserveAspectRatio="none">
               <Path
                 d="M0 33C85 23 82 19 148 36S309 8 393 54V145H0Z"
-                fill="#EEF5FF"
+                fill={appTheme.surface /* Original: "#EEF5FF" */}
               />
               <Path
                 d="M0 66C67 21 108 18 170 43S310 116 393 28V145H0Z"
-                fill="#DCEAFF"
+                fill={appTheme.tintStrong /* Original: "#DCEAFF" */}
               />
               <Path
                 d="M0 143C69 89 105 78 173 103S304 170 393 104V145H0Z"
-                fill="#BAD7FF"
+                fill={appTheme.tintStrong /* Original: "#BAD7FF" */}
               />
             </Svg>
             <Text style={styles.agreement}>
@@ -148,16 +149,16 @@ export default function ShoppingLoginLayout({children, navigation}) {
 }
 
 const styles = StyleSheet.create({
-  screen: {flex: 1, backgroundColor: '#F8FBFF'},
+  screen: {flex: 1, backgroundColor: appTheme.cream /* Original: '#F8FBFF' */},
   content: {flexGrow: 1, alignItems: 'center'},
   page: {width: '100%', flexGrow: 1},
-  hero: {width: '100%', overflow: 'hidden', backgroundColor: '#EDF4FF'},
+  hero: {width: '100%', overflow: 'hidden', backgroundColor: appTheme.surface /* Original: '#EDF4FF' */},
   card: {
     marginHorizontal: 20,
     borderRadius: 18,
     backgroundColor: '#FFFFFF',
     padding: 18,
-    shadowColor: '#9BB8DE',
+    shadowColor: appTheme.shadow /* Original: '#9BB8DE' */,
     shadowOffset: {width: 0, height: 5},
     shadowOpacity: 0.12,
     shadowRadius: 16,
@@ -169,7 +170,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#EDF3FF',
+    backgroundColor: appTheme.surface /* Original: '#EDF3FF' */,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -180,15 +181,15 @@ const styles = StyleSheet.create({
     top: 12,
     bottom: 4,
     width: 1,
-    backgroundColor: '#E7EFFB',
+    backgroundColor: appTheme.tint /* Original: '#E7EFFB' */,
   },
   benefitTitle: {
     fontSize: 10,
     lineHeight: 14,
     fontWeight: '600',
-    color: '#050A36',
+    color: appTheme.ink /* Original: '#050A36' */,
   },
-  benefitCaption: {fontSize: 9, lineHeight: 14, color: '#536892'},
+  benefitCaption: {fontSize: 9, lineHeight: 14, color: appTheme.muted /* Original: '#536892' */},
   spacer: {flexGrow: 1, minHeight: 24},
   footer: {
     paddingTop: 28,
@@ -196,6 +197,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   waves: {position: 'absolute', top: 0, left: 0},
-  agreement: {fontSize: 10, lineHeight: 16, color: '#142351'},
-  legal: {fontSize: 10, lineHeight: 16, color: '#173CFF'},
+  agreement: {fontSize: 10, lineHeight: 16, color: appTheme.ink /* Original: '#142351' */},
+  legal: {fontSize: 10, lineHeight: 16, color: appTheme.primary /* Original: '#173CFF' */},
 });

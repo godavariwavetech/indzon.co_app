@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text} from '../Typography';
 import React from 'react';
 import {ActivityIndicator, Pressable, StyleSheet} from 'react-native';
@@ -40,7 +41,7 @@ export default function LocationButton({
         (pressed || unavailable) && styles.dimmed,
       ]}>
       {loading ? (
-        <ActivityIndicator color={secondary ? '#3832FF' : '#FFFFFF'} />
+        <ActivityIndicator color={secondary ? appTheme.primary /* Original: '#3832FF' */ : '#FFFFFF'} />
       ) : (
         <Text style={[styles.label, secondary && styles.secondaryLabel]}>
           {label}
@@ -53,7 +54,7 @@ export default function LocationButton({
 const styles = StyleSheet.create({
   button: {
     minHeight: 48,
-    backgroundColor: '#3832FF',
+    backgroundColor: appTheme.primary /* Original: '#3832FF' */,
     borderRadius: 7,
     alignItems: 'center',
     justifyContent: 'center',
@@ -68,11 +69,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   secondary: {
-    backgroundColor: '#E5E3FF',
+    backgroundColor: appTheme.tint /* Original: '#E5E3FF' */,
     borderWidth: 1,
-    borderColor: '#6962FF',
+    borderColor: appTheme.primary /* Original: '#6962FF' */,
     borderStyle: 'dashed',
   },
-  secondaryLabel: {color: '#3832FF', fontSize: 13},
+  secondaryLabel: {color: appTheme.primary /* Original: '#3832FF' */, fontSize: 13},
   dimmed: {opacity: 0.6},
 });

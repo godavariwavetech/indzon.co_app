@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import React from 'react';
 import Svg, {
   Circle,
@@ -43,9 +44,9 @@ export function BrandLogo({width, height}: BrandLogoProps) {
           y1="30"
           x2="80"
           y2="460">
-          <Stop offset="0" stopColor="#86D0F2" />
-          <Stop offset="0.5" stopColor="#5F95D8" />
-          <Stop offset="1" stopColor="#5364BE" />
+          <Stop offset="0" stopColor={appTheme.primaryLight /* Original: "#86D0F2" */} />
+          <Stop offset="0.5" stopColor={appTheme.primaryLight /* Original: "#5F95D8" */} />
+          <Stop offset="1" stopColor={appTheme.primaryLight /* Original: "#5364BE" */} />
         </LinearGradient>
         <LinearGradient
           id="logoCrest"
@@ -54,8 +55,8 @@ export function BrandLogo({width, height}: BrandLogoProps) {
           y1="300"
           x2="540"
           y2="320">
-          <Stop offset="0" stopColor="#1F4FAE" />
-          <Stop offset="1" stopColor="#3A7BCD" />
+          <Stop offset="0" stopColor={appTheme.primaryDark /* Original: "#1F4FAE" */} />
+          <Stop offset="1" stopColor={appTheme.primaryLight /* Original: "#3A7BCD" */} />
         </LinearGradient>
         <LinearGradient
           id="logoBody"
@@ -64,8 +65,8 @@ export function BrandLogo({width, height}: BrandLogoProps) {
           y1="380"
           x2="460"
           y2="540">
-          <Stop offset="0" stopColor="#3D74C9" />
-          <Stop offset="1" stopColor="#7CC6EF" />
+          <Stop offset="0" stopColor={appTheme.primaryLight /* Original: "#3D74C9" */} />
+          <Stop offset="1" stopColor={appTheme.primaryLight /* Original: "#7CC6EF" */} />
         </LinearGradient>
       </Defs>
 
@@ -104,7 +105,7 @@ export function BrandLogo({width, height}: BrandLogoProps) {
           cy="318"
           rx="22"
           ry="11"
-          fill="#1F4FAE"
+          fill={appTheme.primaryDark /* Original: "#1F4FAE" */}
           transform="rotate(-20 125 318)"
         />
       </G>
@@ -115,8 +116,8 @@ export function BrandLogo({width, height}: BrandLogoProps) {
         fontSize="21.5"
         fontWeight="600"
         letterSpacing="0.4">
-        <TSpan fill="#5C9AD6">GODAVARI </TSpan>
-        <TSpan fill="#3A63B3" fontWeight="700">
+        <TSpan fill={appTheme.primaryLight /* Original: "#5C9AD6" */}>GODAVARI </TSpan>
+        <TSpan fill={appTheme.primaryDark /* Original: "#3A63B3" */} fontWeight="700">
           WAVE
         </TSpan>
       </Text>

@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text} from '../../components/Typography';
 import React, {useCallback, useState} from 'react';
 import {useFocusEffect} from '@react-navigation/native';
@@ -162,7 +163,7 @@ export default function MainProfileScreen({navigation}) {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
         <LinearGradient
-          colors={['#31436A', '#465995']}
+          colors={[appTheme.primaryDark /* Original: '#31436A' */, appTheme.primaryDark /* Original: '#465995' */]}
           start={{x: 0, y: 0}}
           end={{x: 1, y: 1}}
           style={[styles.profileCard, pageReady && styles.profileCardShadow]}>
@@ -308,7 +309,7 @@ const styles = StyleSheet.create({
     fontSize: 19,
     lineHeight: 24,
     fontWeight: '800',
-    color: '#40528D',
+    color: appTheme.primaryDark /* Original: '#40528D' */,
   },
   profileCopy: {flex: 1, minWidth: 0, zIndex: 1},
   welcome: {
@@ -316,7 +317,7 @@ const styles = StyleSheet.create({
     lineHeight: 13,
     letterSpacing: 0.7,
     fontWeight: '700',
-    color: '#DCD9FF',
+    color: appTheme.tintStrong /* Original: '#DCD9FF' */,
     marginBottom: 3,
   },
   name: {
@@ -325,7 +326,7 @@ const styles = StyleSheet.create({
     lineHeight: 27,
     color: '#FFFFFF',
   },
-  phone: {fontSize: 12, lineHeight: 17, color: '#E8E8FF', marginTop: 2},
+  phone: {fontSize: 12, lineHeight: 17, color: appTheme.tintStrong /* Original: '#E8E8FF' */, marginTop: 2},
   editButton: {
     minWidth: 58,
     height: 32,
@@ -363,7 +364,7 @@ const styles = StyleSheet.create({
   },
   profileCardShadow: {
     elevation: 1,
-    shadowColor: '#1E2440',
+    shadowColor: appTheme.shadow /* Original: '#1E2440' */,
     shadowOpacity: 0.05,
     shadowRadius: 5,
     shadowOffset: {width: 0, height: 2},
@@ -379,7 +380,7 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F0EFFF',
+    backgroundColor: appTheme.tint /* Original: '#F0EFFF' */,
   },
   rowCopy: {flex: 1, minWidth: 0},
   rowTitle: {fontSize: 14, lineHeight: 18, fontWeight: '700', color: '#202427'},

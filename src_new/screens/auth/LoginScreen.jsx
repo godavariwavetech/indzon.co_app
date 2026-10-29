@@ -1,3 +1,4 @@
+import {appTheme} from '../../config/appTheme';
 import {Text, TextInput} from '../../components/Typography';
 import React, {useRef, useState} from 'react';
 import {ActivityIndicator, Pressable, StyleSheet, View} from 'react-native';
@@ -65,7 +66,7 @@ export default function LoginScreen({navigation, route}) {
               setError('');
             }}
             placeholder="Enter phone number"
-            placeholderTextColor="#7C89A5"
+            placeholderTextColor={appTheme.muted /* Original: "#7C89A5" */}
             keyboardType="phone-pad"
             textContentType="telephoneNumber"
             autoComplete="tel"
@@ -74,7 +75,7 @@ export default function LoginScreen({navigation, route}) {
             editable={!loading}
             returnKeyType="done"
             onSubmitEditing={submit}
-            selectionColor="#243FFF"
+            selectionColor={appTheme.primary /* Original: "#243FFF" */}
             accessibilityLabel="Phone Number"
             style={styles.input}
             testID="login-phone-input"
@@ -101,7 +102,7 @@ export default function LoginScreen({navigation, route}) {
         ]}
         testID="login-request-otp">
         <LinearGradient
-          colors={['#4B43FF', '#173CFF']}
+          colors={[appTheme.primary /* Original: '#4B43FF' */, appTheme.primary /* Original: '#173CFF' */]}
           start={{x: 0, y: 0}}
           end={{x: 1, y: 0}}
           style={styles.fill}
@@ -135,12 +136,12 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 31,
     fontWeight: '700',
-    color: '#050A36',
+    color: appTheme.ink /* Original: '#050A36' */,
   },
   subtitle: {
     fontSize: 12,
     lineHeight: 19,
-    color: '#536892',
+    color: appTheme.muted /* Original: '#536892' */,
     marginTop: 8,
   },
   form: {marginTop: 18},
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: 52,
     borderWidth: 1,
-    borderColor: '#DFE6F5',
+    borderColor: appTheme.border /* Original: '#DFE6F5' */,
     borderRadius: 10,
     paddingHorizontal: 12,
     backgroundColor: '#FFFFFF',
@@ -157,7 +158,7 @@ const styles = StyleSheet.create({
   countryCode: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#050A36',
+    color: appTheme.ink /* Original: '#050A36' */,
     paddingRight: 10,
   },
   input: {
@@ -165,7 +166,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#050A36',
+    color: appTheme.ink /* Original: '#050A36' */,
   },
   invalid: {borderColor: '#C62828'},
   error: {color: '#C62828', fontSize: 12, lineHeight: 18, marginTop: 8},
