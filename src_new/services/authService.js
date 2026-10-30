@@ -22,9 +22,12 @@ const requestOtp = async phoneNumber => {
   }
   let response;
   try {
-    response = await api.post(endpoints.REQUEST_OTP, {
-      customer_mobile_number: phoneNumber,
-    });
+    response = await api.post(
+      endpoints.REQUEST_OTP,
+      {customer_mobile_number: phoneNumber},
+      // Allow the backend's 15-second SMS gateway timeout to finish.
+      {timeout: 20000},
+    );
   } catch (error) {
     if (error.response?.status >= 500) {
       throw new Error(

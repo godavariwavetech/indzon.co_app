@@ -1,6 +1,6 @@
 import {appTheme} from '../../config/appTheme';
 import {Text} from '../../components/Typography';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   AccessibilityInfo,
   Animated,
@@ -12,7 +12,8 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import {useIsFocused} from '@react-navigation/native';
+import {useFocusEffect, useIsFocused} from '@react-navigation/native';
+import SystemNavigationBar from 'react-native-system-navigation-bar';
 import {useDispatch, useSelector} from 'react-redux';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -28,6 +29,22 @@ export default function LocationSetupScreen({navigation}) {
   const insets = useSafeAreaInsets();
   const {width, height} = useWindowDimensions();
   const focused = useIsFocused();
+  useFocusEffect(
+    useCallback(() => {
+      SystemNavigationBar.setNavigationColor(
+        appTheme.cream,
+        'dark',
+        'navigation',
+      ).catch(error => console.warn('Could not style the navigation bar', error));
+      return () => {
+        SystemNavigationBar.setNavigationColor(
+          '#FFFFFF',
+          'dark',
+          'navigation',
+        ).catch(error => console.warn('Could not restore the navigation bar', error));
+      };
+    }, []),
+  );
   const motion = useRef(new Animated.Value(0)).current;
   const illustrationHeight = Math.min(width * 0.8, height * 0.34, 310);
   const dispatch = useDispatch();
@@ -164,7 +181,7 @@ export default function LocationSetupScreen({navigation}) {
   }, []);
   return (
     <ImageBackground
-      source={require('../../assets/location/location-background.png')}
+      source={require('../../assets/location/location-background1.png')}
       resizeMode="cover"
       style={styles.screen}>
       <StatusBar

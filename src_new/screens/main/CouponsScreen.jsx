@@ -211,7 +211,12 @@ export default function CouponsScreen({navigation}) {
             <Text allowFontScaling={false} style={styles.eyebrow}>
               EXCLUSIVE REWARDS
             </Text>
-            <Text allowFontScaling={false} style={styles.heroTitle}>
+            <Text
+              allowFontScaling={false}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.65}
+              style={styles.heroTitle}>
               Coupons
             </Text>
             <Text style={styles.heroSub}>More savings. More reasons to shop.</Text>
@@ -449,7 +454,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  heroCopy: {flex: 1, zIndex: 2},
+  heroCopy: {flex: 1, minWidth: 0, zIndex: 2},
   eyebrow: {
     fontSize: 13,
     fontWeight: '800',
@@ -585,7 +590,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#E8E6FF',
+    backgroundColor: appTheme.tint /* Original: '#E8E6FF' */,
     alignItems: 'center',
     justifyContent: 'center',
   },
