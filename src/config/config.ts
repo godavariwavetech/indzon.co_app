@@ -9,6 +9,9 @@
 // Live: https://api.indzon.godavariwave.com/
 // export const baseURL = "http://192.168.0.129:2406/";
 export const baseURL = "https://godavariwave.in:2410/";
+// export const baseURL = __DEV__
+//   ? 'http://192.168.0.110:2406/'
+//   : 'https://godavariwave.in:2410/';
 
 
 export const endpoints = {

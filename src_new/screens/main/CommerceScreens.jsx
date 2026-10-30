@@ -462,7 +462,19 @@ export function ProductListScreen({navigation, route, embedded = false}) {
               }}
               style={{alignItems: 'center', paddingHorizontal: 6, paddingVertical: 10, marginBottom: 4, backgroundColor: (subcategoryId || undefined) === sub.id ? appTheme.tint /* Original: '#F1EEFF' */ : 'transparent', borderLeftWidth: 3, borderLeftColor: (subcategoryId || undefined) === sub.id ? colors.primary : 'transparent'}}>
               <LinearGradient colors={(subcategoryId || undefined) === sub.id ? [appTheme.tintStrong /* Original: '#E4DFFF' */, appTheme.tintStrong /* Original: '#CFC8FF' */] : ['#FFFFFF', '#E9E7EE']} style={{width: 56, height: 56, borderRadius: 13, alignItems: 'center', justifyContent: 'center'}}>
-                {sub.art ? <ReferenceArtwork art={sub.art} width={45} height={45} resizeMode="contain" /> : <MaterialIcons name="apps" size={26} color={colors.primary} />}
+                {sub.art ? (
+                  <ReferenceArtwork
+                    art={sub.art}
+                    width={45}
+                    height={45}
+                    resizeMode="contain"
+                    backgroundColor={
+                      (subcategoryId || undefined) === sub.id
+                        ? appTheme.tintStrong
+                        : appTheme.surface
+                    }
+                  />
+                ) : <MaterialIcons name="apps" size={26} color={colors.primary} />}
               </LinearGradient>
               <Text style={{fontSize: 12, lineHeight: 16, textAlign: 'center', marginTop: 6, fontWeight: (subcategoryId || undefined) === sub.id ? '700' : '500', color: (subcategoryId || undefined) === sub.id ? colors.primary : colors.ink}}>{sub.name}</Text>
             </Pressable>
@@ -1224,7 +1236,7 @@ export function OrderConfirmationScreen({navigation, route}) {
         pointerEvents="none"
         style={[StyleSheet.absoluteFill, {overflow: 'hidden', backgroundColor: appTheme.surface /* Original: '#F1F3FF' */}]}>
         <Image
-          source={require('../../assets/main/references/order-confirmed-background.png')}
+          source={require('../../assets/main/references/order-confirmed-background1.png')}
           style={{
             position: 'absolute',
             bottom: 0,

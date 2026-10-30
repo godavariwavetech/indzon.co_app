@@ -55,14 +55,14 @@ export default function ShoppingLoginLayout({children, navigation}) {
         <View style={[styles.page, {maxWidth: contentWidth}]}>
           <View style={[styles.hero, {height: contentWidth * 0.81}]}>
             <Image
-              source={require('../../assets/auth/shopping-hero.png')}
-              style={{width: contentWidth, height: contentWidth * (542 / 582)}}
-              resizeMode="contain"
+              source={require('../../assets/auth/shopping-hero1.png')}
+              style={{width: '100%', height: contentWidth * (542 / 582)}}
+              resizeMode="cover"
               accessible={false}
               testID="login-shopping-artwork"
             />
             <Image
-              source={require('../../assets/branding/indzon-logo.png')}
+              source={require('../../assets/branding/indzon-logo1.png')}
               style={{
                 position: 'absolute',
                 left: contentWidth * 0.08,

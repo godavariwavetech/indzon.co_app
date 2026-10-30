@@ -65,7 +65,7 @@ export default function SplashScreen({onLogoReady}) {
             },
           ]}>
           <Image
-            source={require('../assets/branding/indzon-logo.png')}
+            source={require('../assets/branding/indzon-logo1.png')}
             onLoadEnd={onLogoReady}
             resizeMode="contain"
             style={{width: logoSize, height: logoSize}}
