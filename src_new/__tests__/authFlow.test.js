@@ -26,9 +26,11 @@ test('request uses the Amaraa endpoint without exposing returned OTPs to screens
   await expect(authService.requestOtp('9876543210')).resolves.toEqual({
     resendAfterSeconds: 45,
   });
-  expect(api.post).toHaveBeenCalledWith(endpoints.REQUEST_OTP, {
-    customer_mobile_number: '9876543210',
-  });
+  expect(api.post).toHaveBeenCalledWith(
+    endpoints.REQUEST_OTP,
+    {customer_mobile_number: '9876543210'},
+    {timeout: 20000},
+  );
 });
 
 test('server rejection is shown as an error even when the HTTP request succeeds', async () => {
