@@ -58,6 +58,24 @@ export function groupVariants(items) {
   return order.map(key => best.get(key));
 }
 
+// Match the existing subcategory navigation: first stocked shop, then group
+// that shop's variants before applying the subcategory and selected filter.
+export function getSubcategoryProductCounts(items, subcategories, matches = () => true) {
+  const groupedByShop = new Map();
+  return Object.fromEntries(subcategories.map(sub => {
+    const stocked = items.find(product => product.subcategoryId === sub.id);
+    const shopId = stocked?.shopId || sub.shopIds[0];
+    const key = shopId == null ? null : String(shopId);
+    if (!groupedByShop.has(key)) {
+      groupedByShop.set(key, groupVariants(items.filter(product => String(product.shopId) === key)));
+    }
+    const count = groupedByShop.get(key).filter(product =>
+      product.subcategoryId === sub.id && matches(product),
+    ).length;
+    return [sub.id, count];
+  }));
+}
+
 export async function getLiveCategories() {
   const response = await api.post(endpoints.DADDY_GET_CATEGORIES, {});
   if (Number(response.data?.status) !== 200 || !Array.isArray(response.data?.data)) {

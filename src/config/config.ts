@@ -2,13 +2,17 @@
 //2630
 // export const baseURL = 'https://melocalapp.com:1035/';
 
-// Local backend (XAMPP MySQL + node app.js on D:\client\indzon_backend\amaraa_backend)
+// Local Node/PostgreSQL backend: D:\React_native\indzon_postgresql_backend
+// USB Android device: adb reverse tcp:2406 tcp:2406
 // Android emulator: http://10.0.2.2:2406/
 // iOS simulator / same machine: http://localhost:2406/
 // Physical device on same Wi-Fi: http://<this machine's LAN IP>:2406/
 // Live: https://api.indzon.godavariwave.com/
 // export const baseURL = "http://192.168.0.129:2406/";
 export const baseURL = "https://godavariwave.in:2410/";
+// export const baseURL = __DEV__
+//   ? 'http://127.0.0.1:2406/'
+//   : 'https://godavariwave.in:2410/';
 // export const baseURL = __DEV__
 //   ? 'http://192.168.0.110:2406/'
 //   : 'https://godavariwave.in:2410/';

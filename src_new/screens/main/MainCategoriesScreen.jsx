@@ -25,6 +25,7 @@ import {
   getLiveBanners,
   getLiveCategories,
   getLiveItems,
+  getSubcategoryProductCounts,
   getLiveSubcategories,
   liveCatalogEnabled,
 } from '../../services/catalogService';
@@ -184,7 +185,9 @@ export default function MainCategoriesScreen({
       return;
     }
     const key = `${locationId}:${selected.id}`;
-    const cached = loaded.current[key];
+    // Previous cache shortcut retained for reference. Refresh on revisiting
+    // so counts do not remain frozen after catalogue changes.
+    /* const cached = loaded.current[key];
     if (cached?.items) {
       setSubcategories(cached.subs);
       setCategoryItems(cached.items);
@@ -192,7 +195,7 @@ export default function MainCategoriesScreen({
       setDataLoading(false);
       setItemsLoading(false);
       return undefined;
-    }
+    } */
     let active = true;
     setDataLoading(true);
     setItemsLoading(true);
@@ -257,7 +260,8 @@ export default function MainCategoriesScreen({
       categoryItems.filter(product => matchesFilter(product, filter)),
     [categoryItems, filter],
   );
-  const subcategoryCounts = useMemo(
+  // Previous count included raw rows from every shop, unlike ProductList.
+  /* const subcategoryCounts = useMemo(
     () =>
       categoryProducts.reduce((counts, product) => {
         counts[product.subcategoryId] =
@@ -265,6 +269,14 @@ export default function MainCategoriesScreen({
         return counts;
       }, {}),
     [categoryProducts],
+  ); */
+  const subcategoryCounts = useMemo(
+    () => getSubcategoryProductCounts(
+      categoryItems,
+      subcategories,
+      product => matchesFilter(product, filter),
+    ),
+    [categoryItems, subcategories, filter],
   );
   const normalizedQuery = query.trim().toLowerCase();
   const visible = useMemo(
