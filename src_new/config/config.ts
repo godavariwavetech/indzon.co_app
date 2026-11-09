@@ -42,6 +42,7 @@ export const endpoints = {
   GET_SERVICES_LIST: 'public_app/getserviceslist',
   GET_COUPONS: 'public_app/coupon_list',
   PLACE_ORDER: 'public_app/orderplaced',
+  GENERATE_INVOICE: 'public_app/generateinvoice',
   GET_CHARGES_LIST: 'public_app/application_common_api',
   REQUEST_OTP: 'public_app/getuserloginotp',
   GLOBAL_SEARCH: 'public_app/search_allitems',

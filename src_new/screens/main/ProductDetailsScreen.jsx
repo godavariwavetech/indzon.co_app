@@ -222,6 +222,21 @@ function Details({product: base, navigation}) {
       },
       {row: null, score: -1},
     ).row;
+    // Debug aid for price-mismatch reports: shows every candidate row (id, price,
+    // variant options) for this key/value pick, and which one was actually selected.
+    console.log('[ProductDetails] pickOption', {
+      key,
+      value,
+      wanted,
+      candidates: matches.map(row => ({
+        id: row.id,
+        price: row.price,
+        originalPrice: row.originalPrice,
+        variantOptions: row.variantOptions,
+        active: row.active,
+      })),
+      selected: best && {id: best.id, price: best.price, variantOptions: best.variantOptions},
+    });
     if (best) {
       setSelectedId(best.id);
     }

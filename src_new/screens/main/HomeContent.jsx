@@ -1,6 +1,6 @@
 import {appTheme} from '../../config/appTheme';
 import {Text} from '../../components/Typography';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   Pressable,
   RefreshControl,
@@ -52,6 +52,10 @@ export default function HomeContent({navigation}) {
   const cart = useSelector(state => state.commerce.cart);
   const dispatch = useDispatch();
   const [outOfArea, setOutOfArea] = useState(false);
+  // While the page itself is scrolling, the offer carousel below pauses its autoplay —
+  // otherwise its auto-advance can fire (and animate) right as it scrolls past, which
+  // looked like the banners flickering.
+  const [pageScrolling, setPageScrolling] = useState(false);
   useEffect(() => {
     if (!liveCatalogEnabled || locationId || !deliveryLocation?.latitude) {
       return;
@@ -187,7 +191,9 @@ export default function HomeContent({navigation}) {
   }, [query, locationId]);
   const contentWidth = width - 32;
   const bannerAspectRatio = 546 / 162;
-  const productWidth = (contentWidth - 20) / 3;
+  // Leave 1dp of slack per card so native pixel rounding cannot wrap the third card.
+  const productWidth = Math.floor((contentWidth - 20) / 3) - 1;
+  // const productWidth = (contentWidth - 20) / 3;
   const iconWidth = Math.min((contentWidth - 32) / 5, 72);
   // Whole-pixel tile width (minus 1dp slack): five `20%` tiles summed to exactly
   // the row width and wrapped to 4 per row on some densities (e.g. iQOO Z3).
@@ -200,9 +206,34 @@ export default function HomeContent({navigation}) {
   const loadingCategories = liveCatalogEnabled && !categoriesDone;
   const loadingFeatured = liveCatalogEnabled && !featuredDone;
   // Banner slots by dashboard type: header on top, offers in the middle, home banner at the end.
-  const headerBanners = liveBanners.filter(banner => banner.type === 2);
-  const offerBanners = liveBanners.filter(banner => banner.type === 1);
-  const homeBanners = liveBanners.filter(banner => banner.type === 0);
+  // Memoized so these stay the same array (and the OfferCarousel's `offers` built from
+  // homeBanners below stays the same objects) across re-renders that don't actually change
+  // liveBanners — otherwise FlatList sees "new" items every render and re-renders its cells,
+  // which showed up as the offer carousel's cards flickering while swiping it.
+  const headerBanners = useMemo(
+    () => liveBanners.filter(banner => banner.type === 2),
+    [liveBanners],
+  );
+  const offerBanners = useMemo(
+    () => liveBanners.filter(banner => banner.type === 1),
+    [liveBanners],
+  );
+  const homeBanners = useMemo(
+    () => liveBanners.filter(banner => banner.type === 0),
+    [liveBanners],
+  );
+  const homeOffers = useMemo(
+    () =>
+      homeBanners.map(banner => ({
+        id: banner.id,
+        categoryId: banner.categoryId,
+        title: banner.title,
+        source: banner.cardSource || {uri: banner.cardUri},
+        background: appTheme.tint /* Original: '#EAF1FC' */,
+        imageOnly: true,
+      })),
+    [homeBanners],
+  );
   const openCategory = id =>
     navigation.navigate('CategoryDetails', {
       categoryId: id,
@@ -235,6 +266,10 @@ export default function HomeContent({navigation}) {
         stickyHeaderIndices={[1]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        onScrollBeginDrag={() => setPageScrolling(true)}
+        onScrollEndDrag={() => setPageScrolling(false)}
+        onMomentumScrollBegin={() => setPageScrolling(true)}
+        onMomentumScrollEnd={() => setPageScrolling(false)}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -441,14 +476,8 @@ export default function HomeContent({navigation}) {
         {homeBanners.length > 0 && (
           <OfferCarousel
             navigation={navigation}
-            offers={homeBanners.map(banner => ({
-              id: banner.id,
-              categoryId: banner.categoryId,
-              title: banner.title,
-              source: banner.cardSource || {uri: banner.cardUri},
-              background: appTheme.tint /* Original: '#EAF1FC' */,
-              imageOnly: true,
-            }))}
+            paused={pageScrolling}
+            offers={homeOffers}
           />
         )}
         <Text style={[ui.sectionTitle, styles.suggestedTitle]}>
