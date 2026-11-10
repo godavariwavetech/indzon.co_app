@@ -164,6 +164,12 @@ export default function OfferCarousel({navigation, offers, paused = false}) {
       <View
         style={{width: cardWidth, height: 224, justifyContent: 'center'}}>
         <Animated.View
+          // Android has to re-rasterize this view's children (the blurred banner image,
+          // the gradient) on every frame the scaleY transform below changes while
+          // dragging, which showed up as the cards flickering while scrolling.
+          // renderToHardwareTextureAndroid rasterizes the card once to a GPU texture so
+          // the transform just moves that texture instead of redrawing the blur each frame.
+          renderToHardwareTextureAndroid
           style={[
             styles.card,
             {

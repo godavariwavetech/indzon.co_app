@@ -210,12 +210,28 @@ export default function HomeContent({navigation}) {
   // homeBanners below stays the same objects) across re-renders that don't actually change
   // liveBanners — otherwise FlatList sees "new" items every render and re-renders its cells,
   // which showed up as the offer carousel's cards flickering while swiping it.
+  // `resolvedSource` is computed once here (not inline in JSX) so it keeps the same object
+  // identity across re-renders that don't change liveBanners — otherwise every re-render
+  // (e.g. setBannerIndex on scroll) handed each banner's <Image> a "new" source object and
+  // looked like the banners flickering while scrolling.
   const headerBanners = useMemo(
-    () => liveBanners.filter(banner => banner.type === 2),
+    () =>
+      liveBanners
+        .filter(banner => banner.type === 2)
+        .map(banner => ({
+          ...banner,
+          resolvedSource: banner.source || {uri: banner.uri},
+        })),
     [liveBanners],
   );
   const offerBanners = useMemo(
-    () => liveBanners.filter(banner => banner.type === 1),
+    () =>
+      liveBanners
+        .filter(banner => banner.type === 1)
+        .map(banner => ({
+          ...banner,
+          resolvedSource: banner.source || {uri: banner.uri},
+        })),
     [liveBanners],
   );
   const homeBanners = useMemo(
@@ -341,7 +357,7 @@ export default function HomeContent({navigation}) {
                   accessibilityRole="button"
                   accessibilityLabel={banner.title || 'Offer banner'}>
                   <BannerImage
-                    source={banner.source || {uri: banner.uri}}
+                    source={banner.resolvedSource}
                     style={{
                       width: contentWidth,
                       height: contentWidth / bannerAspectRatio,
@@ -409,7 +425,7 @@ export default function HomeContent({navigation}) {
                 accessibilityRole="button"
                 accessibilityLabel={banner.title || 'Offer'}>
                 <BannerImage
-                  source={banner.source || {uri: banner.uri}}
+                  source={banner.resolvedSource}
                   style={{
                     width: '100%',
                     aspectRatio: 2.15,
