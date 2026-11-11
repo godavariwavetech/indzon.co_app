@@ -20,7 +20,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
-import {includedGst, money} from '../../config/catalog';
+import {estimatedDeliveryWindow, includedGst, money} from '../../config/catalog';
 import {
   addItem,
   removeItem,
@@ -56,6 +56,7 @@ import {matchesFilter} from './MainCategoriesScreen';
 import api from '../../utils/api';
 import {endpoints} from '../../config/config';
 import {verifyCartPrices} from '../../services/cartPrices';
+import locationService from '../../services/locationService';
 import {
   evaluateLiveCoupon,
   getLiveCategories,
@@ -737,6 +738,19 @@ export function CartScreen({navigation}) {
     placing.current = true;
     try {
       if (liveCatalogEnabled) {
+        // A lookup hiccup shouldn't block checkout - it only tightens the check.
+        const minimumOrder = await locationService
+          .getLocationMinimumOrder(address.location_id || locationId)
+          .catch(() => 0);
+        console.log('[checkout] address.location_id:', address.location_id,
+          'locationId:', locationId, 'order total:', total, 'minimumOrder:', minimumOrder);
+        if (minimumOrder > 0 && total < minimumOrder) {
+          throw new Error(
+            `This area needs a minimum order of ${money(minimumOrder)}. Add ${money(
+              minimumOrder - total,
+            )} more to place this order.`,
+          );
+        }
         await verifyCartPrices({ids: cartIds, previous: liveCartItemsById,
           locationId, refresh: refreshLiveItems});
         if (coupon) {
@@ -778,6 +792,7 @@ export function CartScreen({navigation}) {
       couponDiscount: discount,
       couponCode: discount > 0 ? coupon : null,
       savings: original - amount + discount,
+      estimatedDelivery: estimatedDeliveryWindow(now),
       groups: groups.map(group => ({
         id: 'shipment-' + now.getTime() + '-' + group.id,
         categoryId: group.id,
@@ -788,7 +803,7 @@ export function CartScreen({navigation}) {
         ],
         deliveryPartner: null,
         trackingNumber: null,
-        estimatedDelivery: null,
+        estimatedDelivery: estimatedDeliveryWindow(now),
         name: group.name,
         count: group.items.reduce((sum, item) => sum + cart[item.id], 0),
         price: group.items.reduce(
@@ -1235,6 +1250,9 @@ export function PaymentScreen({navigation, route}) {
   const [method, setMethod] = useState('cod');
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState('');
+  // Fixed at the moment this screen opens, since placing the order moves on to a
+  // different screen - it should read as "if you place it now", not keep ticking.
+  const deliveryEta = useMemo(() => estimatedDeliveryWindow(new Date()), []);
   const placeOrder = async () => {
     if (placing || !cartCheckoutRef.current) {
       return;
@@ -1265,6 +1283,15 @@ export function PaymentScreen({navigation, route}) {
               <Text style={s.muted}>{address?.full_address || ''}</Text>
             </View>
           </View>
+          {deliveryEta ? (
+            <View style={[s.infoRow, {marginTop: 8}]}>
+              <MaterialIcons name="schedule" size={24} color={colors.primary} />
+              <View style={{flex: 1}}>
+                <Text style={s.bold}>Estimated delivery</Text>
+                <Text style={s.muted}>{deliveryEta}</Text>
+              </View>
+            </View>
+          ) : null}
         </Section>
         <Section title="Choose a payment method">
           {PAYMENT_METHODS.map(option => (
@@ -1596,6 +1623,17 @@ export function OrderDetailsScreen({navigation, route}) {
         <Section style={{marginTop: 0}}>
           <Text style={s.bold}>Order #{order.id}</Text>
           <Text style={s.muted}>{order.placed}</Text>
+          {order.estimatedDelivery &&
+          order.status !== 'Delivered' &&
+          order.status !== 'Cancelled' ? (
+            <View style={[s.infoRow, {marginTop: 10}]}>
+              <MaterialIcons name="schedule" size={22} color={colors.primary} />
+              <View style={{flex: 1}}>
+                <Text style={s.bold}>Estimated delivery</Text>
+                <Text style={s.muted}>{order.estimatedDelivery}</Text>
+              </View>
+            </View>
+          ) : null}
           <Text style={[s.bold, {marginTop: 12}]}>
             {order.groups.length} category{' '}
             {order.groups.length === 1 ? 'shipment' : 'shipments'}

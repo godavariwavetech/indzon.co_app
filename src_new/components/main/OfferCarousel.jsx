@@ -16,7 +16,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import BannerImage from './BannerImage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
-export default function OfferCarousel({navigation, offers, paused = false}) {
+function OfferCarouselImpl({navigation, offers, paused = false}) {
   const {width} = useWindowDimensions();
   const cardWidth = Math.min(width * 0.8, 440);
   const step = cardWidth + 12;
@@ -28,6 +28,7 @@ export default function OfferCarousel({navigation, offers, paused = false}) {
   const autoTimer = useRef(null);
   const completionTimer = useRef(null);
   const settleRef = useRef(null);
+  const scheduleSettleRef = useRef(() => {});
   const offset = useRef(step);
   const scrollX = useRef(new Animated.Value(step)).current;
   const focused = useIsFocused();
@@ -154,6 +155,7 @@ export default function OfferCarousel({navigation, offers, paused = false}) {
     clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => settle(offset.current), 200);
   };
+  scheduleSettleRef.current = scheduleSettle;
   // Defined inline, `renderItem` used to get a new function identity on every render (e.g.
   // whenever onTouchStart/onScrollBeginDrag called pause() -> setInteracting(true)) — React
   // Native's own FlatList guidance calls this out as a cause of flicker, since FlatList
@@ -257,6 +259,35 @@ export default function OfferCarousel({navigation, offers, paused = false}) {
     [cardWidth, step, scrollX, navigation],
   );
 
+  const keyExtractor = useCallback((item, index) => `${item.id}-${index}`, []);
+
+  const contentContainerStyle = useMemo(
+    () => ({paddingHorizontal: (width - cardWidth) / 2, gap: 12}),
+    [width, cardWidth],
+  );
+
+  const getItemLayout = useCallback(
+    (_, index) => ({length: step, offset: step * index, index}),
+    [step],
+  );
+
+  // Built once (scrollX never changes identity) instead of inline on every render: recreating
+  // an Animated.event with useNativeDriver on every render re-attaches the native scroll
+  // listener, and on Android that momentarily drops the scaleY transform back to its default
+  // before the new listener catches up — showing up as the card flickering even while idle,
+  // any time this component re-rendered (e.g. the page's `paused` prop toggling on scroll).
+  const onScroll = useMemo(
+    () =>
+      Animated.event([{nativeEvent: {contentOffset: {x: scrollX}}}], {
+        useNativeDriver: true,
+        listener: event => {
+          offset.current = event.nativeEvent.contentOffset.x;
+          if (!touching.current) scheduleSettleRef.current();
+        },
+      }),
+    [scrollX],
+  );
+
   return (
     <View>
       <Animated.FlatList
@@ -270,26 +301,10 @@ export default function OfferCarousel({navigation, offers, paused = false}) {
         disableIntervalMomentum
         removeClippedSubviews={false}
         initialNumToRender={items.length}
-        keyExtractor={(item, index) => `${item.id}-${index}`}
-        contentContainerStyle={{
-          paddingHorizontal: (width - cardWidth) / 2,
-          gap: 12,
-        }}
-        getItemLayout={(_, index) => ({
-          length: step,
-          offset: step * index,
-          index,
-        })}
-        onScroll={Animated.event(
-          [{nativeEvent: {contentOffset: {x: scrollX}}}],
-          {
-            useNativeDriver: true,
-            listener: event => {
-              offset.current = event.nativeEvent.contentOffset.x;
-              if (!touching.current) scheduleSettle();
-            },
-          },
-        )}
+        keyExtractor={keyExtractor}
+        contentContainerStyle={contentContainerStyle}
+        getItemLayout={getItemLayout}
+        onScroll={onScroll}
         scrollEventThrottle={16}
         onTouchStart={() => {
           clearTimeout(completionTimer.current);
@@ -350,6 +365,8 @@ export default function OfferCarousel({navigation, offers, paused = false}) {
     </View>
   );
 }
+
+export default React.memo(OfferCarouselImpl);
 
 const styles = StyleSheet.create({
   fill: {flex: 1},

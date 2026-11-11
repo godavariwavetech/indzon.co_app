@@ -31,6 +31,10 @@ jest.mock('../components/main/MainUi', () => ({
   Heading: () => null,
 }));
 jest.mock('react-native-vector-icons/MaterialIcons', () => 'Icon');
+jest.mock('../services/locationService', () => ({
+  __esModule: true,
+  default: {getLocationMinimumOrder: jest.fn(async () => 0)},
+}));
 jest.mock('../services/catalogService', () => ({
   liveCatalogEnabled: true,
   getLiveCategories: jest.fn(async () => []),

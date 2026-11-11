@@ -12,6 +12,7 @@ import {baseURL, endpoints} from '../config/config';
 import {ENABLE_LIVE_DATA} from '../config/appMode';
 import {createLiveItemCache} from './liveItemCache';
 import {startForegroundPolling} from './foregroundPolling';
+import {estimatedDeliveryWindow} from '../config/catalog';
 
 // The backend stores media URLs with whatever dev IP it was seeded under
 // (e.g. http://192.168.0.111:2406/images/...). Point any such local-server URL
@@ -674,6 +675,11 @@ export async function getLiveOrders({customerId}) {
             photo: row.delivery_boy_image ? mediaUrl(row.delivery_boy_image) : null,
           }
         : null,
+      // no ETA once a shipment is no longer on its way
+      estimatedDelivery:
+        status === 'Delivered' || status === 'Cancelled'
+          ? null
+          : estimatedDeliveryWindow(row.order_date_time || row.order_date),
     };
     const existing = orders.get(String(row.order_id));
     if (existing) {
@@ -715,6 +721,11 @@ export async function getLiveOrders({customerId}) {
     order.status = active.length ? active[0].status : 'Cancelled';
     order.cancelReason =
       order.groups.find(group => group.cancelReason)?.cancelReason || null;
+    // the soonest-arriving active shipment's ETA stands for the whole order
+    order.estimatedDelivery =
+      order.groups
+        .filter(group => group.estimatedDelivery)
+        .map(group => group.estimatedDelivery)[0] || null;
   });
   return Array.from(orders.values());
 }
