@@ -118,7 +118,8 @@ export default function AddressDetailsSheet({
       transparent
       animationType="slide"
       onRequestClose={() => !saving && onClose()}
-      statusBarTranslucent>
+      statusBarTranslucent
+      navigationBarTranslucent>
       <KeyboardAvoidingView
         style={styles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
