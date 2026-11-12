@@ -12,6 +12,7 @@ import {baseURL, endpoints} from '../config/config';
 import {ENABLE_LIVE_DATA} from '../config/appMode';
 import {createLiveItemCache} from './liveItemCache';
 import {startForegroundPolling} from './foregroundPolling';
+import {estimatedDeliveryWindow} from '../config/catalog';
 
 // The backend stores media URLs with whatever dev IP it was seeded under
 // (e.g. http://192.168.0.111:2406/images/...). Point any such local-server URL
@@ -58,6 +59,24 @@ export function groupVariants(items) {
   return order.map(key => best.get(key));
 }
 
+// Match the existing subcategory navigation: first stocked shop, then group
+// that shop's variants before applying the subcategory and selected filter.
+export function getSubcategoryProductCounts(items, subcategories, matches = () => true) {
+  const groupedByShop = new Map();
+  return Object.fromEntries(subcategories.map(sub => {
+    const stocked = items.find(product => product.subcategoryId === sub.id);
+    const shopId = stocked?.shopId || sub.shopIds[0];
+    const key = shopId == null ? null : String(shopId);
+    if (!groupedByShop.has(key)) {
+      groupedByShop.set(key, groupVariants(items.filter(product => String(product.shopId) === key)));
+    }
+    const count = groupedByShop.get(key).filter(product =>
+      product.subcategoryId === sub.id && matches(product),
+    ).length;
+    return [sub.id, count];
+  }));
+}
+
 export async function getLiveCategories() {
   const response = await api.post(endpoints.DADDY_GET_CATEGORIES, {});
   if (Number(response.data?.status) !== 200 || !Array.isArray(response.data?.data)) {
@@ -92,16 +111,25 @@ export async function getLiveBanners({locationId}) {
   const rows = Array.isArray(response.data?.data) ? response.data.data : [];
   return rows
     .filter(row => row.banner_image)
-    .map(row => ({
-      id: String(row.id),
-      uri: mediaUrl(row.banner_image),
-      // banner_image2 is the picture sized for the offer-card carousel.
-      cardUri: mediaUrl(row.banner_image2) || mediaUrl(row.banner_image),
-      title: row.banner_offer_title,
-      categoryId: row.category_id ? String(row.category_id) : null,
-      // banner_type: 0 = home banner, 1 = offer banner, 2 = header banner.
-      type: Number(row.banner_type) || 0,
-    }));
+    .map(row => {
+      const uri = mediaUrl(row.banner_image);
+      const cardUri = mediaUrl(row.banner_image2) || uri;
+      return {
+        id: String(row.id),
+        uri,
+        // banner_image2 is the picture sized for the offer-card carousel.
+        cardUri,
+        // Built once here, not inline in JSX: a fresh {uri} object every render makes
+        // <Image> treat it as a new image and briefly flash/reload, which showed up as
+        // the banners flickering on Home while the page re-rendered during scrolling.
+        source: {uri},
+        cardSource: {uri: cardUri},
+        title: row.banner_offer_title,
+        categoryId: row.category_id ? String(row.category_id) : null,
+        // banner_type: 0 = home banner, 1 = offer banner, 2 = header banner.
+        type: Number(row.banner_type) || 0,
+      };
+    });
 }
 
 // An address saved before a service area matched (or in the old static flow)
@@ -647,6 +675,11 @@ export async function getLiveOrders({customerId}) {
             photo: row.delivery_boy_image ? mediaUrl(row.delivery_boy_image) : null,
           }
         : null,
+      // no ETA once a shipment is no longer on its way
+      estimatedDelivery:
+        status === 'Delivered' || status === 'Cancelled'
+          ? null
+          : estimatedDeliveryWindow(row.order_date_time || row.order_date),
     };
     const existing = orders.get(String(row.order_id));
     if (existing) {
@@ -669,6 +702,9 @@ export async function getLiveOrders({customerId}) {
       status,
       cancelReason: row.order_cancel_msg || null,
       address: {full_address: row.delivery_address},
+      // shown to the customer on Order Details so they can read it out to the delivery
+      // partner, who enters it to confirm delivery
+      otp: row.customer_otp != null ? String(row.customer_otp) : null,
       count,
       price,
       originalPrice,
@@ -685,6 +721,11 @@ export async function getLiveOrders({customerId}) {
     order.status = active.length ? active[0].status : 'Cancelled';
     order.cancelReason =
       order.groups.find(group => group.cancelReason)?.cancelReason || null;
+    // the soonest-arriving active shipment's ETA stands for the whole order
+    order.estimatedDelivery =
+      order.groups
+        .filter(group => group.estimatedDelivery)
+        .map(group => group.estimatedDelivery)[0] || null;
   });
   return Array.from(orders.values());
 }
@@ -758,6 +799,19 @@ export async function getLiveOrderItems(realOrderId) {
     quantity: Number(row.sub_item_count) || 1,
     art: photoArt(row.item_image),
   }));
+}
+
+// Builds (or rebuilds) the PDF invoice for an order and returns its absolute download URL.
+// `realOrderIds` are the order_lst_t row ids (one per shop/category the order was split into).
+export async function generateOrderInvoice({realOrderIds, customerId}) {
+  const response = await api.post(endpoints.GENERATE_INVOICE, {
+    order_ids: [].concat(realOrderIds),
+    customer_id: customerId,
+  });
+  if (response.data?.status !== 200 || !response.data?.data?.url) {
+    throw new Error(response.data?.message || 'Could not generate the invoice.');
+  }
+  return baseURL + response.data.data.url;
 }
 
 // Orders from the backend (the source of truth) plus any placed in this

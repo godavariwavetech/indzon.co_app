@@ -368,6 +368,7 @@ export default function AddAddressScreen({navigation, route}) {
           style={[
             styles.preview,
             {paddingBottom: Math.max(insets.bottom, 16)},
+            detailsVisible && styles.previewHidden,
           ]}>
           <View style={styles.previewAddress}>
             <MaterialIcons name="location-on" size={28} color={appTheme.primary /* Original: "#3832FF" */} />
@@ -410,6 +411,9 @@ export default function AddAddressScreen({navigation, route}) {
             testID="address-more-details"
           />
         </View>
+        {detailsVisible ? (
+          <View pointerEvents="none" style={styles.sheetVeil} />
+        ) : null}
       </View>
       <AddressDetailsSheet
         visible={detailsVisible}
@@ -485,6 +489,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
+  previewHidden: {display: 'none'},
+  sheetVeil: {...StyleSheet.absoluteFillObject, backgroundColor: '#FFFFFF'},
   previewAddress: {
     flexDirection: 'row',
     alignItems: 'center',

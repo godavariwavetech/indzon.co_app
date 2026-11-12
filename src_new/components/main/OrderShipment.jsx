@@ -96,6 +96,11 @@ export default function OrderShipment({
           <Text style={styles.caption}>
             {group.count} items · {money(group.price)}
           </Text>
+          {group.estimatedDelivery && !cancelled && status !== 'Delivered' ? (
+            <Text style={styles.caption}>
+              Arriving: {group.estimatedDelivery}
+            </Text>
+          ) : null}
         </View>
         <View style={[styles.badge, cancelled && styles.cancelled]}>
           <Text style={[styles.status, cancelled && styles.cancelledText]}>
@@ -242,11 +247,6 @@ export default function OrderShipment({
             {group.trackingNumber ? (
               <Text style={styles.caption}>
                 Tracking ID: {group.trackingNumber}
-              </Text>
-            ) : null}
-            {group.estimatedDelivery ? (
-              <Text style={styles.caption}>
-                Expected delivery: {group.estimatedDelivery}
               </Text>
             ) : null}
           </View>

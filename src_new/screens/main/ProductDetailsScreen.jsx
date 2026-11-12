@@ -218,10 +218,37 @@ function Details({product: base, navigation}) {
         const score = row.variantOptions.filter(
           ([k, v]) => wanted[k] === v,
         ).length;
-        return score > found.score ? {row, score} : found;
+        // Tie-break toward the higher item id: a mistaken "add variant" edit in
+        // the dashboard (instead of editing the existing row in place) can leave
+        // an old, stale-priced row active alongside the corrected one, so two
+        // rows can tie for the same colour/storage combo. The dashboard's own
+        // item list always surfaces the newest row first for the same reason —
+        // matching that here keeps the app from silently landing on the stale one.
+        if (
+          score > found.score ||
+          (score === found.score && row.itemId > (found.row?.itemId ?? -Infinity))
+        ) {
+          return {row, score};
+        }
+        return found;
       },
       {row: null, score: -1},
     ).row;
+    // Debug aid for price-mismatch reports: shows every candidate row (id, price,
+    // variant options) for this key/value pick, and which one was actually selected.
+    console.log('[ProductDetails] pickOption', {
+      key,
+      value,
+      wanted,
+      candidates: matches.map(row => ({
+        id: row.id,
+        price: row.price,
+        originalPrice: row.originalPrice,
+        variantOptions: row.variantOptions,
+        active: row.active,
+      })),
+      selected: best && {id: best.id, price: best.price, variantOptions: best.variantOptions},
+    });
     if (best) {
       setSelectedId(best.id);
     }

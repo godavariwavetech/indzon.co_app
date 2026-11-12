@@ -510,6 +510,23 @@ async function getServiceAreas() {
     .filter(area => area.name && validCoordinates(area));
 }
 
+// The minimum cart value a customer must reach to place an order in this delivery
+// area (location) - set on the dashboard's Location settings. 0 means no minimum.
+export async function getLocationMinimumOrder(locationId) {
+  const response = await api.get(endpoints.GET_SERVICES_LIST);
+  const rows = Array.isArray(response.data?.data) ? response.data.data : [];
+  console.log('[getLocationMinimumOrder] raw response.data:', JSON.stringify(response.data));
+  console.log('[getLocationMinimumOrder] row count:', rows.length,
+    'row ids:', rows.map(item => item.id));
+  const row = rows.find(item => Number(item.id) === Number(locationId));
+  console.log('[getLocationMinimumOrder] locationId:', locationId,
+    'matched row (full):', JSON.stringify(row),
+    'matched row keys:', row ? Object.keys(row) : null);
+  const minimumOrder = Number(row?.minimum_order_amount) || 0;
+  console.log('[getLocationMinimumOrder] minimumOrder:', minimumOrder);
+  return minimumOrder;
+}
+
 // An address shaped like the saved ones, for a place that is not in the address book
 // (current location or a chosen service area). Never written to the server.
 function makeDerivedAddress({id, type, fullAddress, coordinates, area, customer}) {
@@ -582,5 +599,6 @@ export default {
   deleteSavedAddress,
   findServiceArea,
   getServiceAreas,
+  getLocationMinimumOrder,
   pickAddressForArea,
 };

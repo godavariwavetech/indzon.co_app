@@ -9,6 +9,9 @@ const initialState = {
   messages: [],
   orders: [],
   feedback: {},
+  // invoice PDF download URL, by order id -- kept separate from `orders` since that list is
+  // rebuilt from the live backend on every refetch and would otherwise drop this client-only field.
+  invoices: {},
 };
 const commerce = createSlice({
   name: 'commerce',
@@ -45,6 +48,9 @@ const commerce = createSlice({
       state.cart = {};
       state.couponCode = null;
     },
+    setOrderInvoice(state, {payload}) {
+      state.invoices[payload.orderId] = payload.url;
+    },
     saveOrderFeedback(state, {payload}) {
       state.feedback[payload.orderId] = {
         rating: payload.rating,
@@ -80,6 +86,7 @@ export const {
   deleteItem,
   clearCart,
   placePreviewOrder,
+  setOrderInvoice,
   saveOrderFeedback,
   toggleWishlist,
   setProfileName,

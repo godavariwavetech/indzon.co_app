@@ -7,6 +7,7 @@ import SuccessCelebration from '../../components/main/SuccessCelebration';
 import {Text, TextInput} from '../../components/Typography';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
+  Linking,
   Modal,
   Pressable,
   RefreshControl,
@@ -19,7 +20,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
-import {includedGst, money} from '../../config/catalog';
+import {estimatedDeliveryWindow, includedGst, money} from '../../config/catalog';
 import {
   addItem,
   removeItem,
@@ -28,6 +29,7 @@ import {
   setCouponCode,
   toggleWishlist,
   placePreviewOrder,
+  setOrderInvoice,
   saveOrderFeedback,
 } from '../../redux/reducers/commerce';
 import {
@@ -54,6 +56,7 @@ import {matchesFilter} from './MainCategoriesScreen';
 import api from '../../utils/api';
 import {endpoints} from '../../config/config';
 import {verifyCartPrices} from '../../services/cartPrices';
+import locationService from '../../services/locationService';
 import {
   evaluateLiveCoupon,
   getLiveCategories,
@@ -64,6 +67,7 @@ import {
   getLiveItems,
   getLiveSubcategories,
   getOrderCharges,
+  generateOrderInvoice,
   groupVariants,
   liveCatalogEnabled,
   useAllOrders,
@@ -573,6 +577,11 @@ export function WishlistScreen({navigation}) {
 
 export {default as ProductDetailsScreen} from './ProductDetailsScreen';
 
+// The Payment screen calls through to whichever CartScreen is currently mounted (it's pushed
+// on top of Cart, which stays mounted beneath it) instead of a function captured once at
+// navigation time, so a retry after a price/coupon change always runs with current cart state.
+const cartCheckoutRef = {current: null};
+
 export function CartScreen({navigation}) {
   const dispatch = useDispatch();
   const {width} = useWindowDimensions();
@@ -719,21 +728,29 @@ export function CartScreen({navigation}) {
     };
   }, [firstCartItem?.shopItemsTableName, firstCartItem?.shopId]);
   const recommendations = liveRecommendations;
-  const [placingLive, setPlacingLive] = useState(false);
-  const [orderError, setOrderError] = useState(null);
+  // Places the order for whichever payment method the Payment screen confirmed with.
+  // Throws on failure instead of setting local state, since by the time this runs the
+  // Payment screen (not this one) is what's on screen and needs to show the error.
   const checkout = async () => {
-    if (!address) {
-      navigation.navigate('AddressList', {isFromCart: true});
-      return;
-    }
-    if (!items.length || placing.current) {
+    if (!address || !items.length || placing.current) {
       return;
     }
     placing.current = true;
-    if (liveCatalogEnabled) {
-      setPlacingLive(true);
-      setOrderError(null);
-      try {
+    try {
+      if (liveCatalogEnabled) {
+        // A lookup hiccup shouldn't block checkout - it only tightens the check.
+        const minimumOrder = await locationService
+          .getLocationMinimumOrder(address.location_id || locationId)
+          .catch(() => 0);
+        console.log('[checkout] address.location_id:', address.location_id,
+          'locationId:', locationId, 'order total:', total, 'minimumOrder:', minimumOrder);
+        if (minimumOrder > 0 && total < minimumOrder) {
+          throw new Error(
+            `This area needs a minimum order of ${money(minimumOrder)}. Add ${money(
+              minimumOrder - total,
+            )} more to place this order.`,
+          );
+        }
         await verifyCartPrices({ids: cartIds, previous: liveCartItemsById,
           locationId, refresh: refreshLiveItems});
         if (coupon) {
@@ -755,13 +772,13 @@ export function CartScreen({navigation}) {
             throw new Error('This coupon has changed. Please review your updated total before placing the order.');
           }
         }
-      } catch (error) {
-        placing.current = false;
-        setPlacingLive(false);
-        setOrderError(error.message || 'Could not verify current prices. Please try again.');
-        return;
       }
+      await placeVerifiedOrder();
+    } finally {
+      placing.current = false;
     }
+  };
+  const placeVerifiedOrder = async () => {
     const now = new Date();
     const order = {
       id: `preview-${now.getTime()}`,
@@ -775,6 +792,7 @@ export function CartScreen({navigation}) {
       couponDiscount: discount,
       couponCode: discount > 0 ? coupon : null,
       savings: original - amount + discount,
+      estimatedDelivery: estimatedDeliveryWindow(now),
       groups: groups.map(group => ({
         id: 'shipment-' + now.getTime() + '-' + group.id,
         categoryId: group.id,
@@ -785,7 +803,7 @@ export function CartScreen({navigation}) {
         ],
         deliveryPartner: null,
         trackingNumber: null,
-        estimatedDelivery: null,
+        estimatedDelivery: estimatedDeliveryWindow(now),
         name: group.name,
         count: group.items.reduce((sum, item) => sum + cart[item.id], 0),
         price: group.items.reduce(
@@ -802,99 +820,106 @@ export function CartScreen({navigation}) {
     };
 
     if (liveCatalogEnabled && customerId) {
-      setPlacingLive(true);
-      try {
-        const liveCoupon = discount > 0
-          ? liveOffers.find(o => o.code === coupon)
-          : null;
-        const subOrderArray = items.map(item => {
-          const qty = cart[item.id];
-          const lineTotal = item.price * qty;
-          return {
-            item_id: item.itemId,
-            item_name: item.name,
-            item_image: item.art?.source?.uri || null,
-            category_id: item.categoryId,
-            sub_category_id: item.subcategoryId,
-            category_name: null,
-            sub_category_name: null,
-            actualitem_price: item.originalPrice,
-            item_price: item.price,
-            sub_item_count: qty,
-            item_total_amount: lineTotal,
-            filter_name: null,
-            item_description: item.description || '',
-            saving_price: (item.originalPrice - item.price) * qty,
-            shop_id: item.shopId,
-            filter_one: null,
-            // the price already includes gst: take the gst out of it
-            item_gst_amount: includedGst(lineTotal, item.gstPercent),
-            item_gst: item.gstPercent || 0,
-          };
-        });
-        const response = await api.post(endpoints.PLACE_ORDER, {
-          customer_id: customerId,
-          customer_name: address.customer_name || '',
-          customer_mobile_number: address.customer_mobile_number || phone || '',
-          category_id: firstCartItem?.categoryId || 0,
-          shop_id: firstCartItem?.shopId || 0,
-          admin_percentage: 0,
-          item_count: Object.values(cart).reduce((sum, count) => sum + count, 0),
-          actual_total_amount: original,
-          total_amount: amount,
-          total_saving_amount: original - amount,
-          coupon_amount: discount,
-          coupon_id: liveCoupon?.id,
-          coupon_type: 0,
-          // the server recomputes these from the dashboard settings when the order is saved
-          delivery_charges: charges?.delivery || 0,
-          delivery_charges_gst: 0,
-          handling_charges: charges?.platform || 0,
-          packing_charges: charges?.packing || 0,
-          packing_charges_gst: 0,
-          donation_charges: charges?.donation || 0,
-          surcharges: charges?.surcharges || 0,
-          gstonplatform_fee: 0,
-          total_item_gst_amount: subOrderArray.reduce((sum, i) => sum + i.item_gst_amount, 0),
-          grand_total: total,
-          location_id: address.location_id || locationId,
-          location_name: address.location_name || '',
-          payment_type: 'Cash On Delivery',
-          order_status: 0,
-          order_type: 0,
-          slot_indication: 0,
-          order_instructions: '',
-          delivery_instruction: '',
-          delivery_address: address.full_address || '',
-          order_latitude: address.customer_latitude || '0',
-          order_longitude: address.customer_longitude || '0',
-          order_distance: 0,
-          ext_del_charge: 0,
-          sub_order_array: subOrderArray,
-        });
-        if (response.data?.status !== 200) {
-          throw new Error(response.data?.message || 'Could not place order.');
-        }
-        dispatch(
-          placePreviewOrder({
-            ...order,
-            id: response.data.order_id || order.id,
-            realOrderId: response.data.id,
-            realOrderIds: response.data.ids || [response.data.id],
-          }),
-        );
-        resetToConfirmation(navigation, response.data.order_id || order.id);
-      } catch (err) {
-        placing.current = false;
-        setPlacingLive(false);
-        setOrderError(err.message || 'Please try again.');
+      const liveCoupon = discount > 0
+        ? liveOffers.find(o => o.code === coupon)
+        : null;
+      const subOrderArray = items.map(item => {
+        const qty = cart[item.id];
+        const lineTotal = item.price * qty;
+        return {
+          item_id: item.itemId,
+          item_name: item.name,
+          item_image: item.art?.source?.uri || null,
+          category_id: item.categoryId,
+          sub_category_id: item.subcategoryId,
+          category_name: null,
+          sub_category_name: null,
+          actualitem_price: item.originalPrice,
+          item_price: item.price,
+          sub_item_count: qty,
+          item_total_amount: lineTotal,
+          filter_name: null,
+          item_description: item.description || '',
+          saving_price: (item.originalPrice - item.price) * qty,
+          shop_id: item.shopId,
+          filter_one: null,
+          // the price already includes gst: take the gst out of it
+          item_gst_amount: includedGst(lineTotal, item.gstPercent),
+          item_gst: item.gstPercent || 0,
+        };
+      });
+      const response = await api.post(endpoints.PLACE_ORDER, {
+        customer_id: customerId,
+        customer_name: address.customer_name || '',
+        customer_mobile_number: address.customer_mobile_number || phone || '',
+        category_id: firstCartItem?.categoryId || 0,
+        shop_id: firstCartItem?.shopId || 0,
+        admin_percentage: 0,
+        item_count: Object.values(cart).reduce((sum, count) => sum + count, 0),
+        actual_total_amount: original,
+        total_amount: amount,
+        total_saving_amount: original - amount,
+        coupon_amount: discount,
+        coupon_id: liveCoupon?.id,
+        coupon_type: 0,
+        // the server recomputes these from the dashboard settings when the order is saved
+        delivery_charges: charges?.delivery || 0,
+        delivery_charges_gst: 0,
+        handling_charges: charges?.platform || 0,
+        packing_charges: charges?.packing || 0,
+        packing_charges_gst: 0,
+        donation_charges: charges?.donation || 0,
+        surcharges: charges?.surcharges || 0,
+        gstonplatform_fee: 0,
+        total_item_gst_amount: subOrderArray.reduce((sum, i) => sum + i.item_gst_amount, 0),
+        grand_total: total,
+        location_id: address.location_id || locationId,
+        location_name: address.location_name || '',
+        payment_type: 'Cash On Delivery',
+        order_status: 0,
+        order_type: 0,
+        slot_indication: 0,
+        order_instructions: '',
+        delivery_instruction: '',
+        delivery_address: address.full_address || '',
+        order_latitude: address.customer_latitude || '0',
+        order_longitude: address.customer_longitude || '0',
+        order_distance: 0,
+        ext_del_charge: 0,
+        sub_order_array: subOrderArray,
+      });
+      if (response.data?.status !== 200) {
+        throw new Error(response.data?.message || 'Could not place order.');
       }
+      const placedOrderId = response.data.order_id || order.id;
+      const realOrderIds = response.data.ids || [response.data.id];
+      dispatch(
+        placePreviewOrder({
+          ...order,
+          id: placedOrderId,
+          realOrderId: response.data.id,
+          realOrderIds,
+        }),
+      );
+      // Awaited so the invoice is ready by the time the confirmation screen shows the
+      // Download Invoice button; a failure here doesn't block the (already placed) order —
+      // Order Details can generate it again on demand.
+      try {
+        const invoiceUrl = await generateOrderInvoice({realOrderIds, customerId});
+        dispatch(setOrderInvoice({orderId: placedOrderId, url: invoiceUrl}));
+      } catch {
+        // ignored: the order is already placed either way
+      }
+      resetToConfirmation(navigation, placedOrderId);
       return;
     }
 
     dispatch(placePreviewOrder(order));
     resetToConfirmation(navigation, order.id);
   };
+  useEffect(() => {
+    cartCheckoutRef.current = checkout;
+  });
   return (
     <Page style={{backgroundColor: appTheme.surface /* Original: '#F8F8FB' */}}>
       <Heading
@@ -1167,15 +1192,17 @@ export function CartScreen({navigation}) {
             </View>
             <GradientButton
               style={{minWidth: 150}}
-              disabled={placingLive}
-              onPress={checkout}
-              label={
-                placingLive
-                  ? 'Placing order…'
-                  : address
-                  ? 'Place order'
-                  : 'Choose address'
-              }
+              onPress={() => {
+                if (!address) {
+                  navigation.navigate('AddressList', {isFromCart: true});
+                  return;
+                }
+                navigation.navigate('Payment', {
+                  total,
+                  savings: original - amount + discount,
+                });
+              }}
+              label={address ? 'Place order' : 'Choose address'}
             />
           </>
         ) : (
@@ -1186,15 +1213,137 @@ export function CartScreen({navigation}) {
           />
         )}
       </Footer>
+    </Page>
+  );
+}
+
+const PAYMENT_METHODS = [
+  {
+    id: 'cod',
+    label: 'Cash on Delivery',
+    description: 'Pay with cash when your order arrives.',
+    icon: 'payments',
+    available: true,
+  },
+  {
+    id: 'upi',
+    label: 'UPI / Cards / Netbanking',
+    description: 'Coming soon',
+    icon: 'credit-card',
+    available: false,
+  },
+  {
+    id: 'wallet',
+    label: 'Wallet',
+    description: 'Coming soon',
+    icon: 'account-balance-wallet',
+    available: false,
+  },
+];
+
+// A payment-method step between Cart and order confirmation. Only Cash on Delivery is
+// wired to actually place the order right now; the rest are shown so the step reads as
+// a real payment page and can be turned on later without moving the flow around again.
+export function PaymentScreen({navigation, route}) {
+  const {total = 0, savings = 0} = route.params || {};
+  const address = useSelector(state => state.Auth.deliveryAddress);
+  const [method, setMethod] = useState('cod');
+  const [placing, setPlacing] = useState(false);
+  const [error, setError] = useState('');
+  // Fixed at the moment this screen opens, since placing the order moves on to a
+  // different screen - it should read as "if you place it now", not keep ticking.
+  const deliveryEta = useMemo(() => estimatedDeliveryWindow(new Date()), []);
+  const placeOrder = async () => {
+    if (placing || !cartCheckoutRef.current) {
+      return;
+    }
+    setPlacing(true);
+    setError('');
+    try {
+      // Always the latest CartScreen closure (it's still mounted beneath this screen),
+      // so a retry after a price/coupon change below places the order with current prices.
+      await cartCheckoutRef.current();
+    } catch (err) {
+      setError(err.message || 'Could not place the order. Please try again.');
+    } finally {
+      setPlacing(false);
+    }
+  };
+  return (
+    <Page style={{backgroundColor: appTheme.surface /* Original: '#F8F8FB' */}}>
+      <Heading title="Payment" back navigation={navigation} />
+      <ScrollView
+        contentContainerStyle={s.content}
+        showsVerticalScrollIndicator={false}>
+        <Section title="Deliver to">
+          <View style={s.infoRow}>
+            <MaterialIcons name="local-shipping" size={24} color={colors.primary} />
+            <View style={{flex: 1}}>
+              <Text style={s.bold}>{address?.address_type || 'Delivery address'}</Text>
+              <Text style={s.muted}>{address?.full_address || ''}</Text>
+            </View>
+          </View>
+          {deliveryEta ? (
+            <View style={[s.infoRow, {marginTop: 8}]}>
+              <MaterialIcons name="schedule" size={24} color={colors.primary} />
+              <View style={{flex: 1}}>
+                <Text style={s.bold}>Estimated delivery</Text>
+                <Text style={s.muted}>{deliveryEta}</Text>
+              </View>
+            </View>
+          ) : null}
+        </Section>
+        <Section title="Choose a payment method">
+          {PAYMENT_METHODS.map(option => (
+            <Pressable
+              key={option.id}
+              disabled={!option.available}
+              onPress={() => setMethod(option.id)}
+              accessibilityRole="radio"
+              accessibilityState={{selected: method === option.id, disabled: !option.available}}
+              style={[s.infoRow, s.divider, !option.available && {opacity: 0.5}]}>
+              <MaterialIcons name={option.icon} size={24} color={colors.primary} />
+              <View style={{flex: 1}}>
+                <Text style={s.bold}>{option.label}</Text>
+                <Text style={s.muted}>{option.description}</Text>
+              </View>
+              <MaterialIcons
+                name={
+                  method === option.id
+                    ? 'radio-button-checked'
+                    : 'radio-button-unchecked'
+                }
+                size={22}
+                color={option.available ? colors.primary : colors.muted}
+              />
+            </Pressable>
+          ))}
+        </Section>
+        <Section title="Billing">
+          <BillRow label="TOTAL" value={money(total)} strong />
+          {savings > 0 ? (
+            <BillRow label="You save" value={money(savings)} blue />
+          ) : null}
+        </Section>
+      </ScrollView>
+      <Footer style={{backgroundColor: '#FFFFFF'}}>
+        <GradientButton
+          style={{flex: 1}}
+          disabled={placing}
+          onPress={placeOrder}
+          accessibilityLabel="Place order"
+          label={placing ? 'Placing order…' : `Place order · ${money(total)}`}
+        />
+      </Footer>
       <ConfirmDialog
-        visible={Boolean(orderError)}
+        visible={Boolean(error)}
         hideCancel
         icon="error-outline"
         title="Order failed"
-        message={orderError || ''}
+        message={error}
         confirmLabel="OK"
-        onConfirm={() => setOrderError(null)}
-        onCancel={() => setOrderError(null)}
+        onConfirm={() => setError('')}
+        onCancel={() => setError('')}
       />
     </Page>
   );
@@ -1214,6 +1363,9 @@ const resetToConfirmation = (navigation, orderId) =>
 export function OrderConfirmationScreen({navigation, route}) {
   const order = useSelector(state =>
     state.commerce.orders.find(item => item.id === route.params?.orderId),
+  );
+  const invoiceUrl = useSelector(
+    state => state.commerce.invoices[route.params?.orderId],
   );
   const {width, height} = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -1296,6 +1448,16 @@ export function OrderConfirmationScreen({navigation, route}) {
           }>
           <Text style={s.blue}>View order details</Text>
         </Pressable>
+        {invoiceUrl ? (
+          <Pressable
+            style={[s.row, {justifyContent: 'center', gap: 6, padding: 8}]}
+            accessibilityRole="button"
+            accessibilityLabel="Download invoice"
+            onPress={() => Linking.openURL(invoiceUrl)}>
+            <MaterialIcons name="receipt-long" size={18} color={colors.primary} />
+            <Text style={s.blue}>Download Invoice</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </Page>
   );
@@ -1307,6 +1469,11 @@ export function OrderDetailsScreen({navigation, route}) {
   const savedFeedback = useSelector(
     state => state.commerce.feedback[route.params?.orderId],
   );
+  const invoiceUrl = useSelector(
+    state => state.commerce.invoices[route.params?.orderId],
+  );
+  const [generatingInvoice, setGeneratingInvoice] = useState(false);
+  const [invoiceError, setInvoiceError] = useState('');
   const foundOrder = allOrders.find(item => item.id === route.params?.orderId);
   const liveOrderItems = useLiveOrderItems(foundOrder);
   const order =
@@ -1355,6 +1522,29 @@ export function OrderDetailsScreen({navigation, route}) {
       </Page>
     );
   }
+  const downloadInvoice = async () => {
+    if (invoiceUrl) {
+      Linking.openURL(invoiceUrl);
+      return;
+    }
+    if (!order.live || !order.realOrderIds || generatingInvoice) {
+      return;
+    }
+    setGeneratingInvoice(true);
+    setInvoiceError('');
+    try {
+      const url = await generateOrderInvoice({
+        realOrderIds: order.realOrderIds,
+        customerId: auth.customerId,
+      });
+      dispatch(setOrderInvoice({orderId: order.id, url}));
+      Linking.openURL(url);
+    } catch (error) {
+      setInvoiceError(error.message || 'Could not generate the invoice. Please try again.');
+    } finally {
+      setGeneratingInvoice(false);
+    }
+  };
   const groups = order.groups.filter(
     group => !route.params?.groupName || group.name === route.params.groupName,
   );
@@ -1433,6 +1623,17 @@ export function OrderDetailsScreen({navigation, route}) {
         <Section style={{marginTop: 0}}>
           <Text style={s.bold}>Order #{order.id}</Text>
           <Text style={s.muted}>{order.placed}</Text>
+          {order.estimatedDelivery &&
+          order.status !== 'Delivered' &&
+          order.status !== 'Cancelled' ? (
+            <View style={[s.infoRow, {marginTop: 10}]}>
+              <MaterialIcons name="schedule" size={22} color={colors.primary} />
+              <View style={{flex: 1}}>
+                <Text style={s.bold}>Estimated delivery</Text>
+                <Text style={s.muted}>{order.estimatedDelivery}</Text>
+              </View>
+            </View>
+          ) : null}
           <Text style={[s.bold, {marginTop: 12}]}>
             {order.groups.length} category{' '}
             {order.groups.length === 1 ? 'shipment' : 'shipments'}
@@ -1448,6 +1649,28 @@ export function OrderDetailsScreen({navigation, route}) {
             }{' '}
             of {order.groups.length} delivered
           </Text>
+          {order.live && order.otp && order.status !== 'Delivered' && order.status !== 'Cancelled' ? (
+            <View style={s.otpBox}>
+              <MaterialIcons name="lock-outline" size={20} color={colors.primary} />
+              <View style={{flex: 1}}>
+                <Text style={s.muted}>Share this OTP with the delivery partner</Text>
+                <Text style={s.otpValue}>{order.otp}</Text>
+              </View>
+            </View>
+          ) : null}
+          {invoiceUrl || order.live ? (
+            <Pressable
+              style={[s.row, {gap: 6, marginTop: 12}]}
+              accessibilityRole="button"
+              accessibilityLabel="Download invoice"
+              disabled={generatingInvoice}
+              onPress={downloadInvoice}>
+              <MaterialIcons name="receipt-long" size={19} color={colors.primary} />
+              <Text style={s.blue}>
+                {generatingInvoice ? 'Preparing invoice…' : 'Download Invoice'}
+              </Text>
+            </Pressable>
+          ) : null}
         </Section>
         {order.live && order.status === 'Cancelled' && order.cancelReason ? (
           <Section>
@@ -1455,7 +1678,7 @@ export function OrderDetailsScreen({navigation, route}) {
             <Text style={s.muted}>{order.cancelReason}</Text>
           </Section>
         ) : null}
-        {cancellableGroups.length ? (
+        {cancellableGroups.length && order.groups.length > 1 ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Cancel this order"
@@ -1718,6 +1941,16 @@ export function OrderDetailsScreen({navigation, route}) {
         onConfirm={() => setCancelDialog(null)}
         onCancel={() => setCancelDialog(null)}
       />
+      <ConfirmDialog
+        visible={Boolean(invoiceError)}
+        hideCancel
+        icon="error-outline"
+        title="Invoice failed"
+        message={invoiceError}
+        confirmLabel="OK"
+        onConfirm={() => setInvoiceError('')}
+        onCancel={() => setInvoiceError('')}
+      />
     </Page>
   );
 }
@@ -1745,6 +1978,16 @@ const s = StyleSheet.create({
   blue: {fontSize: 14, fontWeight: '600', color: colors.primary},
   green: {fontSize: 15, fontWeight: '700', color: '#009B48'},
   muted: {fontSize: 12, lineHeight: 18, color: '#64707C', marginTop: 3},
+  otpBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: appTheme.tint /* Original: '#EFEDFF' */,
+  },
+  otpValue: {fontSize: 20, fontWeight: '800', letterSpacing: 4, color: colors.ink},
   iconButton: {
     width: 36,
     height: 36,

@@ -78,9 +78,13 @@ const staticAuthPersistConfig = {
     'profileData',
   ],
 };
+const commercePersistConfig = {
+  key: 'amaraa-static-commerce',
+  storage: AsyncStorage,
+};
 export const staticStore = configureStore({
   reducer: {
-    commerce,
+    commerce: persistReducer(commercePersistConfig, commerce),
     Auth: persistReducer(staticAuthPersistConfig, AuthSlice),
     Dashboard,
     address: addressReducer,
