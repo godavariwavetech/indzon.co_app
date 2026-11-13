@@ -140,13 +140,14 @@ export default function MainCategoriesScreen({
     let active = true;
     getLiveCategories()
       .then(rows => {
+        console.log('[MainCategoriesScreen] getLiveCategories ->', rows.length, 'categories:', rows.map(r => `${r.id}:${r.name}`));
         if (active) {
           setLiveCategories(rows);
           setCategoryId(current => rows.some(row => row.id === current)
             ? current : rows[0]?.id || null);
         }
       })
-      .catch(() => {})
+      .catch(err => console.log('[MainCategoriesScreen] getLiveCategories FAILED ->', err?.message || err))
       .finally(() => active && setCategoriesDone(true));
     return () => { active = false; };
   }, []));
@@ -199,8 +200,10 @@ export default function MainCategoriesScreen({
     let active = true;
     setDataLoading(true);
     setItemsLoading(true);
+    console.log('[MainCategoriesScreen] fetching subcategories for', key, selected.name);
     getLiveSubcategories({categoryId: selected.id, locationId})
       .then(async subs => {
+        console.log('[MainCategoriesScreen] getLiveSubcategories ->', key, subs.length, 'subs:', subs);
         // show the tiles as soon as they arrive; the item counts fill in after
         if (active) {
           setSubcategories(subs);
@@ -209,20 +212,26 @@ export default function MainCategoriesScreen({
           setDataLoading(false);
         }
         const shopIds = [...new Set(subs.flatMap(sub => sub.shopIds))];
+        console.log('[MainCategoriesScreen] shopIds for', key, '->', shopIds);
         const lists = await Promise.all(
           shopIds.map(shopId =>
             getLiveItems({
               shopItemsTableName: selected.shopItemsTableName,
               shopId,
-            }).catch(() => []),
+            }).catch(err => {
+              console.log('[MainCategoriesScreen] getLiveItems FAILED shopId', shopId, '->', err?.message || err);
+              return [];
+            }),
           ),
         );
+        console.log('[MainCategoriesScreen] getLiveItems ->', key, lists.flat().length, 'items total');
         loaded.current[key] = {subs, items: lists.flat()};
         if (active) {
           setCategoryItems(lists.flat());
         }
       })
-      .catch(() => {
+      .catch(err => {
+        console.log('[MainCategoriesScreen] getLiveSubcategories FAILED', key, '->', err?.message || err);
         if (active) {
           setSubcategories([]);
           setCategoryItems([]);

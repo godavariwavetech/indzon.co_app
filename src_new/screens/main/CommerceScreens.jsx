@@ -658,11 +658,26 @@ export function CartScreen({navigation}) {
       locationId,
       categoryId: firstCartItem?.categoryId || 0,
       shopId: firstCartItem?.shopId || 0,
+      customerId,
     })
-      .then(setLiveOffers)
+      .then(offers => {
+        setLiveOffers(offers);
+        // A coupon that's since become invalid (usage limit hit, deactivated, min
+        // bill no longer met...) is cleared right away instead of sitting on
+        // screen as "Requirements not met" - the row falls back to "Apply
+        // coupons" and checkout proceeds normally with no coupon applied.
+        const result = evaluateLiveCoupon(
+          coupon,
+          offers,
+          items.map(item => ({...item, quantity: cart[item.id]})),
+        );
+        if (result.error) {
+          dispatch(setCouponCode(null));
+        }
+      })
       .catch(() => setLiveOffers([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coupon, locationId, firstCartItem?.categoryId, firstCartItem?.shopId]);
+  }, [coupon, locationId, customerId, firstCartItem?.categoryId, firstCartItem?.shopId]);
   const discount = coupon
     ? evaluateLiveCoupon(
         coupon,
@@ -758,6 +773,7 @@ export function CartScreen({navigation}) {
             locationId: address.location_id || locationId,
             categoryId: firstCartItem?.categoryId || 0,
             shopId: firstCartItem?.shopId || 0,
+            customerId,
           });
           setLiveOffers(currentOffers);
           const currentCoupon = evaluateLiveCoupon(coupon, currentOffers,

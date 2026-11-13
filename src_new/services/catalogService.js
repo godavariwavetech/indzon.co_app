@@ -474,12 +474,14 @@ export function useLiveItemsByIds(ids) {
   return {itemsById, loading: liveIds.length > 0 && loading};
 }
 
-// categoryId / shopId null lists every coupon of the location.
-export async function getLiveCoupons({locationId, categoryId = 0, shopId = 0}) {
+// categoryId / shopId null lists every coupon of the location. customerId lets the backend
+// exclude coupons this customer has already used up to their per-person usage limit.
+export async function getLiveCoupons({locationId, categoryId = 0, shopId = 0, customerId = 0}) {
   const response = await api.post(endpoints.GET_COUPONS, {
     location_id: locationId,
     coupon_category_id: categoryId,
     shop_id: shopId,
+    customer_id: customerId,
   });
   if (Number(response.data?.status) !== 200 || !Array.isArray(response.data?.data)) {
     throw new Error('Could not verify current coupons. Please try again.');
@@ -508,13 +510,16 @@ export async function getLiveCoupons({locationId, categoryId = 0, shopId = 0}) {
     categoryId: row.category_id ? String(row.category_id) : null,
     // a coupon tied to one shop only applies to that shop's items
     shopId: row.shop_id ? String(row.shop_id) : null,
+    usageLimit: Number(row.usage_limit) || 0,
+    usedCount: Number(row.customer_used_count) || 0,
+    limitReached: Number(row.usage_limit) > 0 && Number(row.customer_used_count) >= Number(row.usage_limit),
   }));
 }
 
 // Every offer for the service area, whatever category it belongs to, so the
 // coupons screen can list them all (the endpoint filters by one category at a time).
-export function getAllLiveCoupons({locationId}) {
-  return getLiveCoupons({locationId, categoryId: null, shopId: null});
+export function getAllLiveCoupons({locationId, customerId}) {
+  return getLiveCoupons({locationId, categoryId: null, shopId: null, customerId});
 }
 
 export function evaluateLiveCoupon(code, offers, items) {
@@ -523,6 +528,12 @@ export function evaluateLiveCoupon(code, offers, items) {
   );
   if (!offer) {
     return {discount: 0, error: 'Enter a valid coupon code.'};
+  }
+  if (offer.limitReached) {
+    return {
+      discount: 0,
+      error: `You've already used ${offer.code} the maximum number of times (${offer.usageLimit}).`,
+    };
   }
   if (!items.length) {
     return {discount: 0, error: 'Add items to your cart before applying a coupon.'};

@@ -106,6 +106,7 @@ export default function CouponsScreen({navigation}) {
   const insets = useSafeAreaInsets();
   const cart = useSelector(state => state.commerce.cart);
   const locationId = useSelector(state => state.Auth.locationId);
+  const customerId = useSelector(state => state.Auth.customerId);
   const selected = useSelector(state => state.commerce.couponCode);
   const [success, setSuccess] = useState(null);
   const applying = useRef(false);
@@ -136,13 +137,13 @@ export default function CouponsScreen({navigation}) {
     if (!liveCatalogEnabled || !locationId) {
       return;
     }
-    getAllLiveCoupons({locationId})
+    getAllLiveCoupons({locationId, customerId})
       .then(setLiveOffers)
       .catch(() => setLiveOffers([]));
     getLiveCategories()
       .then(setCategories)
       .catch(() => {});
-  }, [locationId]);
+  }, [locationId, customerId]);
   const categoryById = useMemo(() => {
     const map = {};
     categories.forEach(category => {
@@ -291,16 +292,27 @@ export default function CouponsScreen({navigation}) {
                   style={styles.featuredCode}
                 />
                 <GradientButton
-                  accessibilityLabel={`Apply ${featured.code}`}
+                  accessibilityLabel={
+                    featured.limitReached
+                      ? `${featured.code} usage limit reached`
+                      : `Apply ${featured.code}`
+                  }
                   onPress={() => apply(featured.code)}
                   height={44}
+                  disabled={featured.limitReached}
                   colors={
                     selected === featured.code
                       ? ['#16845E', '#16845E']
                       : undefined
                   }
                   style={styles.featuredApply}
-                  label={selected === featured.code ? 'Applied' : 'Apply Now'}
+                  label={
+                    featured.limitReached
+                      ? 'Limit Reached'
+                      : selected === featured.code
+                      ? 'Applied'
+                      : 'Apply Now'
+                  }
                 />
               </View>
               {featuredArt ? (
@@ -364,13 +376,29 @@ export default function CouponsScreen({navigation}) {
                 </Text>
                 <CodeBox code={offer.code} color={theme.ink} onCopy={copy} />
                 <GradientButton
-                  accessibilityLabel={`Apply ${offer.code}`}
+                  accessibilityLabel={
+                    offer.limitReached
+                      ? `${offer.code} usage limit reached`
+                      : `Apply ${offer.code}`
+                  }
                   onPress={() => apply(offer.code)}
                   height={40}
+                  disabled={offer.limitReached}
                   colors={isApplied ? ['#16845E', '#16845E'] : undefined}
                   style={styles.cardApply}
-                  label={isApplied ? 'Applied' : 'Apply Now'}
+                  label={
+                    offer.limitReached
+                      ? 'Limit Reached'
+                      : isApplied
+                      ? 'Applied'
+                      : 'Apply Now'
+                  }
                 />
+                {offer.limitReached ? (
+                  <Text style={styles.cardLimitNote}>
+                    You've already used this coupon.
+                  </Text>
+                ) : null}
                 <Text style={styles.cardFoot}>
                   {offer.minBill ? `Min. order ₹${offer.minBill}` : 'No minimum order'}
                 </Text>
@@ -641,6 +669,7 @@ const styles = StyleSheet.create({
   },
   codeText: {flexShrink: 1, fontSize: 14, fontWeight: '800', letterSpacing: 0.5},
   cardApply: {marginTop: 10},
+  cardLimitNote: {fontSize: 11, color: '#C62828', textAlign: 'center', marginTop: 6},
   cardFoot: {fontSize: 12, color: '#707585', textAlign: 'center', marginTop: 8},
   empty: {textAlign: 'center', color: '#707585', marginTop: 24, fontSize: 14},
 });
