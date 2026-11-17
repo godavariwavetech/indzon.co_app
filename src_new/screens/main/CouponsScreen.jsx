@@ -239,11 +239,25 @@ export default function CouponsScreen({navigation}) {
         </View>
 
         {message ? (
-          <Text
+          <View
             accessibilityLiveRegion="polite"
-            style={[styles.message, error && styles.error]}>
-            {message}
-          </Text>
+            style={[
+              styles.messageBanner,
+              error ? styles.errorBanner : styles.successBanner,
+            ]}>
+            <MaterialIcons
+              name={error ? 'info-outline' : 'check-circle-outline'}
+              size={20}
+              color={error ? '#B42318' : '#16845E'}
+            />
+            <Text
+              style={[
+                styles.messageText,
+                error ? styles.errorText : styles.successText,
+              ]}>
+              {message}
+            </Text>
+          </View>
         ) : null}
         {selected ? (
           <Pressable
@@ -561,8 +575,21 @@ const styles = StyleSheet.create({
   },
   heroBadgeText: {fontSize: 22, fontWeight: '800', color: '#FFFFFF'},
   heroGift: {position: 'absolute', left: 14, top: 4},
-  message: {fontSize: 13, lineHeight: 18, color: '#247245', marginHorizontal: 20, marginBottom: 8},
-  error: {color: '#C62828'},
+  messageBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  errorBanner: {backgroundColor: '#FFF5F4', borderColor: '#F3C7C2'},
+  successBanner: {backgroundColor: '#F0FAF4', borderColor: '#C5E7D1'},
+  messageText: {flex: 1, fontSize: 14, lineHeight: 20, fontWeight: '600'},
+  errorText: {color: '#8F1D16'},
+  successText: {color: '#176B46'},
   remove: {
     flexDirection: 'row',
     alignItems: 'center',

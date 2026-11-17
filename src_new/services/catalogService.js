@@ -568,7 +568,10 @@ export function evaluateLiveCoupon(code, offers, items) {
   );
   const amount = eligible.reduce((sum, item) => sum + item.price * item.quantity, 0);
   if (!amount) {
-    return {discount: 0, error: 'This coupon does not apply to items in your cart.'};
+    return {
+      discount: 0,
+      error: "This coupon isn't valid for the items in your cart. Try a coupon for this category or shop.",
+    };
   }
   if (amount < offer.minBill) {
     return {
