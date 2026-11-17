@@ -1,5 +1,6 @@
 import notifee, { AndroidImportance, AndroidStyle } from '@notifee/react-native';
 import messaging from '@react-native-firebase/messaging';
+import {Platform} from 'react-native';
 
 export const setupNotificationHandlers = (navigation) => {
   // Foreground notifications
@@ -80,6 +81,20 @@ const handleNotificationNavigation = (data, navigation) => {
 
 export const getFCMToken = async () => {
   try {
+    if (Platform.OS === 'ios') {
+      const authStatus = await messaging().requestPermission();
+      const enabled =
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+      if (!enabled) {
+        console.warn('Notification permission was not granted.');
+        return null;
+      }
+      if (!messaging().isDeviceRegisteredForRemoteMessages) {
+        await messaging().registerDeviceForRemoteMessages();
+      }
+    }
+
     const token = await messaging().getToken();
 
     messaging().onMessage(async remoteMessage => {

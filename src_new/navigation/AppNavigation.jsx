@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {useSelector} from 'react-redux';
 import RentalNavigation from './RentalNavigation';
 import TermsConditionsScreen from '../../src/screens/daddy/TermsConditionsScreen';
@@ -30,6 +30,7 @@ import {
 import SearchScreen from '../screens/main/SearchScreen';
 import CouponsScreen from '../screens/main/CouponsScreen';
 import {ENABLE_LIVE_DATA, STATIC_APP_FLOW} from '../config/appMode';
+import {getFCMToken} from '../services/NotificationsService';
 // Onboarding is temporarily disabled.
 // import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 
@@ -114,12 +115,31 @@ function StaticAppNavigation() {
   const remembered = useSelector(
     state => state.Auth.previewLoginComplete === true,
   );
+  const customerId = useSelector(state => state.Auth.customerId);
   const hasDeliveryAddress = useSelector(state =>
     Boolean(state.Auth.deliveryAddress),
   );
   const needsName = useSelector(state =>
     Boolean(ENABLE_LIVE_DATA && state.Auth.customerId && !state.Auth.customerName),
   );
+  useEffect(() => {
+    if (!ENABLE_LIVE_DATA || !customerId) {
+      return;
+    }
+    let active = true;
+    getFCMToken()
+      .then(token => {
+        if (active && token) {
+          console.log('[FCM] Device token:', token);
+        }
+      })
+      .catch(error => {
+        console.error('[FCM] Could not retrieve device token:', error);
+      });
+    return () => {
+      active = false;
+    };
+  }, [customerId]);
   const setupRoute = needsName ? 'NamePrompt' : 'LocationSetup';
   return (
     <RentalNavigation
