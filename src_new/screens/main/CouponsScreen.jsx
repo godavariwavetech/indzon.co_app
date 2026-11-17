@@ -137,9 +137,22 @@ export default function CouponsScreen({navigation}) {
     if (!liveCatalogEnabled || !locationId) {
       return;
     }
+    console.info('[Coupons] Fetching coupons for location', {locationId});
     getAllLiveCoupons({locationId, customerId})
-      .then(setLiveOffers)
-      .catch(() => setLiveOffers([]));
+      .then(offers => {
+        console.info('[Coupons] Coupon fetch completed', {
+          locationId,
+          availableCount: offers.length,
+        });
+        setLiveOffers(offers);
+      })
+      .catch(fetchError => {
+        console.error('[Coupons] Coupon fetch failed', {
+          locationId,
+          message: fetchError?.message || String(fetchError),
+        });
+        setLiveOffers([]);
+      });
     getLiveCategories()
       .then(setCategories)
       .catch(() => {});

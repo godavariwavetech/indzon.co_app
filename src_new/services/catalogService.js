@@ -483,14 +483,36 @@ export async function getLiveCoupons({locationId, categoryId = 0, shopId = 0, cu
     shop_id: shopId,
     customer_id: customerId,
   });
-  if (Number(response.data?.status) !== 200 || !Array.isArray(response.data?.data)) {
+  const rows = response.data?.data;
+  const responseStatus = response.data?.status;
+  const isValidResponse =
+    Number(responseStatus) === 200 && Array.isArray(rows);
+  const responseDetails = {
+    locationId,
+    status: responseStatus ?? null,
+    rowCount: Array.isArray(rows) ? rows.length : null,
+    dataType: Array.isArray(rows) ? 'array' : rows === null ? 'null' : typeof rows,
+    responseKeys:
+      response.data && typeof response.data === 'object'
+        ? Object.keys(response.data)
+        : [],
+  };
+  if (!isValidResponse) {
+    console.error('[Coupons] Unexpected backend response', responseDetails);
     throw new Error('Could not verify current coupons. Please try again.');
   }
-  const rows = Array.isArray(response.data?.data) ? response.data.data : [];
-  return rows.filter(row =>
+  console.info('[Coupons] Backend response', responseDetails);
+  const activeRows = rows.filter(row =>
     (row.d_in == null || Number(row.d_in) === 0) &&
     (row.coupon_active_status == null || Number(row.coupon_active_status) === 0),
-  ).map(row => ({
+  );
+  console.info('[Coupons] Coupon status filtering', {
+    locationId,
+    receivedCount: rows.length,
+    availableCount: activeRows.length,
+    filteredOutCount: rows.length - activeRows.length,
+  });
+  return activeRows.map(row => ({
     id: row.id,
     code: row.coupon_name,
     label: Number(row.coupon_user_permission) ? 'ONE-TIME' : 'FLAT',

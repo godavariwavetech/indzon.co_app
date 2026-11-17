@@ -1380,9 +1380,6 @@ export function OrderConfirmationScreen({navigation, route}) {
   const order = useSelector(state =>
     state.commerce.orders.find(item => item.id === route.params?.orderId),
   );
-  const invoiceUrl = useSelector(
-    state => state.commerce.invoices[route.params?.orderId],
-  );
   const {width, height} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   // The artwork is 393x852. Scale it to cover the whole window and pin it to the
@@ -1464,7 +1461,7 @@ export function OrderConfirmationScreen({navigation, route}) {
           }>
           <Text style={s.blue}>View order details</Text>
         </Pressable>
-        {invoiceUrl ? (
+        {/* {invoiceUrl ? (
           <Pressable
             style={[s.row, {justifyContent: 'center', gap: 6, padding: 8}]}
             accessibilityRole="button"
@@ -1473,7 +1470,7 @@ export function OrderConfirmationScreen({navigation, route}) {
             <MaterialIcons name="receipt-long" size={18} color={colors.primary} />
             <Text style={s.blue}>Download Invoice</Text>
           </Pressable>
-        ) : null}
+        ) : null} */}
       </ScrollView>
     </Page>
   );
@@ -1568,6 +1565,13 @@ export function OrderDetailsScreen({navigation, route}) {
   const deliveredGroups = order.live
     ? order.groups.filter(group => shipmentStatus(group, order) === 'Delivered')
     : [];
+  const activeGroups = order.groups.filter(
+    group => shipmentStatus(group, order) !== 'Cancelled',
+  );
+  const orderDelivered = order.live
+    ? deliveredGroups.length > 0 &&
+      activeGroups.every(group => shipmentStatus(group, order) === 'Delivered')
+    : order.status === 'Delivered';
   const cancellableGroups = order.live
     ? order.groups.filter(group => shipmentStatus(group, order) === 'Placed')
     : [];
@@ -1674,7 +1678,7 @@ export function OrderDetailsScreen({navigation, route}) {
               </View>
             </View>
           ) : null}
-          {invoiceUrl || order.live ? (
+          {orderDelivered && (invoiceUrl || order.live) ? (
             <Pressable
               style={[s.row, {gap: 6, marginTop: 12}]}
               accessibilityRole="button"

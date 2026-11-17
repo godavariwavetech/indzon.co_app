@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A0A0A0A10000000000000001 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A0A0A0A10000000000000002 /* GoogleService-Info.plist */; };
 		A12000000000000000000001 /* Lato-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A11000000000000000000001 /* Lato-Bold.ttf */; };
 		A12000000000000000000002 /* Lato-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A11000000000000000000002 /* Lato-Medium.ttf */; };
 		A12000000000000000000003 /* Lato-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A11000000000000000000003 /* Lato-Regular.ttf */; };
@@ -38,6 +39,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A0A0A0A10000000000000002 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = localdaddy/GoogleService-Info.plist; sourceTree = "<group>"; };
 		A11000000000000000000001 /* Lato-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Lato-Bold.ttf"; path = "../src_new/assets/fonts/Lato-Bold.ttf"; sourceTree = "<group>"; };
 		A11000000000000000000002 /* Lato-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Lato-Medium.ttf"; path = "../src_new/assets/fonts/Lato-Medium.ttf"; sourceTree = "<group>"; };
 		A11000000000000000000003 /* Lato-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Lato-Regular.ttf"; path = "../src_new/assets/fonts/Lato-Regular.ttf"; sourceTree = "<group>"; };
@@ -109,6 +111,7 @@
 		13B07FAE1A68108700A75B9A /* localdaddy */ = {
 			isa = PBXGroup;
 			children = (
+				A0A0A0A10000000000000002 /* GoogleService-Info.plist */,
 				A11000000000000000000001 /* Lato-Bold.ttf */,
 				A11000000000000000000002 /* Lato-Medium.ttf */,
 				A11000000000000000000003 /* Lato-Regular.ttf */,
@@ -277,6 +280,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A0A0A0A10000000000000001 /* GoogleService-Info.plist in Resources */,
 				A12000000000000000000001 /* Lato-Bold.ttf in Resources */,
 				A12000000000000000000002 /* Lato-Medium.ttf in Resources */,
 				A12000000000000000000003 /* Lato-Regular.ttf in Resources */,
