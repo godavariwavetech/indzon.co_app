@@ -31,6 +31,7 @@ import SearchScreen from '../screens/main/SearchScreen';
 import CouponsScreen from '../screens/main/CouponsScreen';
 import {ENABLE_LIVE_DATA, STATIC_APP_FLOW} from '../config/appMode';
 import {getFCMToken} from '../services/NotificationsService';
+import userService from '../services/userService';
 // Onboarding is temporarily disabled.
 // import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 
@@ -128,9 +129,16 @@ function StaticAppNavigation() {
     }
     let active = true;
     getFCMToken()
-      .then(token => {
-        if (active && token) {
-          console.log('[FCM] Device token:', token);
+      .then(async token => {
+        console.log('[FCM] customerId:', customerId, 'player_id (token):', token);
+        if (!active || !token) {
+          return;
+        }
+        try {
+          const response = await userService.registerFcmToken(customerId, token);
+          console.log('[FCM] postplayer_id response:', response);
+        } catch (error) {
+          console.error('[FCM] Failed to register player_id with backend:', error);
         }
       })
       .catch(error => {

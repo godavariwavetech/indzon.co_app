@@ -1,6 +1,6 @@
 import notifee, { AndroidImportance, AndroidStyle } from '@notifee/react-native';
 import messaging from '@react-native-firebase/messaging';
-import {Platform} from 'react-native';
+import {PermissionsAndroid, Platform} from 'react-native';
 
 export const setupNotificationHandlers = (navigation) => {
   // Foreground notifications
@@ -81,6 +81,15 @@ const handleNotificationNavigation = (data, navigation) => {
 
 export const getFCMToken = async () => {
   try {
+    if (Platform.OS === 'android' && Platform.Version >= 33) {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+      );
+      if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+        console.warn('Android notification permission was not granted.');
+      }
+    }
+
     if (Platform.OS === 'ios') {
       const authStatus = await messaging().requestPermission();
       const enabled =
