@@ -864,7 +864,7 @@ export function CartScreen({navigation}) {
           item_gst: item.gstPercent || 0,
         };
       });
-      const response = await api.post(endpoints.PLACE_ORDER, {
+      const placeOrderPayload = {
         customer_id: customerId,
         customer_name: address.customer_name || '',
         customer_mobile_number: address.customer_mobile_number || phone || '',
@@ -903,7 +903,10 @@ export function CartScreen({navigation}) {
         order_distance: 0,
         ext_del_charge: 0,
         sub_order_array: subOrderArray,
-      });
+      };
+      console.log('[placeOrder] request ->', placeOrderPayload);
+      const response = await api.post(endpoints.PLACE_ORDER, placeOrderPayload);
+      console.log('[placeOrder] response ->', response.status, response.data);
       if (response.data?.status !== 200) {
         throw new Error(response.data?.message || 'Could not place order.');
       }
