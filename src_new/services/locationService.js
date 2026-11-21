@@ -40,6 +40,15 @@ async function getCurrentLocation() {
       );
     }
   }
+  return fetchPosition(true);
+}
+
+// GPS-only fixes (enableHighAccuracy) can time out on devices/locations with
+// weak satellite reception (indoors, certain hardware) even though the
+// device is perfectly capable of a lower-accuracy WiFi/cell fix. Retrying
+// once without it is what makes this reliable across different devices
+// rather than only the ones with a strong GPS signal at the time.
+function fetchPosition(enableHighAccuracy) {
   return new Promise((resolve, reject) => {
     Geolocation.getCurrentPosition(
       position => {
@@ -55,15 +64,21 @@ async function getCurrentLocation() {
           );
         }
       },
-      () =>
+      error => {
+        // 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT.
+        if (enableHighAccuracy && (error?.code === 2 || error?.code === 3)) {
+          resolve(fetchPosition(false));
+          return;
+        }
         reject(
           new Error(
             'Turn on device location and try again, or enter your delivery location manually.',
           ),
-        ),
+        );
+      },
       {
-        enableHighAccuracy: true,
-        timeout: 15000,
+        enableHighAccuracy,
+        timeout: enableHighAccuracy ? 15000 : 20000,
         maximumAge: 30000,
         showLocationDialog: true,
       },
