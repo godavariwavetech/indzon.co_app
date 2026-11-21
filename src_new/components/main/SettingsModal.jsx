@@ -40,16 +40,26 @@ export default function SettingsModal({visible, onClose, onLogout, onDelete}) {
   const [notice, setNotice] = useState(null);
   const refresh = useCallback(async () => {
     try {
-      const [gps, notices, alternate] = await Promise.all([
+      const [gps, notices] = await Promise.all([
         check(locationPermission),
         checkNotifications(),
-        check(
+      ]);
+      let alternateGranted = false;
+      try {
+        // PERMISSIONS.IOS.LOCATION_ALWAYS isn't linked via the Podfile's
+        // setup_permissions (the app never requests "Always" access), so
+        // checking it throws on iOS - don't let that take down the whole
+        // screen, just treat it as not granted.
+        const alternate = await check(
           Platform.OS === 'android'
             ? PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION
             : PERMISSIONS.IOS.LOCATION_ALWAYS,
-        ),
-      ]);
-      setLocation(allowed(gps) || allowed(alternate));
+        );
+        alternateGranted = allowed(alternate);
+      } catch {
+        alternateGranted = false;
+      }
+      setLocation(allowed(gps) || alternateGranted);
       setNotifications(allowed(notices.status));
       setError('');
       setReady(true);

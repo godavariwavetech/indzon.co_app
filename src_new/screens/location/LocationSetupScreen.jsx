@@ -6,6 +6,8 @@ import {
   Animated,
   AppState,
   ImageBackground,
+  Linking,
+  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -172,6 +174,11 @@ export default function LocationSetupScreen({navigation}) {
       }
     }
   };
+  // Unlike Android, iOS has no API that lets an app enable Location Services
+  // or the per-app permission inline - the only way forward is Settings.
+  const openIOSLocationSettings = () => {
+    Linking.openSettings().catch(() => {});
+  };
   // Pick the delivery address straight after login instead of asking for it every time.
   useEffect(() => {
     if (liveCustomer) {
@@ -234,8 +241,12 @@ export default function LocationSetupScreen({navigation}) {
         ) : null}
         <View style={styles.actions}>
           <LocationButton
-            label="Turn on Device Location"
-            onPress={locate}
+            label={
+              Platform.OS === 'ios' && error
+                ? 'Open Settings'
+                : 'Turn on Device Location'
+            }
+            onPress={Platform.OS === 'ios' && error ? openIOSLocationSettings : locate}
             loading={loading}
             testID="location-device"
           />
