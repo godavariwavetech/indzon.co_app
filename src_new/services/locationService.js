@@ -18,18 +18,27 @@ export function validCoordinates(coordinates) {
 }
 
 async function getCurrentLocation() {
-  const permission =
-    Platform.OS === 'ios'
-      ? PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
-      : PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION;
-  let status = await check(permission);
-  if (status === RESULTS.DENIED) {
-    status = await request(permission);
-  }
-  if (![RESULTS.GRANTED, RESULTS.LIMITED].includes(status)) {
-    throw new Error(
-      'Allow location access in Settings, or enter your delivery location manually.',
-    );
+  if (Platform.OS === 'ios') {
+    // Same idea as the Android branch below (ask, then verify) but asked
+    // directly through the geolocation library - same call indzon.co_delivery
+    // uses - instead of react-native-permissions, which needs its iOS
+    // CocoaPods subspec linked to be able to prompt at all.
+    const authStatus = await Geolocation.requestAuthorization('whenInUse');
+    if (authStatus !== 'granted') {
+      throw new Error(
+        'Allow location access in Settings, or enter your delivery location manually.',
+      );
+    }
+  } else {
+    let status = await check(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
+    if (status === RESULTS.DENIED) {
+      status = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
+    }
+    if (![RESULTS.GRANTED, RESULTS.LIMITED].includes(status)) {
+      throw new Error(
+        'Allow location access in Settings, or enter your delivery location manually.',
+      );
+    }
   }
   return new Promise((resolve, reject) => {
     Geolocation.getCurrentPosition(

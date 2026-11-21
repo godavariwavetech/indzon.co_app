@@ -2,7 +2,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import locationService, {validateAddress} from '../services/locationService';
 import api from '../utils/api';
-import {check, request, RESULTS} from 'react-native-permissions';
 import Geolocation from 'react-native-geolocation-service';
 import authReducer, {
   completeAuthentication,
@@ -134,17 +133,15 @@ test('local saving is also usable without an API-backed customer session', async
 });
 
 test('blocked location permissions do not call GPS or repeatedly prompt', async () => {
-  check.mockResolvedValue(RESULTS.BLOCKED);
+  Geolocation.requestAuthorization.mockResolvedValue('denied');
   await expect(locationService.getCurrentLocation()).rejects.toThrow(
     'manually',
   );
-  expect(request).not.toHaveBeenCalled();
   expect(Geolocation.getCurrentPosition).not.toHaveBeenCalled();
 });
 
 test('coordinates from the device are returned after permission is granted', async () => {
-  check.mockResolvedValue(RESULTS.DENIED);
-  request.mockResolvedValue(RESULTS.GRANTED);
+  Geolocation.requestAuthorization.mockResolvedValue('granted');
   Geolocation.getCurrentPosition.mockImplementation(success =>
     success({coords: {latitude: 17, longitude: 81, accuracy: 10}}),
   );

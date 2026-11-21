@@ -12,6 +12,7 @@ jest.mock('react-native-geolocation-service', () => ({
   watchPosition: jest.fn(),
   clearWatch: jest.fn(),
   stopObserving: jest.fn(),
+  requestAuthorization: jest.fn().mockResolvedValue('granted'),
 }));
 
 jest.mock('@react-native-community/netinfo', () => ({

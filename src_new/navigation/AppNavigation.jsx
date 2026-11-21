@@ -117,6 +117,7 @@ function StaticAppNavigation() {
     state => state.Auth.previewLoginComplete === true,
   );
   const customerId = useSelector(state => state.Auth.customerId);
+  const locationId = useSelector(state => state.Auth.locationId);
   const hasDeliveryAddress = useSelector(state =>
     Boolean(state.Auth.deliveryAddress),
   );
@@ -130,12 +131,12 @@ function StaticAppNavigation() {
     let active = true;
     getFCMToken()
       .then(async token => {
-        console.log('[FCM] customerId:', customerId, 'player_id (token):', token);
+        console.log('[FCM] customerId:', customerId, 'locationId:', locationId, 'player_id (token):', token);
         if (!active || !token) {
           return;
         }
         try {
-          const response = await userService.registerFcmToken(customerId, token);
+          const response = await userService.registerFcmToken(customerId, token, locationId);
           console.log('[FCM] postplayer_id response:', response);
         } catch (error) {
           console.error('[FCM] Failed to register player_id with backend:', error);
@@ -147,7 +148,7 @@ function StaticAppNavigation() {
     return () => {
       active = false;
     };
-  }, [customerId]);
+  }, [customerId, locationId]);
   const setupRoute = needsName ? 'NamePrompt' : 'LocationSetup';
   return (
     <RentalNavigation
