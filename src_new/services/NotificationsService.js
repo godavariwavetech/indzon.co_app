@@ -91,6 +91,9 @@ export const getFCMToken = async () => {
     }
 
     if (Platform.OS === 'ios') {
+      // notifee needs its own permission grant (same iOS prompt) to be able
+      // to display notifications, in addition to messaging()'s permission.
+      await notifee.requestPermission();
       const authStatus = await messaging().requestPermission();
       const enabled =
         authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
