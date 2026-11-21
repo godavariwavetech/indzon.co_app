@@ -1,4 +1,5 @@
 import React, {useEffect} from 'react';
+import {Alert, Platform} from 'react-native';
 import {useSelector} from 'react-redux';
 import RentalNavigation from './RentalNavigation';
 import TermsConditionsScreen from '../../src/screens/daddy/TermsConditionsScreen';
@@ -34,6 +35,19 @@ import {getFCMToken} from '../services/NotificationsService';
 import userService from '../services/userService';
 // Onboarding is temporarily disabled.
 // import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
+
+// TEMPORARY DIAGNOSTIC: on iOS, console.log/error is invisible on a TestFlight
+// build (no Mac/Xcode attached), so there is no other way to see why push
+// registration failed. Surface it on-screen once per app launch. Remove once
+// FCM/notifications are confirmed working in production.
+let fcmDiagnosticShown = false;
+function notifyFcmDiagnostic(message) {
+  if (Platform.OS !== 'ios' || fcmDiagnosticShown) {
+    return;
+  }
+  fcmDiagnosticShown = true;
+  Alert.alert('Push notification setup (debug)', message);
+}
 
 const defaultGuestRoutes = [
   // {name: 'Onboarding', component: OnboardingScreen},
@@ -132,7 +146,18 @@ function StaticAppNavigation() {
     getFCMToken()
       .then(async token => {
         console.log('[FCM] customerId:', customerId, 'locationId:', locationId, 'player_id (token):', token);
-        if (!active || !token) {
+        if (!active) {
+          return;
+        }
+        if (!token) {
+          // console.log/warn/error are invisible on a TestFlight build with no
+          // Mac/Xcode attached - surface this on-screen once per launch so a
+          // tester can actually report what's failing instead of guessing.
+          notifyFcmDiagnostic(
+            'No push token was returned (permission likely not granted, or ' +
+              'Apple\'s APNs token never arrived in time). Notifications will ' +
+              'not work until this is resolved.',
+          );
           return;
         }
         try {
@@ -140,10 +165,12 @@ function StaticAppNavigation() {
           console.log('[FCM] postplayer_id response:', response);
         } catch (error) {
           console.error('[FCM] Failed to register player_id with backend:', error);
+          notifyFcmDiagnostic(`Got a push token but failed to register it with the backend: ${error?.message || error}`);
         }
       })
       .catch(error => {
         console.error('[FCM] Could not retrieve device token:', error);
+        notifyFcmDiagnostic(`Could not retrieve device token: ${error?.message || error}`);
       });
     return () => {
       active = false;

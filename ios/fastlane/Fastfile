@@ -1,4 +1,6 @@
 require 'base64'
+require 'tmpdir'
+require 'fileutils'
 
 default_platform(:ios)
 
@@ -36,10 +38,69 @@ platform :ios do
       }
     )
 
+    # Push notifications and FCM token registration silently fail if either
+    # the bundle id doesn't match GoogleService-Info.plist/the provisioning
+    # profile, or the entitlements that actually got signed into the archive
+    # aren't the production ones. Catch that here, loudly, instead of finding
+    # out after a TestFlight upload + install cycle.
+    verify_ipa_signing(
+      ipa_path: '../build/ios/Indzon.ipa',
+      expected_bundle_id: bundle_id
+    )
+
     upload_to_testflight(
       api_key: api_key,
       ipa: '../build/ios/Indzon.ipa',
       skip_waiting_for_build_processing: true
     )
+  end
+
+  desc 'Fail the build if the archived IPA is not signed the way push notifications need'
+  private_lane :verify_ipa_signing do |options|
+    ipa_path = File.expand_path(options.fetch(:ipa_path))
+    expected_bundle_id = options.fetch(:expected_bundle_id)
+    extract_dir = Dir.mktmpdir('verify-ipa')
+
+    begin
+      sh("unzip -q '#{ipa_path}' -d '#{extract_dir}'")
+      app_paths = Dir.glob(File.join(extract_dir, 'Payload', '*.app'))
+      UI.user_error!("verify_ipa_signing: no .app bundle found inside #{ipa_path}") if app_paths.empty?
+      app_path = app_paths.first
+
+      actual_bundle_id = sh(
+        "/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' '#{app_path}/Info.plist'",
+        log: false
+      ).strip
+      if actual_bundle_id != expected_bundle_id
+        UI.user_error!(
+          "verify_ipa_signing: archived app's CFBundleIdentifier is " \
+          "'#{actual_bundle_id}' but expected '#{expected_bundle_id}' " \
+          "(IOS_BUNDLE_ID secret). This mismatches GoogleService-Info.plist " \
+          'and will silently break Firebase/FCM/APNs.'
+        )
+      end
+
+      entitlements_xml = sh("codesign -d --entitlements :- '#{app_path}' 2>/dev/null", log: false)
+      aps_match = entitlements_xml.match(%r{<key>aps-environment</key>\s*<string>([^<]+)</string>})
+      if aps_match.nil?
+        UI.user_error!(
+          'verify_ipa_signing: archived app has no aps-environment entitlement at all - ' \
+          'push notifications cannot work. Check CODE_SIGN_ENTITLEMENTS for the Release ' \
+          'configuration and that the provisioning profile grants Push Notifications.'
+        )
+      elsif aps_match[1] != 'production'
+        UI.user_error!(
+          "verify_ipa_signing: archived app's aps-environment entitlement is " \
+          "'#{aps_match[1]}', not 'production'. A TestFlight/App Store build signed " \
+          'with a development APNs environment will never receive push notifications. ' \
+          'Check ios/localdaddy/localdaddyRelease.entitlements and the Release ' \
+          'configuration in project.pbxproj.'
+        )
+      end
+
+      UI.success("verify_ipa_signing: bundle id '#{actual_bundle_id}' and aps-environment 'production' confirmed in the archived IPA.")
+    ensure
+      FileUtils.remove_entry(extract_dir, true)
+    end
   end
 end
