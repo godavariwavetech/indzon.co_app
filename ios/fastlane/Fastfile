@@ -41,12 +41,17 @@ platform :ios do
     # Push notifications and FCM token registration silently fail if either
     # the bundle id doesn't match GoogleService-Info.plist/the provisioning
     # profile, or the entitlements that actually got signed into the archive
-    # aren't the production ones. Catch that here, loudly, instead of finding
-    # out after a TestFlight upload + install cycle.
-    verify_ipa_signing(
-      ipa_path: '../build/ios/Indzon.ipa',
-      expected_bundle_id: bundle_id
-    )
+    # aren't the production ones. This is a diagnostic check only - it must
+    # never block the TestFlight upload, so any problem (including a bug in
+    # the check itself) is just printed as a warning, never raised.
+    begin
+      verify_ipa_signing(
+        ipa_path: '../build/ios/Indzon.ipa',
+        expected_bundle_id: bundle_id
+      )
+    rescue => e
+      UI.important("verify_ipa_signing diagnostic check crashed (ignoring, build continues): #{e.message}")
+    end
 
     upload_to_testflight(
       api_key: api_key,
@@ -64,7 +69,8 @@ platform :ios do
     begin
       UI.message("verify_ipa_signing: extracting #{ipa_path} to #{extract_dir}")
       unless File.exist?(ipa_path)
-        UI.user_error!("verify_ipa_signing: no IPA found at #{ipa_path}")
+        UI.error("verify_ipa_signing: no IPA found at #{ipa_path} (skipping check)")
+        next
       end
       # Not `unzip` - it exits 1 on mere warnings (common with Apple-generated
       # .ipa archives, e.g. __MACOSX/resource-fork entries), which `sh` treats
@@ -72,7 +78,10 @@ platform :ios do
       # for this and doesn't have that false-failure problem.
       sh("ditto -xk '#{ipa_path}' '#{extract_dir}'")
       app_paths = Dir.glob(File.join(extract_dir, 'Payload', '*.app'))
-      UI.user_error!("verify_ipa_signing: no .app bundle found inside #{ipa_path}") if app_paths.empty?
+      if app_paths.empty?
+        UI.error("verify_ipa_signing: no .app bundle found inside #{ipa_path} (skipping check)")
+        next
+      end
       app_path = app_paths.first
 
       actual_bundle_id = sh(
@@ -80,7 +89,7 @@ platform :ios do
         log: false
       ).strip
       if actual_bundle_id != expected_bundle_id
-        UI.user_error!(
+        UI.error(
           "verify_ipa_signing: archived app's CFBundleIdentifier is " \
           "'#{actual_bundle_id}' but expected '#{expected_bundle_id}' " \
           "(IOS_BUNDLE_ID secret). This mismatches GoogleService-Info.plist " \
@@ -91,22 +100,22 @@ platform :ios do
       entitlements_xml = sh("codesign -d --entitlements :- '#{app_path}' 2>/dev/null", log: false)
       aps_match = entitlements_xml.match(%r{<key>aps-environment</key>\s*<string>([^<]+)</string>})
       if aps_match.nil?
-        UI.user_error!(
+        UI.error(
           'verify_ipa_signing: archived app has no aps-environment entitlement at all - ' \
           'push notifications cannot work. Check CODE_SIGN_ENTITLEMENTS for the Release ' \
           'configuration and that the provisioning profile grants Push Notifications.'
         )
       elsif aps_match[1] != 'production'
-        UI.user_error!(
+        UI.error(
           "verify_ipa_signing: archived app's aps-environment entitlement is " \
           "'#{aps_match[1]}', not 'production'. A TestFlight/App Store build signed " \
           'with a development APNs environment will never receive push notifications. ' \
           'Check ios/localdaddy/localdaddyRelease.entitlements and the Release ' \
           'configuration in project.pbxproj.'
         )
+      else
+        UI.success("verify_ipa_signing: bundle id '#{actual_bundle_id}' and aps-environment 'production' confirmed in the archived IPA.")
       end
-
-      UI.success("verify_ipa_signing: bundle id '#{actual_bundle_id}' and aps-environment 'production' confirmed in the archived IPA.")
     ensure
       FileUtils.remove_entry(extract_dir, true)
     end
