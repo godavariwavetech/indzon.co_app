@@ -62,7 +62,15 @@ platform :ios do
     extract_dir = Dir.mktmpdir('verify-ipa')
 
     begin
-      sh("unzip -q '#{ipa_path}' -d '#{extract_dir}'")
+      UI.message("verify_ipa_signing: extracting #{ipa_path} to #{extract_dir}")
+      unless File.exist?(ipa_path)
+        UI.user_error!("verify_ipa_signing: no IPA found at #{ipa_path}")
+      end
+      # Not `unzip` - it exits 1 on mere warnings (common with Apple-generated
+      # .ipa archives, e.g. __MACOSX/resource-fork entries), which `sh` treats
+      # as fatal even though extraction succeeded. `ditto` is Apple's own tool
+      # for this and doesn't have that false-failure problem.
+      sh("ditto -xk '#{ipa_path}' '#{extract_dir}'")
       app_paths = Dir.glob(File.join(extract_dir, 'Payload', '*.app'))
       UI.user_error!("verify_ipa_signing: no .app bundle found inside #{ipa_path}") if app_paths.empty?
       app_path = app_paths.first
